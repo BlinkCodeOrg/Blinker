@@ -265,13 +265,18 @@ export class TabService extends TypedEventEmitter<TabServiceEvents> {
     if (!layout) return;
 
     layout.setActiveNode(spaceId, node);
+
+    // Update view visibility and bounds
+    this.updateTabVisibility(windowId, spaceId);
+    this.handlePageBoundsChanged(windowId);
   }
 
   /**
    * Activate a tab by finding its layout node and making it active.
    */
   public activateTab(tab: Tab): void {
-    const layout = this.layouts.get(tab.getWindow().id);
+    const windowId = tab.getWindow().id;
+    const layout = this.layouts.get(windowId);
     if (!layout) return;
 
     const node = layout.getNodeForTab(tab.id);
@@ -284,6 +289,10 @@ export class TabService extends TypedEventEmitter<TabServiceEvents> {
 
     layout.setActiveNode(tab.spaceId, node);
     layout.setFocusedTab(tab.spaceId, tab);
+
+    // Update view visibility and bounds
+    this.updateTabVisibility(windowId, tab.spaceId);
+    this.handlePageBoundsChanged(windowId);
   }
 
   /**
