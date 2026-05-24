@@ -418,6 +418,12 @@ export class TabService extends TypedEventEmitter<TabServiceEvents> {
     this.updateTabVisibility(windowId, tab.spaceId);
     this.handlePageBoundsChanged(windowId);
 
+    // Focus the tab's layer through the LayerManager so the window
+    // properly owns input focus for this tab's webContents.
+    if (tab.layer) {
+      tab.layer.focus();
+    }
+
     // Notify renderer of active tab change
     this.emitStructuralChange(windowId);
   }

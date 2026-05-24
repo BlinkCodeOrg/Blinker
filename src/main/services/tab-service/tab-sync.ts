@@ -361,7 +361,12 @@ export function initTabSync(): void {
       return;
     }
 
-    // Async move: screenshot → move → placeholder → activate → re-focus
+    // Lock out other focus-triggered moves while this one is in flight.
+    // Without this, a spurious focus event during the async screenshot capture
+    // would queue a competing mutation that moves the tab back.
+    _lastFocusMoveTime = Date.now();
+
+    // Async move: screenshot → move → placeholder → activate
     const targetWindowId = window.id;
     runTabSyncMutation(async () => {
       if (window.destroyed || focusedTab.isDestroyed) return;
@@ -372,16 +377,11 @@ export function initTabSync(): void {
 
       if (focusedTab.isDestroyed || window.destroyed) return;
 
-      // Activate the tab (makes it visible in the target window)
       tabService.activateTab(focusedTab);
 
-      // Re-focus the target window AFTER the tab is moved and visible.
-      // This ensures the correct window stays in front even if Electron
-      // briefly shifted focus during WebContentsView manipulation.
+      // Extend the debounce window after completion to absorb any delayed
+      // focus events from Electron's WebContentsView manipulation.
       _lastFocusMoveTime = Date.now();
-      if (!window.destroyed && !window.browserWindow.isFocused()) {
-        window.browserWindow.focus();
-      }
     }).catch((err) => {
       console.error("[tab-sync] Failed to move active tab on focus:", err);
     });
