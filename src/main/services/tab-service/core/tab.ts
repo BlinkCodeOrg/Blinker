@@ -455,10 +455,7 @@ export class Tab extends TypedEventEmitter<TabEvents> {
       }
       // Force Chromium to exit fullscreen mode and recognize the viewport change
       if (this.webContents && !this.webContents.isDestroyed()) {
-        this.webContents.executeJavaScript(
-          `if (document.fullscreenElement) { document.exitFullscreen(); }`,
-          true
-        );
+        this.webContents.executeJavaScript(`if (document.fullscreenElement) { document.exitFullscreen(); }`, true);
       }
     }
     this.emit("fullscreen-changed", isFullScreen);
