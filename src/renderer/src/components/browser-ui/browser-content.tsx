@@ -158,7 +158,7 @@ function BrowserContent() {
           alt=""
           draggable={false}
           onError={() => setPlaceholderSnapshotId(null)}
-          className="absolute inset-0 w-full h-full rounded-md object-fill opacity-50 pointer-events-none"
+          className="absolute inset-0 w-full h-full object-fill opacity-50 pointer-events-none"
         />
       )}
     </div>
