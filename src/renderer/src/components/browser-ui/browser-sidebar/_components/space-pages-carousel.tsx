@@ -109,7 +109,7 @@ export function SpacePagesCarousel() {
   }, []);
 
   const moveTab = useCallback((tabId: number, newPosition: number) => {
-    flow.tabs.moveTab(tabId, newPosition);
+    flow.tabService.moveTab(tabId, newPosition);
   }, []);
 
   const currentIndex = useMemo(() => {

@@ -219,6 +219,11 @@ export class TabPersistenceService {
     db.delete(schema.tabs).where(eq(schema.tabs.uniqueId, uniqueId)).run();
   }
 
+  public removeLayoutNode(nodeId: string): void {
+    const db = getDb();
+    db.delete(schema.tabGroups).where(eq(schema.tabGroups.groupId, nodeId)).run();
+  }
+
   // --- Serialization ---
 
   public serializeTab(tab: Tab): PersistedTabData {

@@ -1,7 +1,8 @@
 import { transformUserAgentHeader } from "@/modules/user-agent";
 import { ProfileData, profilesController } from "@/controllers/profiles-controller";
 import { sessionsController } from "@/controllers/sessions-controller";
-import { NEW_TAB_URL, tabsController } from "@/controllers/tabs-controller";
+import { tabService } from "@/services/tab-service";
+import { NEW_TAB_URL } from "@/services/tab-service/tab-service";
 import { windowsController } from "@/controllers/windows-controller";
 import { browserWindowsController } from "@/controllers/windows-controller/interfaces/browser";
 import { setWindowSpace } from "@/ipc/session/spaces";
@@ -125,7 +126,7 @@ class LoadedProfilesController extends TypedEventEmitter<LoadedProfilesControlle
       license: "GPL-3.0",
       session: profileSession,
       assignTabDetails: (tabDetails, tabWebContents) => {
-        const tab = tabsController.getTabByWebContents(tabWebContents);
+        const tab = tabService.getTabByWebContents(tabWebContents);
         if (!tab) return;
 
         tabDetails.title = tab.title;
@@ -140,11 +141,16 @@ class LoadedProfilesController extends TypedEventEmitter<LoadedProfilesControlle
         const windowId = tabDetails.windowId;
         const window = windowId ? browserWindowsController.getWindowById(windowId) : undefined;
 
-        const tab = await tabsController.createTab(window?.id, profileId, undefined, undefined, {
+        const targetWindow = window || browserWindowsController.getWindows()[0];
+        if (!targetWindow) throw new Error("No window available");
+        const spaceId = targetWindow.currentSpaceId;
+        if (!spaceId) throw new Error("No space available");
+
+        const tab = tabService.createTabInternal(targetWindow.id, profileId, spaceId, undefined, {
           url: tabDetails.url
         });
         if (tabDetails.active) {
-          tabsController.activateTab(tab);
+          tabService.activateTab(tab);
         }
 
         const electronWindow = tab.getWindow().browserWindow;
@@ -152,7 +158,7 @@ class LoadedProfilesController extends TypedEventEmitter<LoadedProfilesControlle
         return [tab.webContents!, electronWindow];
       },
       selectTab: (tabWebContents) => {
-        const tab = tabsController.getTabByWebContents(tabWebContents);
+        const tab = tabService.getTabByWebContents(tabWebContents);
         if (!tab) return;
 
         // Set the space for the window
@@ -160,10 +166,10 @@ class LoadedProfilesController extends TypedEventEmitter<LoadedProfilesControlle
         setWindowSpace(window, tab.spaceId);
 
         // Set the active tab
-        tabsController.activateTab(tab);
+        tabService.activateTab(tab);
       },
       removeTab: (tabWebContents) => {
-        const tab = tabsController.getTabByWebContents(tabWebContents);
+        const tab = tabService.getTabByWebContents(tabWebContents);
         if (!tab) return;
 
         tab.destroy();
@@ -186,11 +192,13 @@ class LoadedProfilesController extends TypedEventEmitter<LoadedProfilesControlle
           for (const url of urls) {
             const currentTabIndex = tabIndex;
 
-            await tabsController.createTab(window.id, profileId, undefined, undefined, { url }).then((tab) => {
+            const windowSpaceId = window.currentSpaceId;
+            if (windowSpaceId) {
+              const tab = tabService.createTabInternal(window.id, profileId, windowSpaceId, undefined, { url });
               if (currentTabIndex === 0) {
-                tabsController.activateTab(tab);
+                tabService.activateTab(tab);
               }
-            });
+            }
 
             tabIndex++;
           }
@@ -382,7 +390,7 @@ class LoadedProfilesController extends TypedEventEmitter<LoadedProfilesControlle
     this.emit("profile-unloaded", profileId);
 
     // Destroy all tabs in the profile
-    const tabs = tabsController.getTabsInProfile(profileId);
+    const tabs = tabService.getTabsInProfile(profileId);
     tabs.forEach((tab) => {
       tab.destroy();
     });

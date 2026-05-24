@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 import { useBrowserSidebar } from "@/components/browser-ui/browser-sidebar/provider";
 import { useAdaptiveTopbar } from "@/components/browser-ui/adaptive-topbar";
 import { useSpaces } from "@/components/providers/spaces-provider";
-import type { TabPlaceholderUpdate } from "~/types/tabs";
+import type { TabPlaceholderUpdate } from "~/types/tab-service";
 import "./browser-content.css";
 
 const PLACEHOLDER_CLEAR_DELAY_MS = 180;
@@ -43,7 +43,7 @@ function BrowserContent() {
       }
     };
 
-    const unsub = flow.tabs.onPlaceholderChanged(({ snapshotId, generation, spaceId }: TabPlaceholderUpdate) => {
+    const unsub = flow.tabService.onPlaceholderChanged(({ snapshotId, generation, spaceId }: TabPlaceholderUpdate) => {
       if (spaceId !== currentSpaceIdRef.current) {
         return;
       }

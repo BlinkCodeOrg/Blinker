@@ -49,7 +49,7 @@ export function TabDropTarget({ spaceData, isSpaceLight, moveTab, biggestIndex }
         if (tabGroupData.profileId !== spaceData.profileId) {
           // TODO: @MOVE_TABS_BETWEEN_PROFILES not supported yet
         } else {
-          flow.tabs.moveTabToWindowSpace(sourceTabId, spaceData.id, newPos);
+          flow.tabService.moveTabToSpace(sourceTabId, spaceData.id, newPos);
         }
       } else {
         moveTab(sourceTabId, newPos);

@@ -325,6 +325,107 @@ export class Tab extends TypedEventEmitter<TabEvents> {
     this.webContents = null;
   }
 
+  // --- Sleep / Wake ---
+
+  public putToSleep(): void {
+    if (this.asleep) return;
+
+    this.updateTabState();
+
+    // Capture nav state before tearing down
+    if (this.webContents && !this.webContents.isDestroyed()) {
+      const history = this.webContents.navigationHistory;
+      const count = history.length();
+      const entries: NavigationEntry[] = [];
+      for (let i = 0; i < count; i++) {
+        const entry = history.getEntryAtIndex(i);
+        entries.push({ title: entry.title || "", url: entry.url });
+      }
+      this.navHistory = entries;
+      this.navHistoryIndex = history.getActiveIndex();
+    }
+
+    this.updateStateProperty("asleep", true);
+    this.teardownView();
+  }
+
+  public wakeUp(): void {
+    if (!this.asleep) return;
+
+    this.initializeView();
+    this.setWindow(this.window);
+    this.updateStateProperty("asleep", false);
+
+    if (this.navHistory.length > 0) {
+      this.restoreNavigationHistory(this.navHistory, this.navHistoryIndex);
+    }
+  }
+
+  // --- Picture in Picture ---
+
+  public async enterPictureInPicture(): Promise<boolean> {
+    if (!this.webContents || this.webContents.isDestroyed()) return false;
+
+    const enterPiP = async function () {
+      const videos = document.querySelectorAll("video");
+      if (videos.length > 0 && document.pictureInPictureElement !== videos[0]) {
+        try {
+          const video = videos[0];
+          await video.requestPictureInPicture();
+
+          const onLeavePiP = () => {
+            setTimeout(() => {
+              const goBackToTab = !video.paused && !video.ended;
+              flow.tabService.disablePictureInPicture(goBackToTab);
+            }, 50);
+            video.removeEventListener("leavepictureinpicture", onLeavePiP);
+          };
+
+          video.addEventListener("leavepictureinpicture", onLeavePiP);
+          return true;
+        } catch (e) {
+          console.error("Failed to enter Picture in Picture mode:", e);
+          return false;
+        }
+      }
+      return false;
+    };
+
+    try {
+      const result = await this.webContents.executeJavaScript(`(${enterPiP})()`, true);
+      if (result) {
+        this.updateStateProperty("isPictureInPicture", true);
+      }
+      return result;
+    } catch (err) {
+      console.error("PiP enter error:", err);
+      return false;
+    }
+  }
+
+  public async exitPictureInPicture(): Promise<boolean> {
+    if (!this.webContents || this.webContents.isDestroyed()) return false;
+
+    const exitPiP = function () {
+      if (document.pictureInPictureElement) {
+        document.exitPictureInPicture();
+        return true;
+      }
+      return false;
+    };
+
+    try {
+      const result = await this.webContents.executeJavaScript(`(${exitPiP})()`, true);
+      if (result) {
+        this.updateStateProperty("isPictureInPicture", false);
+      }
+      return result;
+    } catch (err) {
+      console.error("PiP exit error:", err);
+      return false;
+    }
+  }
+
   // --- State Updates ---
 
   public updateStateProperty<K extends TabStateProperty>(key: K, value: this[K]): boolean {
@@ -451,6 +552,16 @@ export class Tab extends TypedEventEmitter<TabEvents> {
       title: this.title,
       incrementTyped: typed
     });
+  }
+
+  public clearBrowsingHistoryDeduping(url?: string): void {
+    if (!url) {
+      this.lastRecordedHistoryKey = "";
+      return;
+    }
+    if (this.lastRecordedHistoryKey.startsWith(`${url}|`)) {
+      this.lastRecordedHistoryKey = "";
+    }
   }
 
   // --- Lifecycle ---

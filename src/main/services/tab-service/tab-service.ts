@@ -2,15 +2,23 @@ import { TypedEventEmitter } from "@/modules/typed-event-emitter";
 import { Tab, TabCreationDetails, TabCreationOptions } from "./core/tab";
 import { TabLayoutNode } from "./core/tab-layout-node";
 import { PinnedTab } from "./core/pinned-tab";
+import { RecentlyClosedManager } from "./core/recently-closed-manager";
 import { TabLayout } from "./layout/tab-layout";
 import { TabPositioner } from "./layout/tab-positioner";
-import { TabLayoutNodeMode } from "~/types/tab-service";
+import {
+  NavigationEntry,
+  PersistedTabData,
+  RecentlyClosedTabData,
+  TabLayoutNodeMode,
+  TAB_SERVICE_SCHEMA_VERSION
+} from "~/types/tab-service";
 import { browserWindowsController } from "@/controllers/windows-controller/interfaces/browser";
 import { spacesController } from "@/controllers/spaces-controller";
 import { loadedProfilesController } from "@/controllers/loaded-profiles-controller";
 import { BrowserWindow } from "@/controllers/windows-controller/types";
-import { WebContents } from "electron";
+import { clipboard, Menu, MenuItem, WebContents } from "electron";
 import { quitController } from "@/controllers/quit-controller";
+import { setWindowSpace } from "@/ipc/session/spaces";
 
 export const NEW_TAB_URL = "flow://new-tab";
 
@@ -46,6 +54,9 @@ export class TabService extends TypedEventEmitter<TabServiceEvents> {
 
   // Pinned tabs
   public readonly pinnedTabs: Map<string, PinnedTab> = new Map();
+
+  // Recently closed
+  public readonly recentlyClosed: RecentlyClosedManager = new RecentlyClosedManager();
 
   // Shared positioner
   public readonly positioner: TabPositioner = new TabPositioner();
@@ -161,6 +172,9 @@ export class TabService extends TypedEventEmitter<TabServiceEvents> {
     // Wire up tab events
     this.wireTabEvents(tab);
 
+    // Activate the new tab (makes it visible)
+    this.activateTab(tab);
+
     // Load initial URL if needed
     if (tab._needsInitialLoad && options.noLoadURL !== true) {
       const initialURL = options.url || profile.newTabUrl || NEW_TAB_URL;
@@ -233,6 +247,12 @@ export class TabService extends TypedEventEmitter<TabServiceEvents> {
       if (tab.profileId === profileId) result.push(tab);
     }
     return result;
+  }
+
+  public clearBrowsingHistoryDedupingForProfile(profileId: string, url?: string): void {
+    for (const tab of this.getTabsInProfile(profileId)) {
+      tab.clearBrowsingHistoryDeduping(url);
+    }
   }
 
   // --- Active Tab Management ---
@@ -617,6 +637,7 @@ export class TabService extends TypedEventEmitter<TabServiceEvents> {
 
       // Forward events
       layout.on("active-changed", (wId, spaceId) => {
+        this.updateTabVisibility(wId, spaceId);
         this.emit("active-changed", wId, spaceId);
       });
       layout.on("focused-tab-changed", (wId, spaceId) => {
@@ -632,6 +653,109 @@ export class TabService extends TypedEventEmitter<TabServiceEvents> {
       layout.destroy();
       this.layouts.delete(windowId);
     }
+  }
+
+  // --- Tab Visibility ---
+
+  /**
+   * Update tab visibility for a given window+space.
+   * Tabs in the active node are shown; all others in that space are hidden.
+   */
+  private updateTabVisibility(windowId: number, spaceId: string): void {
+    const layout = this.layouts.get(windowId);
+    if (!layout) return;
+
+    const activeNode = layout.getActiveNode(spaceId);
+    const tabsInSpace = this.getTabsInWindowSpace(windowId, spaceId);
+
+    for (const tab of tabsInSpace) {
+      const shouldBeVisible = activeNode !== undefined && activeNode.hasTab(tab.id);
+      if (tab.visible !== shouldBeVisible) {
+        tab.visible = shouldBeVisible;
+        tab.layer?.setVisible(shouldBeVisible);
+      }
+    }
+  }
+
+  // --- Window Space Management ---
+
+  public setCurrentWindowSpace(windowId: number, spaceId: string): void {
+    const window = browserWindowsController.getWindowById(windowId);
+    if (!window) return;
+
+    // Update visibility for old space (hide tabs) and new space (show tabs)
+    const oldSpaceId = window.currentSpaceId;
+    if (oldSpaceId && oldSpaceId !== spaceId) {
+      // Hide tabs in old space
+      const oldTabs = this.getTabsInWindowSpace(windowId, oldSpaceId);
+      for (const tab of oldTabs) {
+        if (tab.visible) {
+          tab.visible = false;
+          tab.layer?.setVisible(false);
+        }
+      }
+    }
+
+    // Show active tab in new space
+    this.updateTabVisibility(windowId, spaceId);
+    this.handlePageBoundsChanged(windowId);
+  }
+
+  public handlePageBoundsChanged(windowId: number): void {
+    const window = browserWindowsController.getWindowById(windowId);
+    if (!window) return;
+
+    const pageBounds = window.pageBounds;
+    const tabsInWindow = this.getTabsInWindow(windowId);
+
+    for (const tab of tabsInWindow) {
+      if (!tab.visible || !tab.view) continue;
+
+      let bounds: Electron.Rectangle;
+      if (tab.fullScreen) {
+        const [contentWidth, contentHeight] = window.browserWindow.getContentSize();
+        bounds = { x: 0, y: 0, width: contentWidth, height: contentHeight };
+      } else {
+        bounds = pageBounds;
+      }
+
+      // For layout nodes with multiple tabs (glance/split), compute sub-bounds
+      const layout = this.layouts.get(windowId);
+      const activeNode = layout?.getActiveNode(tab.spaceId);
+      if (activeNode && activeNode.tabs.length > 1) {
+        const tabIndex = activeNode.tabs.indexOf(tab);
+        if (tabIndex >= 0) {
+          bounds = this.computeNodeTabBounds(bounds, activeNode, tabIndex);
+        }
+      }
+
+      tab.view.setBounds(bounds);
+      const borderRadius = tab.fullScreen ? 0 : 6;
+      tab.view.setBorderRadius(borderRadius);
+    }
+  }
+
+  private computeNodeTabBounds(
+    pageBounds: Electron.Rectangle,
+    node: TabLayoutNode,
+    tabIndex: number
+  ): Electron.Rectangle {
+    const count = node.tabs.length;
+    if (count <= 1) return pageBounds;
+
+    if (node.mode === "split") {
+      // Horizontal split
+      const tabWidth = Math.floor(pageBounds.width / count);
+      return {
+        x: pageBounds.x + tabIndex * tabWidth,
+        y: pageBounds.y,
+        width: tabIndex === count - 1 ? pageBounds.width - tabIndex * tabWidth : tabWidth,
+        height: pageBounds.height
+      };
+    }
+
+    // Glance mode - only the front tab gets full bounds, others are hidden via visibility
+    return pageBounds;
   }
 
   // --- Event Helpers ---
@@ -699,6 +823,11 @@ export class TabService extends TypedEventEmitter<TabServiceEvents> {
         if (activeNode) {
           wasActive = activeNode.hasTab(tab.id) || activeNode.isDestroyed;
         }
+      }
+
+      // Store in recently closed (only normal tabs with URLs)
+      if (tab.owner.kind === "normal" && tab.url) {
+        this.recentlyClosed.add(this.serializeTabForPersistence(tab));
       }
 
       // Clean up pinned tab association
@@ -800,5 +929,238 @@ export class TabService extends TypedEventEmitter<TabServiceEvents> {
         sorted[i].updatePosition(i);
       }
     }
+  }
+
+  // --- Picture in Picture ---
+
+  public disablePictureInPicture(tabId: number, goBackToTab: boolean): boolean {
+    const tab = this.tabs.get(tabId);
+    if (!tab || !tab.isPictureInPicture) return false;
+
+    tab.updateStateProperty("isPictureInPicture", false);
+
+    if (goBackToTab) {
+      const win = tab.getWindow();
+      setWindowSpace(win, tab.spaceId);
+      win.browserWindow.focus();
+      this.activateTab(tab);
+    }
+
+    return true;
+  }
+
+  // --- Batch Tab Move ---
+
+  public batchMoveTabs(tabIds: number[], spaceId: string, window: BrowserWindow, newPositionStart?: number): boolean {
+    for (let i = 0; i < tabIds.length; i++) {
+      const tab = this.tabs.get(tabIds[i]);
+      if (!tab) continue;
+
+      tab.setSpace(spaceId);
+      tab.setWindow(window);
+
+      if (newPositionStart !== undefined) {
+        tab.updateStateProperty("position", newPositionStart + i);
+      }
+    }
+
+    this.positioner.normalizePositions(this.getTabsInWindowSpace(window.id, spaceId));
+    return true;
+  }
+
+  // --- Recently Closed ---
+
+  public getRecentlyClosed(): RecentlyClosedTabData[] {
+    return this.recentlyClosed.getAll();
+  }
+
+  public async restoreRecentlyClosed(uniqueId: string, window: BrowserWindow): Promise<boolean> {
+    const result = this.recentlyClosed.restore(uniqueId);
+    if (!result) return false;
+
+    const { tabData } = result;
+    const space = await spacesController.get(tabData.spaceId);
+    if (!space) return false;
+
+    const tab = await this.createTab(window.id, space.profileId, tabData.spaceId, undefined, {
+      uniqueId: tabData.uniqueId,
+      createdAt: tabData.createdAt,
+      lastActiveAt: tabData.lastActiveAt,
+      position: tabData.position,
+      title: tabData.title,
+      faviconURL: tabData.faviconURL ?? undefined,
+      navHistory: tabData.navHistory,
+      navHistoryIndex: tabData.navHistoryIndex
+    });
+
+    this.activateTab(tab);
+    return true;
+  }
+
+  public clearRecentlyClosed(): void {
+    this.recentlyClosed.clear();
+  }
+
+  // --- Context Menus ---
+
+  public showContextMenu(tabId: number, window: BrowserWindow): void {
+    const tab = this.tabs.get(tabId);
+    if (!tab) return;
+
+    const isTabVisible = tab.visible;
+    const hasURL = !!tab.url;
+
+    const contextMenu = new Menu();
+
+    contextMenu.append(
+      new MenuItem({
+        label: "Copy URL",
+        enabled: hasURL,
+        click: () => {
+          if (tab.url) clipboard.writeText(tab.url);
+        }
+      })
+    );
+
+    contextMenu.append(new MenuItem({ type: "separator" }));
+
+    contextMenu.append(
+      new MenuItem({
+        label: isTabVisible ? "Cannot put active tab to sleep" : tab.asleep ? "Wake Tab" : "Put Tab to Sleep",
+        enabled: !isTabVisible,
+        click: () => {
+          if (tab.asleep) {
+            tab.wakeUp();
+            this.activateTab(tab);
+          } else {
+            tab.putToSleep();
+          }
+        }
+      })
+    );
+
+    contextMenu.append(
+      new MenuItem({
+        label: "Close Tab",
+        click: () => {
+          tab.destroy();
+        }
+      })
+    );
+
+    contextMenu.append(new MenuItem({ type: "separator" }));
+
+    const mostRecent = this.recentlyClosed.peekMostRecent();
+    const mostRecentTitle = mostRecent?.tabData.title;
+    const truncatedTitle =
+      mostRecentTitle && mostRecentTitle.length > 35
+        ? mostRecentTitle.slice(0, 35).trim() + "..."
+        : mostRecentTitle?.trim();
+
+    contextMenu.append(
+      new MenuItem({
+        label: truncatedTitle ? `Reopen Closed Tab (${truncatedTitle})` : "Reopen Closed Tab",
+        enabled: this.recentlyClosed.hasEntries(),
+        click: () => {
+          if (mostRecent) {
+            this.restoreRecentlyClosed(mostRecent.tabData.uniqueId, window).catch((error) => {
+              console.error("Failed to restore recently closed tab:", error);
+            });
+          }
+        }
+      })
+    );
+
+    contextMenu.popup({ window: window.browserWindow });
+  }
+
+  public showPinnedTabContextMenu(pinnedTabId: string, window: BrowserWindow): void {
+    const pinnedTab = this.pinnedTabs.get(pinnedTabId);
+    if (!pinnedTab) return;
+
+    const contextMenu = new Menu();
+
+    contextMenu.append(
+      new MenuItem({
+        label: "Unpin",
+        click: () => {
+          const removedTabIds = this.removePinnedTab(pinnedTabId);
+          for (const removedTabId of removedTabIds) {
+            const tab = this.tabs.get(removedTabId);
+            if (tab && !tab.isDestroyed) {
+              tab.destroy();
+            }
+          }
+        }
+      })
+    );
+
+    contextMenu.append(new MenuItem({ type: "separator" }));
+
+    const currentSpaceId = window.currentSpaceId;
+    const associatedTabId = currentSpaceId ? pinnedTab.getAssociatedTabId(currentSpaceId) : null;
+    const associatedTab = associatedTabId !== null ? this.tabs.get(associatedTabId) : undefined;
+    const isOnDifferentUrl = associatedTab && associatedTab.url !== pinnedTab.defaultUrl;
+
+    contextMenu.append(
+      new MenuItem({
+        label: "Reset to Default",
+        enabled: !!isOnDifferentUrl,
+        click: () => {
+          if (associatedTab && !associatedTab.isDestroyed) {
+            associatedTab.loadURL(pinnedTab.defaultUrl);
+          }
+        }
+      })
+    );
+
+    contextMenu.append(
+      new MenuItem({
+        label: "Copy URL",
+        click: () => {
+          clipboard.writeText(pinnedTab.defaultUrl);
+        }
+      })
+    );
+
+    contextMenu.popup({ window: window.browserWindow });
+  }
+
+  // --- Serialization ---
+
+  private serializeTabForPersistence(tab: Tab): PersistedTabData {
+    const navHistory: NavigationEntry[] = [];
+    let navHistoryIndex = 0;
+
+    if (tab.webContents && !tab.webContents.isDestroyed()) {
+      const history = tab.webContents.navigationHistory;
+      const count = history.length();
+      for (let i = 0; i < count; i++) {
+        const entry = history.getEntryAtIndex(i);
+        navHistory.push({ title: entry.title || "", url: entry.url });
+      }
+      navHistoryIndex = history.getActiveIndex();
+    } else if (tab.url) {
+      navHistory.push({ title: tab.title, url: tab.url });
+      navHistoryIndex = 0;
+    }
+
+    return {
+      schemaVersion: TAB_SERVICE_SCHEMA_VERSION,
+      uniqueId: tab.uniqueId,
+      createdAt: tab.createdAt,
+      lastActiveAt: tab.lastActiveAt,
+      position: tab.position,
+      profileId: tab.profileId,
+      spaceId: tab.spaceId,
+      windowGroupId: `w-${tab.getWindow().id}`,
+      title: tab.title,
+      url: tab.url,
+      faviconURL: tab.faviconURL,
+      muted: tab.muted,
+      navHistory,
+      navHistoryIndex,
+      owner: tab.owner
+    };
   }
 }

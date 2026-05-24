@@ -3,7 +3,7 @@ import { XIcon, Volume2, VolumeX } from "lucide-react";
 import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import type { TabGroup as TabGroupType } from "@/components/providers/tabs-provider";
-import type { TabData } from "~/types/tabs";
+import type { TabData } from "~/types/tab-service";
 import {
   draggable,
   dropTargetForElements,
@@ -88,14 +88,14 @@ const SidebarTab = memo(
 
     const handleClick = useCallback(() => {
       if (!tab.id) return;
-      flow.tabs.switchToTab(tab.id);
+      flow.tabService.switchToTab(tab.id);
     }, [tab.id]);
 
     const handleCloseTab = useCallback(
       (e: React.MouseEvent) => {
         if (!tab.id) return;
         e.preventDefault();
-        flow.tabs.closeTab(tab.id);
+        flow.tabService.closeTab(tab.id);
       },
       [tab.id]
     );
@@ -117,7 +117,7 @@ const SidebarTab = memo(
         e.stopPropagation();
         if (!tab.id) return;
         const newMutedState = !tab.muted;
-        flow.tabs.setTabMuted(tab.id, newMutedState);
+        flow.tabService.setTabMuted(tab.id, newMutedState);
       },
       [tab.id, tab.muted]
     );
@@ -125,7 +125,7 @@ const SidebarTab = memo(
     const handleContextMenu = useCallback(
       (e: React.MouseEvent) => {
         e.preventDefault();
-        flow.tabs.showContextMenu(tab.id);
+        flow.tabService.showContextMenu(tab.id);
       },
       [tab.id]
     );
@@ -287,7 +287,7 @@ export const TabGroup = memo(
           if (tabGroupData.profileId !== tabGroup.profileId) {
             // TODO: @MOVE_TABS_BETWEEN_PROFILES not supported yet
           } else {
-            flow.tabs.moveTabToWindowSpace(sourceTabId, tabGroup.spaceId, newPos);
+            flow.tabService.moveTabToSpace(sourceTabId, tabGroup.spaceId, newPos);
           }
         } else if (newPos !== undefined) {
           moveTab(sourceTabId, newPos);

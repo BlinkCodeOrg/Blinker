@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { draggable, dropTargetForElements } from "@atlaskit/pragmatic-drag-and-drop/element/adapter";
 import { attachClosestEdge, extractClosestEdge } from "@atlaskit/pragmatic-drag-and-drop-hitbox/closest-edge";
 import { motion } from "motion/react";
-import type { PinnedTabData } from "~/types/pinned-tabs";
+import type { PinnedTabData } from "~/types/tab-service";
 import { isPinnedTabSource, isTabGroupSource } from "@/components/browser-ui/browser-sidebar/_components/drag-utils";
 import { generateBorderGradient } from "@/components/browser-ui/browser-sidebar/_components/pin-grid/pin-visual";
 import "./pin.css";

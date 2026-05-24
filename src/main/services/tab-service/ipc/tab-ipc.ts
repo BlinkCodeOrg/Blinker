@@ -251,6 +251,61 @@ export class TabIPC {
       this.tabService.dissolveLayoutNode(nodeId, window.id);
       return true;
     });
+
+    // --- Context Menu ---
+    ipcMain.on("tab-service:show-context-menu", (event, tabId: number) => {
+      const webContents = event.sender;
+      const window = browserWindowsController.getWindowFromWebContents(webContents);
+      if (!window) return;
+      this.tabService.showContextMenu(tabId, window);
+    });
+
+    ipcMain.on("tab-service:show-pinned-tab-context-menu", (event, pinnedTabId: string) => {
+      const webContents = event.sender;
+      const window = browserWindowsController.getWindowFromWebContents(webContents);
+      if (!window) return;
+      this.tabService.showPinnedTabContextMenu(pinnedTabId, window);
+    });
+
+    // --- Picture in Picture ---
+    ipcMain.handle("tab-service:disable-pip", async (event, goBackToTab: boolean) => {
+      const sender = event.sender;
+      const tab = this.tabService.getTabByWebContents(sender);
+      if (!tab) return false;
+      return this.tabService.disablePictureInPicture(tab.id, goBackToTab);
+    });
+
+    // --- Batch Move ---
+    ipcMain.handle(
+      "tab-service:batch-move-tabs",
+      async (event, tabIds: number[], spaceId: string, newPositionStart?: number) => {
+        const webContents = event.sender;
+        const window = browserWindowsController.getWindowFromWebContents(webContents);
+        if (!window) return false;
+
+        const space = await spacesController.get(spaceId);
+        if (!space) return false;
+
+        return this.tabService.batchMoveTabs(tabIds, spaceId, window, newPositionStart);
+      }
+    );
+
+    // --- Recently Closed ---
+    ipcMain.handle("tab-service:get-recently-closed", async () => {
+      return this.tabService.getRecentlyClosed();
+    });
+
+    ipcMain.handle("tab-service:restore-recently-closed", async (event, uniqueId: string) => {
+      const webContents = event.sender;
+      const window = browserWindowsController.getWindowFromWebContents(webContents);
+      if (!window) return false;
+      return this.tabService.restoreRecentlyClosed(uniqueId, window);
+    });
+
+    ipcMain.handle("tab-service:clear-recently-closed", async () => {
+      this.tabService.clearRecentlyClosed();
+      return true;
+    });
   }
 
   // --- Serialization ---

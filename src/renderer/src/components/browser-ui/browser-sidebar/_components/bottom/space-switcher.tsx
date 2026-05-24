@@ -90,7 +90,7 @@ function SpaceButton({ space, isActive, compact }: SpaceButtonProps) {
         // Move the tab to this space (no specific position — append to end)
         const sourceData = args.source.data as TabGroupSourceData;
         const sourceTabId = sourceData.primaryTabId;
-        flow.tabs.moveTabToWindowSpace(sourceTabId, space.id);
+        flow.tabService.moveTabToSpace(sourceTabId, space.id);
       }
     });
   }, [onClick, removeDraggingTimeout, space.profileId, space.id]);

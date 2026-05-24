@@ -1,16 +1,23 @@
 import { useSpaces } from "@/components/providers/spaces-provider";
 import { transformUrlToDisplayURL } from "@/lib/url";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
-import type { TabData, TabGroupData, WindowTabsData } from "~/types/tabs";
+import type { TabData, TabLayoutNodeData, WindowTabsPayload } from "~/types/tab-service";
 
-export type TabGroup = Omit<TabGroupData, "tabIds"> & {
+export type TabGroup = {
+  id: string;
+  mode: string;
+  profileId: string;
+  spaceId: string;
+  position: number;
+  tabIds: number[];
+  frontTabId?: number;
   tabs: TabData[];
   active: boolean;
   focusedTab: TabData | null;
 };
 
 type TabGroupCacheEntry = {
-  source: TabGroupData;
+  source: TabLayoutNodeData | null;
   tabs: TabData[];
   active: boolean;
   focusedTab: TabData | null;
@@ -29,7 +36,7 @@ interface TabsContextValue {
   addressUrl: string;
 
   // Utilities //
-  tabsData: WindowTabsData | null;
+  tabsData: WindowTabsPayload | null;
   getActiveTabId: (spaceId: string) => number[] | null;
   getFocusedTabId: (spaceId: string) => number | null;
 }
@@ -117,13 +124,13 @@ function areSameTabRefs(a: TabData[], b: TabData[]): boolean {
 
 export const TabsProvider = ({ children }: TabsProviderProps) => {
   const { currentSpace } = useSpaces();
-  const [tabsData, setTabsData] = useState<WindowTabsData | null>(null);
+  const [tabsData, setTabsData] = useState<WindowTabsPayload | null>(null);
   const tabGroupCacheRef = useRef<Map<string, TabGroupCacheEntry>>(EMPTY_TAB_GROUP_CACHE);
 
   const fetchTabs = useCallback(async () => {
     if (!flow) return;
     try {
-      const data = await flow.tabs.getData();
+      const data = await flow.tabService.getData();
       setTabsData(data);
     } catch (error) {
       console.error("Failed to fetch tabs data:", error);
@@ -138,13 +145,13 @@ export const TabsProvider = ({ children }: TabsProviderProps) => {
     if (!flow) return;
 
     // Full data refresh (structural changes: tab created/removed, active tab changed)
-    const unsubFull = flow.tabs.onDataUpdated((data) => {
+    const unsubFull = flow.tabService.onDataUpdated((data) => {
       setTabsData(data);
     });
 
     // Lightweight content update (title, url, isLoading, etc.)
     // Merges changed tabs into existing state without replacing the full object.
-    const unsubContent = flow.tabs.onTabsContentUpdated((updatedTabs) => {
+    const unsubContent = flow.tabService.onContentUpdated((updatedTabs) => {
       setTabsData((prev) => {
         if (!prev) return prev;
         if (updatedTabs.length === 0) return prev;
@@ -176,7 +183,17 @@ export const TabsProvider = ({ children }: TabsProviderProps) => {
 
   const getActiveTabId = useCallback(
     (spaceId: string) => {
-      return tabsData?.activeTabIds[spaceId] || null;
+      if (!tabsData) return null;
+      // Resolve from active layout node
+      const activeNodeId = tabsData.activeLayoutNodeIds[spaceId];
+      if (!activeNodeId) return null;
+      // Find the node to get its tab IDs
+      const node = tabsData.layoutNodes.find((n) => n.id === activeNodeId);
+      if (node) return node.tabIds;
+      // For single nodes (not in layoutNodes), the node ID is the tab ID string
+      const tabId = parseInt(activeNodeId);
+      if (!isNaN(tabId)) return [tabId];
+      return null;
     },
     [tabsData]
   );
@@ -211,45 +228,70 @@ export const TabsProvider = ({ children }: TabsProviderProps) => {
         tabById.set(tab.id, tab);
       }
 
-      const allTabGroupDatas: TabGroupData[] = [];
-      const tabsWithGroups = new Set<number>();
-      for (const tabGroup of tabsData.tabGroups ?? []) {
-        allTabGroupDatas.push(tabGroup);
-        for (const tabId of tabGroup.tabIds) {
-          tabsWithGroups.add(tabId);
-        }
-      }
-
-      for (const tab of tabsData.tabs) {
-        if (tabsWithGroups.has(tab.id)) continue;
-        // Ephemeral tabs (e.g. pinned-tab-associated) are included in tabById
-        // for focusedTab resolution but should not appear in the sidebar tab list.
-        if (tab.ephemeral) continue;
-        allTabGroupDatas.push({
-          // Synthetic group ID — uses string format to avoid collision with real group IDs
-          id: `s-${tab.uniqueId}`,
-          mode: "normal",
-          profileId: tab.profileId,
-          spaceId: tab.spaceId,
-          tabIds: [tab.id],
-          position: tab.position
-        });
-      }
-
-      const activeTabIdsBySpaceId = new Map<string, Set<number>>();
-      for (const [spaceId, activeTabIds] of Object.entries(tabsData.activeTabIds)) {
-        activeTabIdsBySpaceId.set(spaceId, new Set(activeTabIds));
+      // Build active node IDs set per space
+      const activeNodeBySpace = new Map<string, string>();
+      for (const [spaceId, nodeId] of Object.entries(tabsData.activeLayoutNodeIds)) {
+        activeNodeBySpace.set(spaceId, nodeId);
       }
 
       for (const [spaceId, focusedTabId] of Object.entries(tabsData.focusedTabIds)) {
         focusedTabBySpaceId.set(spaceId, tabById.get(focusedTabId) ?? null);
       }
 
+      // Collect tabs that are part of multi-tab layout nodes
+      const tabsInNodes = new Set<number>();
+      for (const node of tabsData.layoutNodes) {
+        for (const tabId of node.tabIds) {
+          tabsInNodes.add(tabId);
+        }
+      }
+
+      // Build tab groups from layout nodes (multi-tab: glance/split)
+      interface InternalGroupData {
+        id: string;
+        mode: string;
+        profileId: string;
+        spaceId: string;
+        tabIds: number[];
+        frontTabId?: number;
+        position: number;
+        nodeData: TabLayoutNodeData | null;
+      }
+
+      const allGroupDatas: InternalGroupData[] = [];
+
+      for (const node of tabsData.layoutNodes) {
+        allGroupDatas.push({
+          id: node.id,
+          mode: node.mode,
+          profileId: node.profileId,
+          spaceId: node.spaceId,
+          tabIds: node.tabIds,
+          frontTabId: node.frontTabId,
+          position: node.position,
+          nodeData: node
+        });
+      }
+
+      // Create synthetic single-tab groups for tabs not in any multi-tab node
+      for (const tab of tabsData.tabs) {
+        if (tabsInNodes.has(tab.id)) continue;
+        allGroupDatas.push({
+          id: `s-${tab.uniqueId}`,
+          mode: "single",
+          profileId: tab.profileId,
+          spaceId: tab.spaceId,
+          tabIds: [tab.id],
+          position: tab.position,
+          nodeData: null
+        });
+      }
+
       const tabGroups: TabGroup[] = [];
 
-      for (const tabGroupData of allTabGroupDatas) {
+      for (const groupData of allGroupDatas) {
         const tabs: TabData[] = [];
-        for (const tabId of tabGroupData.tabIds) {
+        for (const tabId of groupData.tabIds) {
           const tab = tabById.get(tabId);
           if (tab) {
             tabs.push(tab);
@@ -258,17 +300,30 @@ export const TabsProvider = ({ children }: TabsProviderProps) => {
 
         if (tabs.length === 0) continue;
 
-        const activeTabIds = activeTabIdsBySpaceId.get(tabGroupData.spaceId);
-        const isActive = tabs.some((tab) => activeTabIds?.has(tab.id));
-        const focusedTab = focusedTabBySpaceId.get(tabGroupData.spaceId) ?? null;
+        const activeNodeId = activeNodeBySpace.get(groupData.spaceId);
+        // For synthetic single-tab groups, check if any of their tabs match the active node
+        let isActive = false;
+        if (activeNodeId) {
+          if (groupData.id === activeNodeId) {
+            isActive = true;
+          } else if (groupData.mode === "single") {
+            // Single-node ID format: check if active node references this tab
+            const activeTabId = parseInt(activeNodeId);
+            if (!isNaN(activeTabId) && groupData.tabIds.includes(activeTabId)) {
+              isActive = true;
+            }
+          }
+        }
 
-        const tabGroupKey = `${tabGroupData.spaceId}:${tabGroupData.id}`;
+        const focusedTab = focusedTabBySpaceId.get(groupData.spaceId) ?? null;
+
+        const tabGroupKey = `${groupData.spaceId}:${groupData.id}`;
         const previousEntry = previousTabGroupCache.get(tabGroupKey);
 
         let tabGroup: TabGroup;
         if (
           previousEntry &&
-          previousEntry.source === tabGroupData &&
+          previousEntry.source === groupData.nodeData &&
           previousEntry.active === isActive &&
           previousEntry.focusedTab === focusedTab &&
           areSameTabRefs(previousEntry.tabs, tabs)
@@ -276,7 +331,13 @@ export const TabsProvider = ({ children }: TabsProviderProps) => {
           tabGroup = previousEntry.value;
         } else {
           tabGroup = {
-            ...tabGroupData,
+            id: groupData.id,
+            mode: groupData.mode,
+            profileId: groupData.profileId,
+            spaceId: groupData.spaceId,
+            position: groupData.position,
+            tabIds: groupData.tabIds,
+            frontTabId: groupData.frontTabId,
             tabs,
             active: isActive,
             focusedTab
@@ -284,7 +345,7 @@ export const TabsProvider = ({ children }: TabsProviderProps) => {
         }
 
         nextTabGroupCache.set(tabGroupKey, {
-          source: tabGroupData,
+          source: groupData.nodeData,
           tabs,
           active: isActive,
           focusedTab,
@@ -292,15 +353,15 @@ export const TabsProvider = ({ children }: TabsProviderProps) => {
         });
         tabGroups.push(tabGroup);
 
-        const existingGroups = tabGroupsBySpaceId.get(tabGroupData.spaceId);
+        const existingGroups = tabGroupsBySpaceId.get(groupData.spaceId);
         if (existingGroups) {
           existingGroups.push(tabGroup);
         } else {
-          tabGroupsBySpaceId.set(tabGroupData.spaceId, [tabGroup]);
+          tabGroupsBySpaceId.set(groupData.spaceId, [tabGroup]);
         }
 
-        if (isActive && !activeTabGroupBySpaceId.has(tabGroupData.spaceId)) {
-          activeTabGroupBySpaceId.set(tabGroupData.spaceId, tabGroup);
+        if (isActive && !activeTabGroupBySpaceId.has(groupData.spaceId)) {
+          activeTabGroupBySpaceId.set(groupData.spaceId, tabGroup);
         }
       }
 

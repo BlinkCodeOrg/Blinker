@@ -13,7 +13,6 @@ import { useSpaces } from "@/components/providers/spaces-provider";
 import { transformUrlToDisplayURL } from "@/lib/url";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import type { TabData, TabLayoutNodeData, WindowTabsPayload, PinnedTabData } from "~/types/tab-service";
-import type { FlowTabServiceAPI } from "~/flow/interfaces/browser/tab-service";
 
 // --- Types ---
 
@@ -124,10 +123,8 @@ export const TabServiceProvider = ({ children }: TabServiceProviderProps) => {
 
   // Fetch initial data
   const fetchData = useCallback(async () => {
-    const api = (flow as unknown as { tabService?: FlowTabServiceAPI })?.tabService;
-    if (!api) return;
     try {
-      const [payload, pinned] = await Promise.all([api.getData(), api.getPinnedTabs()]);
+      const [payload, pinned] = await Promise.all([flow.tabService.getData(), flow.tabService.getPinnedTabs()]);
       setTabsPayload(payload);
       setPinnedTabs(pinned);
     } catch (error) {
@@ -141,14 +138,11 @@ export const TabServiceProvider = ({ children }: TabServiceProviderProps) => {
 
   // Subscribe to updates
   useEffect(() => {
-    const api = (flow as unknown as { tabService?: FlowTabServiceAPI })?.tabService;
-    if (!api) return;
-
-    const unsubFull = api.onDataUpdated((data: WindowTabsPayload) => {
+    const unsubFull = flow.tabService.onDataUpdated((data: WindowTabsPayload) => {
       setTabsPayload(data);
     });
 
-    const unsubContent = api.onContentUpdated((updatedTabs: TabData[]) => {
+    const unsubContent = flow.tabService.onContentUpdated((updatedTabs: TabData[]) => {
       setTabsPayload((prev) => {
         if (!prev || updatedTabs.length === 0) return prev;
         const updatesById = new Map(updatedTabs.map((t) => [t.id, t]));
@@ -166,7 +160,7 @@ export const TabServiceProvider = ({ children }: TabServiceProviderProps) => {
       });
     });
 
-    const unsubPinned = api.onPinnedTabsChanged((data: Record<string, PinnedTabData[]>) => {
+    const unsubPinned = flow.tabService.onPinnedTabsChanged((data: Record<string, PinnedTabData[]>) => {
       setPinnedTabs(data);
     });
 

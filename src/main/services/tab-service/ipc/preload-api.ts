@@ -61,6 +61,20 @@ export function createTabServicePreloadAPI(ipcRenderer: IpcRenderer, listenOnIPC
     moveTabToSpace: (tabId: number, spaceId: string, newPosition?: number) =>
       ipcRenderer.invoke("tab-service:move-tab-to-space", tabId, spaceId, newPosition),
 
+    batchMoveTabs: (tabIds: number[], spaceId: string, newPositionStart?: number) =>
+      ipcRenderer.invoke("tab-service:batch-move-tabs", tabIds, spaceId, newPositionStart),
+
+    showContextMenu: (tabId: number) => ipcRenderer.send("tab-service:show-context-menu", tabId),
+
+    disablePictureInPicture: (goBackToTab: boolean) => ipcRenderer.invoke("tab-service:disable-pip", goBackToTab),
+
+    // --- Recently Closed ---
+    getRecentlyClosed: () => ipcRenderer.invoke("tab-service:get-recently-closed"),
+
+    restoreRecentlyClosed: (uniqueId: string) => ipcRenderer.invoke("tab-service:restore-recently-closed", uniqueId),
+
+    clearRecentlyClosed: () => ipcRenderer.invoke("tab-service:clear-recently-closed"),
+
     // --- Layout Node Operations ---
     createLayoutNode: (mode: "glance" | "split", tabIds: number[]) =>
       ipcRenderer.invoke("tab-service:create-layout-node", mode, tabIds),
@@ -87,6 +101,9 @@ export function createTabServicePreloadAPI(ipcRenderer: IpcRenderer, listenOnIPC
     unpinToTabList: (pinnedTabId: string) => ipcRenderer.invoke("tab-service:pinned-tabs-unpin", pinnedTabId),
 
     reorderPinnedTab: (pinnedTabId: string, newPosition: number) =>
-      ipcRenderer.invoke("tab-service:pinned-tabs-reorder", pinnedTabId, newPosition)
+      ipcRenderer.invoke("tab-service:pinned-tabs-reorder", pinnedTabId, newPosition),
+
+    showPinnedTabContextMenu: (pinnedTabId: string) =>
+      ipcRenderer.send("tab-service:show-pinned-tab-context-menu", pinnedTabId)
   };
 }

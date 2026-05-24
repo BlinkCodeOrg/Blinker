@@ -4,6 +4,7 @@ import {
   TabLayoutNodeData,
   WindowTabsPayload,
   PinnedTabData,
+  RecentlyClosedTabData,
   TabPlaceholderUpdate,
   TabTargetUrlUpdate
 } from "~/types/tab-service";
@@ -52,6 +53,26 @@ export interface FlowTabServiceAPI {
   /** Move a tab to a different space. */
   moveTabToSpace: (tabId: number, spaceId: string, newPosition?: number) => Promise<boolean>;
 
+  /** Batch move multiple tabs to a space. */
+  batchMoveTabs: (tabIds: number[], spaceId: string, newPositionStart?: number) => Promise<boolean>;
+
+  /** Show context menu for a tab. */
+  showContextMenu: (tabId: number) => void;
+
+  /** Disable picture-in-picture. */
+  disablePictureInPicture: (goBackToTab: boolean) => Promise<boolean>;
+
+  // --- Recently Closed ---
+
+  /** Get all recently closed tabs. */
+  getRecentlyClosed: () => Promise<RecentlyClosedTabData[]>;
+
+  /** Restore a recently closed tab. */
+  restoreRecentlyClosed: (uniqueId: string) => Promise<boolean>;
+
+  /** Clear all recently closed tabs. */
+  clearRecentlyClosed: () => Promise<boolean>;
+
   // --- Layout Node Operations ---
 
   /** Create a multi-tab layout node (glance or split). */
@@ -85,4 +106,7 @@ export interface FlowTabServiceAPI {
 
   /** Reorder a pinned tab. */
   reorderPinnedTab: (pinnedTabId: string, newPosition: number) => Promise<boolean>;
+
+  /** Show context menu for a pinned tab. */
+  showPinnedTabContextMenu: (pinnedTabId: string) => void;
 }
