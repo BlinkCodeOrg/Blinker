@@ -371,9 +371,39 @@ export function initTabSync(): void {
     });
   });
 
-  // Update placeholders when active/focused state changes
-  tabService.on("active-changed", (windowId) => {
+  // When a window switches away from a synced tab, release it to another
+  // window that still wants it (has it as its focused tab in the same space).
+  tabService.on("active-changed", (windowId, spaceId) => {
     reconcilePlaceholderForWindow(windowId);
+
+    // Find tabs in this window+space that are no longer active but are wanted elsewhere
+    const allWindows = browserWindowsController.getWindows().filter((w) => w.browserWindowType === "normal");
+    for (const otherWin of allWindows) {
+      if (otherWin.id === windowId || otherWin.destroyed) continue;
+      if (otherWin.currentSpaceId !== spaceId) continue;
+      if (!shouldSyncSharedActiveTab(otherWin, spaceId)) continue;
+
+      const wantedTab = tabService.getFocusedTab(otherWin.id, spaceId);
+      if (!wantedTab || wantedTab.isDestroyed) continue;
+      if (isSyncExcludedTab(wantedTab)) continue;
+      // Only release if the tab is in this window and no longer active here
+      if (wantedTab.getWindow().id !== windowId) continue;
+      if (tabService.isTabActive(wantedTab)) continue;
+
+      // Move it to the window that wants it
+      runTabSyncMutation(async () => {
+        if (otherWin.destroyed || wantedTab.isDestroyed) return;
+        if (wantedTab.getWindow().id === otherWin.id) return; // already there
+
+        await moveTabToWindowIfNeeded(wantedTab, otherWin);
+
+        if (!wantedTab.isDestroyed && !otherWin.destroyed) {
+          tabService.activateTab(wantedTab);
+        }
+      }).catch((err) => {
+        console.error("[tab-sync] Failed to release synced tab:", err);
+      });
+    }
   });
 
   tabService.on("focused-tab-changed", (windowId) => {
