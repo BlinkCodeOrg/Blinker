@@ -49,6 +49,7 @@ export class Layer<ViewType extends Electron.View = Electron.View> {
       }
 
       this.view.webContents.focus();
+      this.manager.clearPendingFocusReallocation();
       return true;
     }
     return false;
@@ -199,6 +200,10 @@ export class LayerManager extends TypedEventEmitter<LayerManagerEvents> {
         return;
       }
     }
+  }
+
+  public clearPendingFocusReallocation(): void {
+    this._focusReallocatePending = false;
   }
 
   public getFocusedLayer(): Layer | null {
