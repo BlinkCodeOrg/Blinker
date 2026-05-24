@@ -1000,6 +1000,8 @@ export class TabService extends TypedEventEmitter<TabServiceEvents> {
       if (oldWindowId !== tab.getWindow().id) {
         this.emitStructuralChange(oldWindowId);
       }
+      // Re-serialize so persistence picks up the new windowGroupId
+      this.emitContentChange(tab.getWindow().id, tab.id);
     });
 
     tab.on("focused", () => {

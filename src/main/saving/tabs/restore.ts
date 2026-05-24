@@ -11,8 +11,9 @@ function shouldArchiveTab(lastActiveAt: number): boolean {
   const archiveDays = Number(getSettingValueById("autoArchiveDays")) || undefined;
   const days = archiveDays ?? ARCHIVE_THRESHOLD_DAYS;
   if (days <= 0) return false;
-  const threshold = Date.now() - days * 24 * 60 * 60 * 1000;
-  return lastActiveAt < threshold;
+  // lastActiveAt is in seconds (from getCurrentTimestamp()), so threshold must also be in seconds.
+  const thresholdSeconds = Math.floor(Date.now() / 1000) - days * 24 * 60 * 60;
+  return lastActiveAt < thresholdSeconds;
 }
 
 /**
