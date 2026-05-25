@@ -23,6 +23,7 @@ import { WebContents } from "electron";
 import { quitController } from "@/controllers/quit-controller";
 import { setWindowSpace } from "@/ipc/session/spaces";
 import { FLAGS } from "@/modules/flags";
+import { sendPlaceholderForTab } from "./tab-sync";
 
 export const NEW_TAB_URL = "flow://new-tab";
 
@@ -632,6 +633,9 @@ export class TabService extends TypedEventEmitter<TabServiceEvents> {
         // For cross-window: move only the tab's view (NOT the layout node).
         // Pinned nodes stay in all layouts — we don't migrate them.
         if (existingTab.getWindow().id !== window.id) {
+          const oldWindow = existingTab.getWindow();
+          // Capture placeholder for old window before moving the view away
+          await sendPlaceholderForTab(existingTab, oldWindow);
           existingTab.setWindow(window);
           node.setActiveLayout(targetLayout);
         }
@@ -722,6 +726,8 @@ export class TabService extends TypedEventEmitter<TabServiceEvents> {
       if (node) {
         // For cross-window: move only the view (not the node)
         if (existingTab.getWindow().id !== window.id) {
+          const oldWindow = existingTab.getWindow();
+          await sendPlaceholderForTab(existingTab, oldWindow);
           existingTab.setWindow(window);
           node.setActiveLayout(targetLayout);
         }

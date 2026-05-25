@@ -108,6 +108,18 @@ export function clearPlaceholdersForTab(tabId: number): void {
   }
 }
 
+/**
+ * Capture a screenshot of a tab and send it as a placeholder to the given window.
+ * Used when a pinned tab's view moves to another window — the old window shows
+ * a placeholder thumbnail instead of real content.
+ */
+export async function sendPlaceholderForTab(tab: Tab, targetWindow: BrowserWindow): Promise<void> {
+  const screenshot = await captureTabScreenshot(tab);
+  if (screenshot && !targetWindow.destroyed) {
+    sendPlaceholderToRenderer(targetWindow, targetWindow.currentSpaceId ?? tab.spaceId, tab.id, screenshot);
+  }
+}
+
 function reconcilePlaceholderForWindow(windowId: number): void {
   const window = browserWindowsController.getWindowById(windowId);
   if (!window || window.destroyed || window.browserWindowType !== "normal") return;
@@ -129,8 +141,9 @@ function reconcilePlaceholderForWindow(windowId: number): void {
     return;
   }
 
-  // If the focused tab moved to a different space, the placeholder is stale
-  if (focusedTab.spaceId !== spaceId) {
+  // If the focused tab moved to a different space, the placeholder is stale.
+  // Exception: pinned tabs span all spaces — their spaceId is just the creation space.
+  if (focusedTab.spaceId !== spaceId && focusedTab.owner.kind !== "pinned") {
     clearPlaceholderInRenderer(windowId);
     return;
   }
