@@ -345,24 +345,21 @@ export class Tab extends TypedEventEmitter<TabEvents> {
       this._disconnectLeaveFullScreen = null;
     }
 
-    // Unregister from extensions
-    if (this.webContents) {
-      const extensions = this.loadedProfile.extensions;
-      extensions.removeTab(this.webContents);
-    }
-
     // Remove layer from window
     if (this.layer) {
       this.window?.layerManager?.pop(this.layer);
       this.layer = null;
     }
 
-    // Close webContents (this effectively destroys the view)
-    if (this.webContents && !this.webContents.isDestroyed()) {
-      this.webContents.close();
-    }
+    // Null references before closing so getTabByWebContents() won't find
+    // this tab during the extensions library's "destroyed" callback.
+    const wc = this.webContents;
     this.view = null;
     this.webContents = null;
+
+    if (wc && !wc.isDestroyed()) {
+      wc.close();
+    }
   }
 
   // --- Sleep / Wake ---
@@ -701,6 +698,11 @@ export class Tab extends TypedEventEmitter<TabEvents> {
       if (window && !window.destroyed) {
         window.browserWindow.setFullScreen(false);
       }
+    }
+
+    // Unregister from extensions (only on destroy, not sleep)
+    if (this.webContents && !this.webContents.isDestroyed()) {
+      this.loadedProfile.extensions.removeTab(this.webContents);
     }
 
     this.teardownView();
