@@ -756,6 +756,8 @@ export class TabService extends TypedEventEmitter<TabServiceEvents> {
         if (existingTab.getWindow().id !== window.id) {
           const oldWindow = existingTab.getWindow();
           await sendPlaceholderForTab(existingTab, oldWindow);
+          // Re-check after async: tab or window may have been destroyed
+          if (existingTab.isDestroyed || window.destroyed) return true;
           existingTab.setWindow(window);
           node.setActiveLayout(targetLayout);
         }
