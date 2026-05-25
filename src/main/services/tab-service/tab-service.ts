@@ -334,13 +334,19 @@ export class TabService extends TypedEventEmitter<TabServiceEvents> {
     if (this._activatingTabIds.has(tab.id)) return;
 
     const windowId = tab.getWindow().id;
-
-    // For pinned tabs (multi-layout nodes), prefer the window's current space layout.
-    // The tab's spaceId may not match because pinned nodes span all profile spaces.
     const window = browserWindowsController.getWindowById(windowId);
-    let layout = this.getLayout(windowId, tab.spaceId);
-    if (!layout && window?.currentSpaceId) {
-      layout = this.getLayout(windowId, window.currentSpaceId);
+
+    // For pinned tabs (multi-layout nodes), prefer the window's current space layout
+    // since pinned nodes span all profile spaces and tab.spaceId is just the creation space.
+    let layout: TabLayout | undefined;
+    if (window?.currentSpaceId) {
+      const currentLayout = this.getLayout(windowId, window.currentSpaceId);
+      if (currentLayout?.getNodeForTab(tab.id)) {
+        layout = currentLayout;
+      }
+    }
+    if (!layout) {
+      layout = this.getLayout(windowId, tab.spaceId);
     }
     if (!layout) return;
 
@@ -623,13 +629,10 @@ export class TabService extends TypedEventEmitter<TabServiceEvents> {
 
       if (node) {
         // Node is already in this layout (propagated). Just activate it here.
-        // For cross-window: move the tab's view to this window so it renders here.
+        // For cross-window: move only the tab's view (NOT the layout node).
+        // Pinned nodes stay in all layouts — we don't migrate them.
         if (existingTab.getWindow().id !== window.id) {
-          if (this.moveTabToWindowHook) {
-            await this.moveTabToWindowHook(existingTab, window);
-          } else {
-            existingTab.setWindow(window);
-          }
+          existingTab.setWindow(window);
           node.setActiveLayout(targetLayout);
         }
 
@@ -717,13 +720,9 @@ export class TabService extends TypedEventEmitter<TabServiceEvents> {
       const node = targetLayout.getNodeForTab(existingTab.id);
 
       if (node) {
-        // For cross-window: move the view
+        // For cross-window: move only the view (not the node)
         if (existingTab.getWindow().id !== window.id) {
-          if (this.moveTabToWindowHook) {
-            await this.moveTabToWindowHook(existingTab, window);
-          } else {
-            existingTab.setWindow(window);
-          }
+          existingTab.setWindow(window);
           node.setActiveLayout(targetLayout);
         }
 
