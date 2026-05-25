@@ -888,36 +888,16 @@ export class TabService extends TypedEventEmitter<TabServiceEvents> {
       tab.layer?.setVisible(false);
     }
 
-    // Collect all layouts in the source space that have this node (for multi-layout cleanup)
-    const affectedLayouts: { layout: TabLayout; wasActive: boolean; nodePosition: number }[] = [];
+    // Remove from source layout
     if (sourceLayout) {
       const node = sourceLayout.getNodeForTab(tab.id);
       if (node) {
-        // Find all layouts that share this node (STAW multi-layout membership)
-        for (const layout of this.layouts.values()) {
-          if (layout.spaceId !== sourceSpaceId) continue;
-          const layoutNode = layout.getNodeForTab(tab.id);
-          if (!layoutNode) continue;
-          affectedLayouts.push({
-            layout,
-            wasActive: layout.getActiveNode()?.id === layoutNode.id,
-            nodePosition: layoutNode.position
-          });
-        }
-
         // Destroy single node from source, or remove tab from multi-node.
         // The "destroyed" event cascades cleanup to all member layouts.
         if (node.mode === "single") {
           sourceLayout.destroyNode(node.id);
         } else {
           node.removeTab(tab);
-        }
-
-        // Select next tab in all affected layouts
-        for (const { layout, wasActive, nodePosition } of affectedLayouts) {
-          if (wasActive) {
-            layout.removeActiveAndSelectNext(nodePosition);
-          }
         }
       }
     }
@@ -929,7 +909,6 @@ export class TabService extends TypedEventEmitter<TabServiceEvents> {
     targetLayout.createSingleNode(tab);
 
     // Clear focused tab references to this tab in the source space across ALL layouts.
-    // This prevents STAW from thinking any window still "wants" this tab in the old space.
     for (const layout of this.layouts.values()) {
       if (layout.spaceId === sourceSpaceId && layout.getFocusedTab()?.id === tab.id) {
         layout.removeFocusedTab();
@@ -944,15 +923,8 @@ export class TabService extends TypedEventEmitter<TabServiceEvents> {
     this.positioner.normalizePositions(this.getTabsInWindowSpace(windowId, spaceId));
     this.positioner.normalizePositions(this.getTabsInWindowSpace(windowId, sourceSpaceId));
 
-    // Update visibility and UI in ALL windows that had the tab active in the source space.
-    for (const { layout, wasActive } of affectedLayouts) {
-      if (wasActive) {
-        this.updateTabVisibility(layout.windowId, sourceSpaceId);
-        this.emitStructuralChange(layout.windowId);
-      }
-    }
-
-    this.activateTab(tab);
+    // Notify renderer that source space changed (tab removed)
+    this.emitStructuralChange(windowId);
   }
 
   /**
