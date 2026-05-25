@@ -281,7 +281,11 @@ export class Tab extends TypedEventEmitter<TabEvents> {
     // Update the extensions library's internal window mapping for this tab.
     // The library has no public moveTab API, so we patch the store directly.
     if (this.webContents && !this.webContents.isDestroyed()) {
-      const store = (this.loadedProfile.extensions as unknown as { ctx: { store: { tabToWindow: WeakMap<WebContents, Electron.BaseWindow> } } }).ctx.store;
+      const store = (
+        this.loadedProfile.extensions as unknown as {
+          ctx: { store: { tabToWindow: WeakMap<WebContents, Electron.BaseWindow> } };
+        }
+      ).ctx.store;
       store.tabToWindow.set(this.webContents, window.browserWindow);
     }
 
