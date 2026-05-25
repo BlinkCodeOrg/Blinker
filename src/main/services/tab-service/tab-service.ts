@@ -334,7 +334,14 @@ export class TabService extends TypedEventEmitter<TabServiceEvents> {
     if (this._activatingTabIds.has(tab.id)) return;
 
     const windowId = tab.getWindow().id;
-    const layout = this.getLayout(windowId, tab.spaceId);
+
+    // For pinned tabs (multi-layout nodes), prefer the window's current space layout.
+    // The tab's spaceId may not match because pinned nodes span all profile spaces.
+    const window = browserWindowsController.getWindowById(windowId);
+    let layout = this.getLayout(windowId, tab.spaceId);
+    if (!layout && window?.currentSpaceId) {
+      layout = this.getLayout(windowId, window.currentSpaceId);
+    }
     if (!layout) return;
 
     const node = layout.getNodeForTab(tab.id);
@@ -358,12 +365,11 @@ export class TabService extends TypedEventEmitter<TabServiceEvents> {
       // Mark as recently active (prevents premature archive/sleep)
       tab.lastActiveAt = Math.floor(Date.now() / 1000);
 
-      // Only update visibility/bounds if the tab's space is the window's current space.
+      // Only update visibility/bounds if this layout's space is the window's current space.
       // A tab can be activated in a non-current space (e.g. STAW release) without
       // making it visible — it becomes visible when the user switches to that space.
-      const window = browserWindowsController.getWindowById(windowId);
-      if (window && !window.destroyed && window.currentSpaceId === tab.spaceId) {
-        this.updateTabVisibility(windowId, tab.spaceId);
+      if (window && !window.destroyed && window.currentSpaceId === layout.spaceId) {
+        this.updateTabVisibility(windowId, layout.spaceId);
         this.handlePageBoundsChanged(windowId);
       }
 
@@ -597,8 +603,10 @@ export class TabService extends TypedEventEmitter<TabServiceEvents> {
 
   /**
    * Click a pinned tab — activate or create its associated tab.
-   * Pinned tabs sync across spaces: clicking in space B moves the existing
-   * tab from space A to space B (one live tab per pinned tab, not per space).
+   * Pinned tab nodes exist in all profile layouts. Clicking just sets the
+   * target layout's active node — the node can be active in multiple layouts
+   * simultaneously. For cross-window clicks, the tab's view moves to the
+   * target window (since a view can only render in one window).
    */
   public async clickPinnedTab(pinnedTabId: string, window: BrowserWindow): Promise<boolean> {
     const pinnedTab = this.pinnedTabs.get(pinnedTabId);
@@ -610,26 +618,31 @@ export class TabService extends TypedEventEmitter<TabServiceEvents> {
     // Find the existing associated tab (any space)
     const existingTab = this.findAssociatedTab(pinnedTab);
     if (existingTab) {
-      // Move to target window if needed
-      if (existingTab.getWindow().id !== window.id) {
-        if (this.moveTabToWindowHook) {
-          await this.moveTabToWindowHook(existingTab, window);
-        } else {
-          this.migrateTabBetweenLayouts(existingTab, window.id);
-          existingTab.setWindow(window);
-        }
-      }
+      const targetLayout = this.getOrCreateLayout(window.id, spaceId);
+      const node = targetLayout.getNodeForTab(existingTab.id);
 
-      // Move to target space if needed
-      if (existingTab.spaceId !== spaceId) {
-        const oldSpaceId = existingTab.spaceId;
-        pinnedTab.dissociate(oldSpaceId);
-        this.moveTabToSpace(existingTab.id, spaceId);
+      if (node) {
+        // Node is already in this layout (propagated). Just activate it here.
+        // For cross-window: move the tab's view to this window so it renders here.
+        if (existingTab.getWindow().id !== window.id) {
+          if (this.moveTabToWindowHook) {
+            await this.moveTabToWindowHook(existingTab, window);
+          } else {
+            existingTab.setWindow(window);
+          }
+          node.setActiveLayout(targetLayout);
+        }
+
+        // Update association to track which space last activated it
         pinnedTab.associate(spaceId, existingTab.id);
-        this.reorderPinnedTabsInSpace(window.id, spaceId);
+
+        targetLayout.setActiveNode(node);
+        targetLayout.setFocusedTab(existingTab);
+        this.activateTab(existingTab);
         return true;
       }
 
+      // Node not in target layout (shouldn't happen if propagation worked, but fallback)
       this.activateTab(existingTab);
       return true;
     }
@@ -695,27 +708,30 @@ export class TabService extends TypedEventEmitter<TabServiceEvents> {
     // Find existing tab across all spaces
     const existingTab = this.findAssociatedTab(pinnedTab);
     if (existingTab) {
+      // Navigate back to default URL
       if (existingTab.url !== pinnedTab.defaultUrl) {
         existingTab.loadURL(pinnedTab.defaultUrl);
       }
-      // Move to target window if needed
-      if (existingTab.getWindow().id !== window.id) {
-        if (this.moveTabToWindowHook) {
-          await this.moveTabToWindowHook(existingTab, window);
-        } else {
-          this.migrateTabBetweenLayouts(existingTab, window.id);
-          existingTab.setWindow(window);
+
+      const targetLayout = this.getOrCreateLayout(window.id, spaceId);
+      const node = targetLayout.getNodeForTab(existingTab.id);
+
+      if (node) {
+        // For cross-window: move the view
+        if (existingTab.getWindow().id !== window.id) {
+          if (this.moveTabToWindowHook) {
+            await this.moveTabToWindowHook(existingTab, window);
+          } else {
+            existingTab.setWindow(window);
+          }
+          node.setActiveLayout(targetLayout);
         }
-      }
-      // Move to target space if needed
-      if (existingTab.spaceId !== spaceId) {
-        const oldSpaceId = existingTab.spaceId;
-        pinnedTab.dissociate(oldSpaceId);
-        this.moveTabToSpace(existingTab.id, spaceId);
+
         pinnedTab.associate(spaceId, existingTab.id);
-        this.reorderPinnedTabsInSpace(window.id, spaceId);
-        return true;
+        targetLayout.setActiveNode(node);
+        targetLayout.setFocusedTab(existingTab);
       }
+
       this.activateTab(existingTab);
       return true;
     }
@@ -1023,9 +1039,19 @@ export class TabService extends TypedEventEmitter<TabServiceEvents> {
     if (!layout) return;
 
     const activeNode = layout.getActiveNode();
-    const tabsInSpace = this.getTabsInWindowSpace(windowId, spaceId);
 
-    for (const tab of tabsInSpace) {
+    // Collect all tabs that belong to this layout's scope:
+    // - Normal tabs in this window+space
+    // - Tabs in the active node (includes pinned tabs whose spaceId may differ)
+    const tabsInSpace = this.getTabsInWindowSpace(windowId, spaceId);
+    const allRelevantTabs = new Set(tabsInSpace);
+    if (activeNode) {
+      for (const tab of activeNode.tabs) {
+        allRelevantTabs.add(tab);
+      }
+    }
+
+    for (const tab of allRelevantTabs) {
       const shouldBeVisible = activeNode !== null && activeNode.hasTab(tab.id);
       if (tab.visible !== shouldBeVisible) {
         const wasVisible = tab.visible;
