@@ -89,15 +89,18 @@ export async function showTabContextMenu(tabService: TabService, tabId: number, 
       enabled: hasURL,
       click: () => {
         if (tab.url) {
-          void tabService.createTab(window.id, tab.profileId, tab.spaceId, undefined, { url: tab.url });
+          const targetSpaceId = window.currentSpaceId ?? tab.spaceId;
+          void tabService.createTab(window.id, tab.profileId, targetSpaceId, undefined, { url: tab.url });
         }
       }
     })
   );
 
-  // --- Move To ---
-  const moveToItem = await buildMoveToSubmenu(tabService, tab);
-  contextMenu.append(moveToItem);
+  // --- Move To (not applicable for pinned tabs — they exist in all spaces) ---
+  if (!isPinned) {
+    const moveToItem = await buildMoveToSubmenu(tabService, tab);
+    contextMenu.append(moveToItem);
+  }
 
   contextMenu.append(new MenuItem({ type: "separator" }));
 
@@ -112,7 +115,9 @@ export async function showTabContextMenu(tabService: TabService, tabId: number, 
   );
 
   // --- Close Tabs Below ---
-  const tabsInSpace = tabService.getTabsInWindowSpace(window.id, tab.spaceId);
+  // Use the window's current space (not tab.spaceId which is creation space for pinned tabs)
+  const spaceForContext = window.currentSpaceId ?? tab.spaceId;
+  const tabsInSpace = tabService.getTabsInWindowSpace(window.id, spaceForContext);
   const tabsBelow = tabsInSpace.filter((t) => t.position > tab.position && t.id !== tab.id);
   contextMenu.append(
     new MenuItem({

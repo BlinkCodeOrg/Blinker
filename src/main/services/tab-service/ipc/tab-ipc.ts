@@ -137,18 +137,17 @@ export class TabIPC {
   }
 
   private processQueues(): void {
-    // Re-serialize only dirty tabs before building payloads
-    for (const tabId of this.dirtyTabs) {
-      const tab = this.tabService.getTabById(tabId);
-      if (tab) {
-        this.tabCache.set(tabId, this.serializeTabForRenderer(tab));
-      } else {
-        this.tabCache.delete(tabId);
+    // Structural changes — invalidate cache for all affected windows upfront
+    // so fields that change without content-change (e.g. lastActiveAt during
+    // activation) are always fresh. Must evict all before building payloads
+    // because STAW payloads include tabs from multiple windows.
+    for (const windowId of this.structuralQueue) {
+      for (const tab of this.tabService.getTabsInWindow(windowId)) {
+        this.tabCache.delete(tab.id);
+        this.dirtyTabs.delete(tab.id); // Will be re-serialized in getWindowTabsPayload
       }
     }
-    this.dirtyTabs.clear();
 
-    // Structural changes (full refresh)
     for (const windowId of this.structuralQueue) {
       const window = browserWindowsController.getWindowById(windowId);
       if (!window) continue;
@@ -158,6 +157,17 @@ export class TabIPC {
       this.contentQueue.delete(windowId);
     }
     this.structuralQueue.clear();
+
+    // Re-serialize remaining dirty tabs (only those NOT already handled above)
+    for (const tabId of this.dirtyTabs) {
+      const tab = this.tabService.getTabById(tabId);
+      if (tab) {
+        this.tabCache.set(tabId, this.serializeTabForRenderer(tab));
+      } else {
+        this.tabCache.delete(tabId);
+      }
+    }
+    this.dirtyTabs.clear();
 
     // Content-only changes (only send tabs that actually changed)
     for (const [windowId, tabIds] of this.contentQueue) {
