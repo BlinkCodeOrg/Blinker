@@ -1122,6 +1122,11 @@ export class TabService extends TypedEventEmitter<TabServiceEvents> {
       this.emitContentChange(tab.getWindow().id, tab.id);
     });
 
+    tab.on("content-changed", () => {
+      if (quitController.isQuitting) return;
+      this.emitContentChange(tab.getWindow().id, tab.id);
+    });
+
     tab.on("space-changed", () => {
       if (quitController.isQuitting) return;
       this.emitStructuralChange(tab.getWindow().id);
@@ -1434,11 +1439,11 @@ export class TabService extends TypedEventEmitter<TabServiceEvents> {
       const count = history.length();
       for (let i = 0; i < count; i++) {
         const entry = history.getEntryAtIndex(i);
-        navHistory.push({ title: entry.title || "", url: entry.url });
+        navHistory.push({ title: entry.title || "", url: entry.url, pageState: entry.pageState });
       }
       navHistoryIndex = history.getActiveIndex();
     } else if (tab.url) {
-      navHistory.push({ title: tab.title, url: tab.url });
+      navHistory.push({ title: tab.title, url: tab.url }); // no pageState available when asleep
       navHistoryIndex = 0;
     }
 

@@ -34,6 +34,11 @@ export function startTabLifecycleTimer(tabs: Map<number, Tab>): void {
   setInterval(() => {
     if (quitController.isQuitting) return;
 
+    // Poll pageState on all awake tabs (scroll position, form data, etc.)
+    for (const tab of tabs.values()) {
+      tab.pollPageState();
+    }
+
     const nowSec = Math.floor(Date.now() / 1000);
 
     for (const tab of tabs.values()) {

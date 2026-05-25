@@ -49,6 +49,7 @@ export type TabEvents = {
   ];
   focused: [];
   updated: [TabPublicProperty[]];
+  "content-changed": [];
   destroyed: [];
 };
 
@@ -387,7 +388,7 @@ export class Tab extends TypedEventEmitter<TabEvents> {
       const entries: NavigationEntry[] = [];
       for (let i = 0; i < count; i++) {
         const entry = history.getEntryAtIndex(i);
-        entries.push({ title: entry.title || "", url: entry.url });
+        entries.push({ title: entry.title || "", url: entry.url, pageState: entry.pageState });
       }
       this.navHistory = entries;
       this.navHistoryIndex = history.getActiveIndex();
@@ -598,7 +599,7 @@ export class Tab extends TypedEventEmitter<TabEvents> {
     const entries = wc.navigationHistory.getAllEntries();
     const currentIndex = wc.navigationHistory.getActiveIndex();
     if (entries.length !== this.lastNavHistoryLength || currentIndex !== this.lastNavHistoryIndex) {
-      this.navHistory = entries.map((e) => ({ title: e.title || "", url: e.url }));
+      this.navHistory = entries.map((e) => ({ title: e.title || "", url: e.url, pageState: e.pageState }));
       this.navHistoryIndex = currentIndex;
       this.lastNavHistoryLength = entries.length;
       this.lastNavHistoryIndex = currentIndex;
@@ -608,6 +609,31 @@ export class Tab extends TypedEventEmitter<TabEvents> {
     if (changed.length > 0) {
       this.scheduleUpdate(changed);
     }
+  }
+
+  /**
+   * Polls Chromium's navigation entries for in-place pageState changes
+   * (scroll position, form values, etc.) that update without events.
+   * Returns true if any entry was updated.
+   */
+  public pollPageState(): boolean {
+    if (!this.webContents || this.webContents.isDestroyed() || this.asleep) return false;
+
+    const entries = this.webContents.navigationHistory.getAllEntries();
+    if (entries.length !== this.navHistory.length) return false;
+
+    let changed = false;
+    for (let i = 0; i < entries.length; i++) {
+      if (entries[i].pageState !== this.navHistory[i].pageState) {
+        this.navHistory[i] = { ...this.navHistory[i], pageState: entries[i].pageState };
+        changed = true;
+      }
+    }
+
+    if (changed) {
+      this.emit("content-changed");
+    }
+    return changed;
   }
 
   private scheduleUpdate(properties: TabPublicProperty[]): void {
@@ -648,7 +674,7 @@ export class Tab extends TypedEventEmitter<TabEvents> {
     if (!this.webContents || this.webContents.isDestroyed()) return;
 
     this.webContents.navigationHistory.restore({
-      entries: entries.map((e) => ({ url: e.url, title: e.title })),
+      entries: entries.map((e) => ({ url: e.url, title: e.title, pageState: e.pageState })),
       index: activeIndex
     });
   }

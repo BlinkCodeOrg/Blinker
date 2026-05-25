@@ -12,6 +12,7 @@ export const TAB_SERVICE_SCHEMA_VERSION = 2;
 export type NavigationEntry = {
   title: string;
   url: string;
+  pageState?: string;
 };
 
 /**
