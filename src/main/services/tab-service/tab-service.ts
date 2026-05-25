@@ -971,7 +971,11 @@ export class TabService extends TypedEventEmitter<TabServiceEvents> {
 
     // Relocate pinned tabs whose live tab is in another space.
     // Pinned tabs sync across spaces — one live tab that follows the user.
+    // Only relocate pinned tabs whose profile matches the target space's profile.
+    const targetSpaceData = spacesController.getFromCache(spaceId);
     for (const pinnedTab of this.pinnedTabs.values()) {
+      if (targetSpaceData && pinnedTab.profileId !== targetSpaceData.profileId) continue;
+
       const liveTab = this.findAssociatedTab(pinnedTab);
       if (!liveTab || liveTab.isDestroyed) continue;
       if (liveTab.spaceId === spaceId && liveTab.getWindow().id === windowId) continue;
@@ -1355,6 +1359,12 @@ export class TabService extends TypedEventEmitter<TabServiceEvents> {
     for (let i = 0; i < tabIds.length; i++) {
       const tab = this.tabs.get(tabIds[i]);
       if (!tab) continue;
+
+      // Hide if leaving the current space
+      if (tab.spaceId !== spaceId && tab.visible) {
+        tab.visible = false;
+        tab.layer?.setVisible(false);
+      }
 
       tab.setSpace(spaceId);
       tab.setWindow(window);

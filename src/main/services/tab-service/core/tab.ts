@@ -401,7 +401,6 @@ export class Tab extends TypedEventEmitter<TabEvents> {
     if (!this.asleep) return;
 
     this.initializeView();
-    this.setWindow(this.window);
     this.updateStateProperty("asleep", false);
 
     if (this.navHistory.length > 0) {
