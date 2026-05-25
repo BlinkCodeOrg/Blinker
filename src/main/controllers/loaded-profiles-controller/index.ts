@@ -161,10 +161,22 @@ class LoadedProfilesController extends TypedEventEmitter<LoadedProfilesControlle
         const tab = tabService.getTabByWebContents(tabWebContents);
         if (!tab) return;
 
-        // Set the space for the window
+        // Set the space for the window — but only if the tab's space differs
+        // from the current space AND the tab isn't a multi-layout node (pinned tabs).
+        // Pinned tab nodes span all spaces, so their tab.spaceId is just the
+        // creation space and shouldn't force a space switch.
         const window = tab.getWindow();
         if (window.destroyed) return;
-        setWindowSpace(window, tab.spaceId);
+        const currentSpaceId = window.currentSpaceId;
+        if (currentSpaceId !== tab.spaceId) {
+          // Check if this tab's node is already in the current space's layout
+          const currentLayout = tabService.getLayout(window.id, currentSpaceId!);
+          const nodeInCurrentLayout = currentLayout?.getNodeForTab(tab.id);
+          if (!nodeInCurrentLayout) {
+            // Tab is not in the current space's layout — switch space
+            setWindowSpace(window, tab.spaceId);
+          }
+        }
 
         // Set the active tab
         tabService.activateTab(tab);
