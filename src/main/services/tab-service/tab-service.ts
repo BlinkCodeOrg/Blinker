@@ -403,6 +403,11 @@ export class TabService extends TypedEventEmitter<TabServiceEvents> {
     const node = layout.getNodeForTab(tab.id);
     if (!node) return;
 
+    // Wake sleeping tabs before activation so the view exists
+    if (tab.asleep) {
+      tab.wakeUp();
+    }
+
     // For multi-tab nodes (glance), set front tab
     if (node.mode === "glance") {
       node.setFrontTab(tab);
