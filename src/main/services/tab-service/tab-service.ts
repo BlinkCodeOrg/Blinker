@@ -44,7 +44,7 @@ type TabServiceEvents = {
  * Manages:
  * - All tabs (Map<tabId, Tab>)
  * - All pinned tabs (Map<uniqueId, PinnedTab>)
- * - Per-window layouts (Map<windowId, TabLayout>)
+ * - Per-window-space layouts (Map<`${windowId}-${spaceId}`, TabLayout>)
  * - A shared TabPositioner
  *
  * Coordinates tab creation, destruction, activation, pinned tab operations,
@@ -405,28 +405,40 @@ export class TabService extends TypedEventEmitter<TabServiceEvents> {
   }
 
   /**
-   * Ensure a tab's node exists in the target window's layout (for STAW cross-window moves).
-   * With multi-layout membership, nodes are never destroyed during cross-window moves.
-   * Instead, the node is registered in the target layout (if not already) and the
-   * activeLayout is updated so the real content renders there.
+   * Ensure a tab's node exists in the target window's current-space layout and
+   * set it as the activeLayout (for STAW cross-window moves).
+   *
+   * With multi-layout membership, nodes are never destroyed during cross-window
+   * moves. The node stays registered in the source layout (which shows a
+   * placeholder) and is registered in the target layout (which shows real content).
+   *
+   * For pinned tabs the node already exists in all profile layouts via propagation,
+   * so this just flips activeLayout. For normal STAW tabs the node is registered
+   * in the target layout if not already present.
    */
   public ensureNodeInLayout(tab: Tab, toWindowId: number): void {
     const fromWindowId = tab.getWindow().id;
     if (fromWindowId === toWindowId) return;
 
-    const spaceId = tab.spaceId;
-    const fromLayout = this.getLayout(fromWindowId, spaceId);
-    const toLayout = this.getOrCreateLayout(toWindowId, spaceId);
+    const targetWindow = browserWindowsController.getWindowById(toWindowId);
+    const targetSpaceId = targetWindow?.currentSpaceId ?? tab.spaceId;
+    const toLayout = this.getOrCreateLayout(toWindowId, targetSpaceId);
 
-    const node = fromLayout?.getNodeForTab(tab.id);
-    if (node) {
-      // Register in target layout if not already there
-      if (!toLayout.getNode(node.id)) {
+    // Find the node: try the target layout first (pinned tabs are already there),
+    // then fall back to looking up from the source window's layout.
+    let node = toLayout.getNodeForTab(tab.id);
+    if (!node) {
+      const fromLayout = this.getLayout(fromWindowId, tab.spaceId);
+      node = fromLayout?.getNodeForTab(tab.id);
+      if (node) {
         toLayout.addExistingNode(node);
       }
+    }
+
+    if (node) {
       node.setActiveLayout(toLayout);
     } else {
-      // Node doesn't exist in source — create fresh in target
+      // No node found anywhere — create fresh in target
       toLayout.createSingleNode(tab);
     }
   }
@@ -456,12 +468,15 @@ export class TabService extends TypedEventEmitter<TabServiceEvents> {
   }
 
   /**
-   * Check if a tab is currently active.
+   * Check if a tab is currently active in any layout of its window.
    */
   public isTabActive(tab: Tab): boolean {
-    const layout = this.getLayout(tab.getWindow().id, tab.spaceId);
-    if (!layout) return false;
-    return layout.isTabActive(tab);
+    const windowId = tab.getWindow().id;
+    for (const layout of this.layouts.values()) {
+      if (layout.windowId !== windowId) continue;
+      if (layout.isTabActive(tab)) return true;
+    }
+    return false;
   }
 
   /**
@@ -913,12 +928,6 @@ export class TabService extends TypedEventEmitter<TabServiceEvents> {
     this.positioner.normalizePositions(this.getTabsInWindowSpace(windowId, spaceId));
     this.positioner.normalizePositions(this.getTabsInWindowSpace(windowId, sourceSpaceId));
 
-    // Ensure the tab is fully hidden before re-activating in the new space.
-    // updateTabVisibility won't find this tab anymore (spaceId/windowId changed),
-    // so we must explicitly hide the layer here.
-    tab.visible = false;
-    tab.layer?.setVisible(false);
-
     // Update visibility and UI in ALL windows that had the tab active in the source space.
     for (const { layout, wasActive } of affectedLayouts) {
       if (wasActive) {
@@ -1123,10 +1132,9 @@ export class TabService extends TypedEventEmitter<TabServiceEvents> {
     const tabWindowId = tab.getWindow().id;
     for (const layout of this.layouts.values()) {
       if (layout.windowId === tabWindowId) continue;
-      if (layout.spaceId !== tab.spaceId) continue;
+      if (!layout.visible) continue;
       const window = browserWindowsController.getWindowById(layout.windowId);
       if (!window || window.destroyed || window.browserWindowType !== "normal") continue;
-      if (window.currentSpaceId !== tab.spaceId) continue;
       const activeNode = layout.getActiveNode();
       if (activeNode && activeNode.hasTab(tab.id)) return true;
     }
@@ -1255,7 +1263,9 @@ export class TabService extends TypedEventEmitter<TabServiceEvents> {
     });
 
     tab.on("focused", () => {
-      const currentLayout = this.getLayout(tab.getWindow().id, tab.spaceId);
+      const window = tab.getWindow();
+      const spaceId = window.currentSpaceId ?? tab.spaceId;
+      const currentLayout = this.getLayout(window.id, spaceId);
       if (currentLayout && this.isTabActive(tab)) {
         currentLayout.setFocusedTab(tab);
       }
@@ -1292,9 +1302,16 @@ export class TabService extends TypedEventEmitter<TabServiceEvents> {
       }
 
       const windowId = tab.getWindow().id;
-      const spaceId = tab.spaceId;
       const position = tab.position;
-      const currentLayout = this.getLayout(windowId, spaceId);
+
+      // Find the layout containing this tab. Prefer window's current space
+      // (handles pinned tabs whose spaceId differs from active space).
+      const win = browserWindowsController.getWindowById(windowId);
+      const currentSpaceId = win?.currentSpaceId;
+      let currentLayout = currentSpaceId ? this.getLayout(windowId, currentSpaceId) : undefined;
+      if (!currentLayout?.getNodeForTab(tab.id)) {
+        currentLayout = this.getLayout(windowId, tab.spaceId);
+      }
 
       // Determine if tab was active. The once("destroyed") listener from
       // TabLayoutNode.addTab may have already removed the tab from its node
@@ -1521,18 +1538,43 @@ export class TabService extends TypedEventEmitter<TabServiceEvents> {
   // --- Batch Tab Move ---
 
   public batchMoveTabs(tabIds: number[], spaceId: string, window: BrowserWindow, newPositionStart?: number): boolean {
+    const affectedSourceSpaces = new Set<string>();
+
     for (let i = 0; i < tabIds.length; i++) {
       const tab = this.tabs.get(tabIds[i]);
       if (!tab) continue;
 
+      const sourceSpaceId = tab.spaceId;
+      const sourceWindowId = tab.getWindow().id;
+
       // Hide if leaving the current space
-      if (tab.spaceId !== spaceId && tab.visible) {
+      if (tab.visible) {
         tab.visible = false;
         tab.layer?.setVisible(false);
       }
 
+      // Remove from source layout node
+      if (sourceSpaceId !== spaceId || sourceWindowId !== window.id) {
+        const sourceLayout = this.getLayout(sourceWindowId, sourceSpaceId);
+        if (sourceLayout) {
+          const node = sourceLayout.getNodeForTab(tab.id);
+          if (node && node.mode === "single") {
+            sourceLayout.destroyNode(node.id);
+          } else if (node) {
+            node.removeTab(tab);
+          }
+        }
+        affectedSourceSpaces.add(`${sourceWindowId}-${sourceSpaceId}`);
+      }
+
       tab.setSpace(spaceId);
       tab.setWindow(window);
+
+      // Create node in target layout
+      const targetLayout = this.getOrCreateLayout(window.id, spaceId);
+      if (!targetLayout.getNodeForTab(tab.id)) {
+        targetLayout.createSingleNode(tab);
+      }
 
       if (newPositionStart !== undefined) {
         tab.updateStateProperty("position", newPositionStart + i);
@@ -1540,6 +1582,14 @@ export class TabService extends TypedEventEmitter<TabServiceEvents> {
     }
 
     this.positioner.normalizePositions(this.getTabsInWindowSpace(window.id, spaceId));
+
+    // Emit structural changes for affected source windows
+    for (const key of affectedSourceSpaces) {
+      const [windowIdStr] = key.split("-");
+      const windowId = parseInt(windowIdStr, 10);
+      this.emitStructuralChange(windowId);
+    }
+    this.emitStructuralChange(window.id);
     return true;
   }
 

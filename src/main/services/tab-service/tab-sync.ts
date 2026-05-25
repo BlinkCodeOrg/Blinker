@@ -238,8 +238,9 @@ async function moveActiveTabToWindow(window: BrowserWindow, isStale?: () => bool
 
   if (isSyncExcludedTab(focusedTab)) return;
 
-  // Move the focused tab (and all tabs in its layout node)
-  const layout = tabService.getLayout(window.id, focusedTab.spaceId);
+  // Look up the node using the window's current space layout (not tab.spaceId,
+  // which may differ for pinned tabs whose spaceId is just the creation space).
+  const layout = tabService.getLayout(window.id, spaceId);
   if (!layout) return;
 
   const node = layout.getNodeForTab(focusedTab.id);
@@ -258,7 +259,12 @@ async function moveActiveTabToWindow(window: BrowserWindow, isStale?: () => bool
 export async function moveTabOrGroupToWindow(tab: Tab, window: BrowserWindow): Promise<void> {
   clearPlaceholderInRenderer(window.id);
 
-  const layout = tabService.getLayout(tab.getWindow().id, tab.spaceId);
+  // Look up the node from the tab's current window. For pinned tabs, try the
+  // current space layout first (where the node is active), then fall back to tab.spaceId.
+  const sourceWindow = tab.getWindow();
+  const sourceSpaceId = sourceWindow.currentSpaceId ?? tab.spaceId;
+  const layout =
+    tabService.getLayout(sourceWindow.id, sourceSpaceId) ?? tabService.getLayout(sourceWindow.id, tab.spaceId);
   if (layout) {
     const node = layout.getNodeForTab(tab.id);
     if (node) {
