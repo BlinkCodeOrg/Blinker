@@ -3,8 +3,11 @@ import { Tab, TabCreationDetails, TabCreationOptions } from "./core/tab";
 import { TabLayoutNode } from "./core/tab-layout-node";
 import { PinnedTab } from "./core/pinned-tab";
 import { RecentlyClosedManager } from "./core/recently-closed-manager";
+import { showTabContextMenu, showPinnedTabContextMenu } from "./core/tab-context-menus";
 import { TabLayout } from "./layout/tab-layout";
 import { TabPositioner } from "./layout/tab-positioner";
+import { PinnedTabPersistence } from "./persistence/pinned-tab-persistence";
+import { startTabLifecycleTimer } from "./tab-lifecycle-timer";
 import {
   NavigationEntry,
   PersistedTabData,
@@ -16,13 +19,9 @@ import { browserWindowsController } from "@/controllers/windows-controller/inter
 import { spacesController } from "@/controllers/spaces-controller";
 import { loadedProfilesController } from "@/controllers/loaded-profiles-controller";
 import { BrowserWindow } from "@/controllers/windows-controller/types";
-import { clipboard, Menu, MenuItem, WebContents } from "electron";
+import { WebContents } from "electron";
 import { quitController } from "@/controllers/quit-controller";
 import { setWindowSpace } from "@/ipc/session/spaces";
-import { getDb, schema } from "@/saving/db";
-import { eq } from "drizzle-orm";
-import { getSettingValueById } from "@/saving/settings";
-import { SleepTabValueMap } from "@/modules/basic-settings";
 
 export const NEW_TAB_URL = "flow://new-tab";
 
@@ -71,46 +70,21 @@ export class TabService extends TypedEventEmitter<TabServiceEvents> {
    */
   public moveTabToWindowHook: ((tab: Tab, window: BrowserWindow) => Promise<void>) | null = null;
 
-  // --- Pinned Tab Persistence ---
+  // Persistence delegate
+  private readonly pinnedTabDb = new PinnedTabPersistence();
+
+  // --- Initialization ---
 
   /**
    * Load all pinned tabs from the database into memory.
    * Called once during app startup.
    */
   public loadPinnedTabs(): void {
-    const db = getDb();
-    const rows = db.select().from(schema.pinnedTabs).all();
-    for (const row of rows) {
-      const pinnedTab = new PinnedTab(row);
+    const pinnedTabs = this.pinnedTabDb.loadAll();
+    for (const pinnedTab of pinnedTabs) {
       this.pinnedTabs.set(pinnedTab.uniqueId, pinnedTab);
       this.wirePinnedTabEvents(pinnedTab);
     }
-  }
-
-  private savePinnedTab(pinnedTab: PinnedTab): void {
-    const db = getDb();
-    db.insert(schema.pinnedTabs)
-      .values({
-        uniqueId: pinnedTab.uniqueId,
-        profileId: pinnedTab.profileId,
-        defaultUrl: pinnedTab.defaultUrl,
-        faviconUrl: pinnedTab.faviconUrl,
-        position: pinnedTab.position
-      })
-      .onConflictDoUpdate({
-        target: schema.pinnedTabs.uniqueId,
-        set: {
-          defaultUrl: pinnedTab.defaultUrl,
-          faviconUrl: pinnedTab.faviconUrl,
-          position: pinnedTab.position
-        }
-      })
-      .run();
-  }
-
-  private deletePinnedTabFromDb(uniqueId: string): void {
-    const db = getDb();
-    db.delete(schema.pinnedTabs).where(eq(schema.pinnedTabs.uniqueId, uniqueId)).run();
   }
 
   /**
@@ -118,63 +92,14 @@ export class TabService extends TypedEventEmitter<TabServiceEvents> {
    * Called once during initialization.
    */
   public startBackgroundTasks(): void {
-    // Destroy tabs when their space is deleted
     spacesController.on("space-deleted", (_profileId, spaceId) => {
       if (quitController.isQuitting) return;
-      const tabs = this.getTabsInSpace(spaceId);
-      for (const tab of tabs) {
+      for (const tab of this.getTabsInSpace(spaceId)) {
         tab.destroy();
       }
     });
 
-    // Auto-sleep/archive interval (every 10s)
-    setInterval(() => {
-      if (quitController.isQuitting) return;
-      // Use seconds — lastActiveAt is stored in seconds (from getCurrentTimestamp())
-      const nowSec = Math.floor(Date.now() / 1000);
-
-      for (const tab of this.tabs.values()) {
-        if (tab.owner.kind !== "normal") continue;
-        if (tab.visible) continue;
-
-        // Auto-archive (destroy) tabs inactive too long
-        const archiveAfter = getSettingValueById("archiveTabAfter");
-        if (typeof archiveAfter === "string" && archiveAfter !== "never") {
-          const archiveSec = this.parseDurationToSeconds(archiveAfter);
-          if (archiveSec > 0 && nowSec - tab.lastActiveAt >= archiveSec) {
-            tab.destroy();
-            continue;
-          }
-        }
-
-        // Auto-sleep tabs inactive past threshold
-        if (!tab.asleep) {
-          const sleepAfter = getSettingValueById("sleepTabAfter");
-          if (typeof sleepAfter === "string" && sleepAfter !== "never") {
-            const sleepSeconds = SleepTabValueMap[sleepAfter as keyof typeof SleepTabValueMap];
-            if (typeof sleepSeconds === "number" && nowSec - tab.lastActiveAt >= sleepSeconds) {
-              tab.putToSleep();
-            }
-          }
-        }
-      }
-    }, 10_000);
-  }
-
-  private parseDurationToSeconds(value: string): number {
-    const match = value.match(/^(\d+)(m|h|d)$/);
-    if (!match) return 0;
-    const num = parseInt(match[1], 10);
-    switch (match[2]) {
-      case "m":
-        return num * 60;
-      case "h":
-        return num * 60 * 60;
-      case "d":
-        return num * 24 * 60 * 60;
-      default:
-        return 0;
-    }
+    startTabLifecycleTimer(this.tabs);
   }
 
   // --- Tab Creation ---
@@ -394,6 +319,7 @@ export class TabService extends TypedEventEmitter<TabServiceEvents> {
 
   /**
    * Activate a tab by finding its layout node and making it active.
+   * Wakes the tab if it is sleeping so the view is available.
    */
   private _activatingTabIds = new Set<number>();
 
@@ -410,6 +336,11 @@ export class TabService extends TypedEventEmitter<TabServiceEvents> {
 
     this._activatingTabIds.add(tab.id);
     try {
+      // Wake sleeping tabs so the view exists for display
+      if (tab.asleep) {
+        tab.wakeUp();
+      }
+
       // For multi-tab nodes (glance), set front tab
       if (node.mode === "glance") {
         node.setFrontTab(tab);
@@ -424,6 +355,14 @@ export class TabService extends TypedEventEmitter<TabServiceEvents> {
       // Update view visibility and bounds
       this.updateTabVisibility(windowId, tab.spaceId);
       this.handlePageBoundsChanged(windowId);
+
+      // Record browsing history on activation (deduped)
+      tab.recordBrowsingHistoryOnActivationIfNeeded();
+
+      // Notify extensions of the active tab change
+      if (tab.webContents && !tab.webContents.isDestroyed()) {
+        tab.loadedProfile.extensions.selectTab(tab.webContents);
+      }
 
       // Focus the tab's layer through the LayerManager — but only if the
       // window is currently focused. Calling webContents.focus() on a
@@ -440,17 +379,6 @@ export class TabService extends TypedEventEmitter<TabServiceEvents> {
     } finally {
       this._activatingTabIds.delete(tab.id);
     }
-  }
-
-  /**
-   * Wake a sleeping tab and activate it. Use this for explicit user interactions
-   * (clicking a tab in the sidebar, switch-to-tab IPC, etc).
-   */
-  public wakeAndActivateTab(tab: Tab): void {
-    if (tab.asleep) {
-      tab.wakeUp();
-    }
-    this.activateTab(tab);
   }
 
   /**
@@ -571,7 +499,7 @@ export class TabService extends TypedEventEmitter<TabServiceEvents> {
 
     // Activate the first tab
     if (tabs.length > 0) {
-      this.wakeAndActivateTab(tabs[0]);
+      this.activateTab(tabs[0]);
     }
   }
 
@@ -599,7 +527,7 @@ export class TabService extends TypedEventEmitter<TabServiceEvents> {
 
     this.wirePinnedTabEvents(pinnedTab);
     this.normalizePinnedTabPositions(tab.profileId);
-    this.savePinnedTab(pinnedTab);
+    this.pinnedTabDb.save(pinnedTab);
     this.emit("pinned-tab-changed");
     this.emitStructuralChange(tab.getWindow().id);
 
@@ -624,7 +552,7 @@ export class TabService extends TypedEventEmitter<TabServiceEvents> {
     }
 
     this.pinnedTabs.delete(pinnedTabId);
-    this.deletePinnedTabFromDb(pinnedTabId);
+    this.pinnedTabDb.delete(pinnedTabId);
     pinnedTab.destroy();
 
     this.emit("pinned-tab-changed");
@@ -654,7 +582,7 @@ export class TabService extends TypedEventEmitter<TabServiceEvents> {
             tab.setWindow(window);
           }
         }
-        this.wakeAndActivateTab(tab);
+        this.activateTab(tab);
         return true;
       }
       // Stale association — clear it
@@ -696,7 +624,7 @@ export class TabService extends TypedEventEmitter<TabServiceEvents> {
             tab.setWindow(window);
           }
         }
-        this.wakeAndActivateTab(tab);
+        this.activateTab(tab);
         return true;
       }
     }
@@ -723,7 +651,7 @@ export class TabService extends TypedEventEmitter<TabServiceEvents> {
     }
 
     this.pinnedTabs.delete(pinnedTabId);
-    this.deletePinnedTabFromDb(pinnedTabId);
+    this.pinnedTabDb.delete(pinnedTabId);
     pinnedTab.destroy();
 
     this.emit("pinned-tab-changed");
@@ -818,7 +746,7 @@ export class TabService extends TypedEventEmitter<TabServiceEvents> {
       this.positioner.normalizePositions(this.getTabsInWindowSpace(windowId, sourceSpaceId));
     }
 
-    this.wakeAndActivateTab(tab);
+    this.activateTab(tab);
   }
 
   /**
@@ -891,6 +819,8 @@ export class TabService extends TypedEventEmitter<TabServiceEvents> {
     for (const tab of tabsInSpace) {
       const shouldBeVisible = activeNode !== undefined && activeNode.hasTab(tab.id);
       if (tab.visible !== shouldBeVisible) {
+        const wasVisible = tab.visible;
+
         // When a tab is being hidden, record the time so archive/sleep timers
         // measure from when the user actually stopped viewing it.
         if (!shouldBeVisible) {
@@ -901,8 +831,38 @@ export class TabService extends TypedEventEmitter<TabServiceEvents> {
         }
         tab.visible = shouldBeVisible;
         tab.layer?.setVisible(shouldBeVisible);
+
+        // PiP transitions on visibility change
+        if (wasVisible && !shouldBeVisible && tab.layer) {
+          // Tab became hidden — auto-enter PiP if playing video
+          const anyTabInPiP = Array.from(this.tabs.values()).some((t) => t.id !== tab.id && t.isPictureInPicture);
+          const isStillVisibleElsewhere = this.isTabVisibleInAnotherWindow(tab);
+          if (!anyTabInPiP && !isStillVisibleElsewhere) {
+            tab.enterPictureInPicture();
+          }
+        } else if (!wasVisible && shouldBeVisible && tab.isPictureInPicture) {
+          // Tab became visible — exit PiP
+          tab.exitPictureInPicture();
+        }
       }
     }
+  }
+
+  /**
+   * Returns true when the tab is visible (active) in a different browser window.
+   * Used to prevent auto-PiP for tabs that are still on-screen elsewhere (STAW).
+   */
+  private isTabVisibleInAnotherWindow(tab: Tab): boolean {
+    const tabWindowId = tab.getWindow().id;
+    for (const [windowId, layout] of this.layouts) {
+      if (windowId === tabWindowId) continue;
+      const window = browserWindowsController.getWindowById(windowId);
+      if (!window || window.destroyed || window.browserWindowType !== "normal") continue;
+      if (window.currentSpaceId !== tab.spaceId) continue;
+      const activeNode = layout.getActiveNode(tab.spaceId);
+      if (activeNode && activeNode.hasTab(tab.id)) return true;
+    }
+    return false;
   }
 
   // --- Window Space Management ---
@@ -924,6 +884,14 @@ export class TabService extends TypedEventEmitter<TabServiceEvents> {
           }
           tab.visible = false;
           tab.layer?.setVisible(false);
+
+          // Auto-PiP for hidden tabs with playing video
+          if (tab.layer) {
+            const anyTabInPiP = Array.from(this.tabs.values()).some((t) => t.id !== tab.id && t.isPictureInPicture);
+            if (!anyTabInPiP && !this.isTabVisibleInAnotherWindow(tab)) {
+              tab.enterPictureInPicture();
+            }
+          }
         }
       }
     }
@@ -958,7 +926,16 @@ export class TabService extends TypedEventEmitter<TabServiceEvents> {
         const tabIndex = activeNode.tabs.indexOf(tab);
         if (tabIndex >= 0) {
           bounds = this.computeNodeTabBounds(bounds, activeNode, tabIndex);
+
+          // Update z-index for glance mode (front tab = "tab", back tab = "tabBack")
+          if (activeNode.mode === "glance") {
+            const isFront = activeNode.frontTab === tab;
+            tab.setLayerType(isFront ? "tab" : "tabBack");
+          }
         }
+      } else {
+        // Single-tab node: ensure layer type is "tab" (reset from previous glance)
+        tab.setLayerType("tab");
       }
 
       tab.view.setBounds(bounds);
@@ -986,8 +963,22 @@ export class TabService extends TypedEventEmitter<TabServiceEvents> {
       };
     }
 
-    // Glance mode - only the front tab gets full bounds, others are hidden via visibility
-    return pageBounds;
+    // Glance mode: front tab at 85% centered, back tab at 95% centered
+    const isFront = node.frontTab === node.tabs[tabIndex];
+    const widthPct = isFront ? 0.85 : 0.95;
+    const heightPct = isFront ? 1 : 0.975;
+
+    const newWidth = Math.floor(pageBounds.width * widthPct);
+    const newHeight = Math.floor(pageBounds.height * heightPct);
+    const xOffset = Math.floor((pageBounds.width - newWidth) / 2);
+    const yOffset = Math.floor((pageBounds.height - newHeight) / 2);
+
+    return {
+      x: pageBounds.x + xOffset,
+      y: pageBounds.y + yOffset,
+      width: newWidth,
+      height: newHeight
+    };
   }
 
   // --- Event Helpers ---
@@ -1144,7 +1135,7 @@ export class TabService extends TypedEventEmitter<TabServiceEvents> {
       .sort((a, b) => b.lastActiveAt - a.lastActiveAt);
     const bestTab = spaceTabs[0] ?? tabsInWindow.sort((a, b) => b.lastActiveAt - a.lastActiveAt)[0];
     if (bestTab) {
-      this.wakeAndActivateTab(bestTab);
+      this.activateTab(bestTab);
     }
   }
 
@@ -1200,7 +1191,7 @@ export class TabService extends TypedEventEmitter<TabServiceEvents> {
       this.emit("pinned-tab-changed");
     });
     pinnedTab.on("updated", () => {
-      this.savePinnedTab(pinnedTab);
+      this.pinnedTabDb.save(pinnedTab);
       this.emit("pinned-tab-changed");
     });
   }
@@ -1297,143 +1288,11 @@ export class TabService extends TypedEventEmitter<TabServiceEvents> {
   // --- Context Menus ---
 
   public showContextMenu(tabId: number, window: BrowserWindow): void {
-    const tab = this.tabs.get(tabId);
-    if (!tab) return;
-
-    const isTabVisible = tab.visible;
-    const hasURL = !!tab.url;
-
-    const contextMenu = new Menu();
-
-    const isPinned = tab.owner.kind === "pinned";
-
-    contextMenu.append(
-      new MenuItem({
-        label: "Copy URL",
-        enabled: hasURL,
-        click: () => {
-          if (tab.url) clipboard.writeText(tab.url);
-        }
-      })
-    );
-
-    contextMenu.append(new MenuItem({ type: "separator" }));
-
-    contextMenu.append(
-      new MenuItem({
-        label: isPinned ? "Unpin Tab" : "Pin Tab",
-        enabled: hasURL,
-        click: () => {
-          if (tab.owner.kind === "pinned") {
-            this.unpinToTabList(tab.owner.pinnedTabId);
-          } else {
-            this.createPinnedTabFromTab(tabId);
-          }
-        }
-      })
-    );
-
-    contextMenu.append(new MenuItem({ type: "separator" }));
-
-    contextMenu.append(
-      new MenuItem({
-        label: isTabVisible ? "Cannot put active tab to sleep" : tab.asleep ? "Wake Tab" : "Put Tab to Sleep",
-        enabled: !isTabVisible,
-        click: () => {
-          if (tab.asleep) {
-            this.wakeAndActivateTab(tab);
-          } else {
-            tab.putToSleep();
-          }
-        }
-      })
-    );
-
-    contextMenu.append(
-      new MenuItem({
-        label: "Close Tab",
-        click: () => {
-          tab.destroy();
-        }
-      })
-    );
-
-    contextMenu.append(new MenuItem({ type: "separator" }));
-
-    const mostRecent = this.recentlyClosed.peekMostRecent();
-    const mostRecentTitle = mostRecent?.tabData.title;
-    const truncatedTitle =
-      mostRecentTitle && mostRecentTitle.length > 35
-        ? mostRecentTitle.slice(0, 35).trim() + "..."
-        : mostRecentTitle?.trim();
-
-    contextMenu.append(
-      new MenuItem({
-        label: truncatedTitle ? `Reopen Closed Tab (${truncatedTitle})` : "Reopen Closed Tab",
-        enabled: this.recentlyClosed.hasEntries(),
-        click: () => {
-          if (mostRecent) {
-            this.restoreRecentlyClosed(mostRecent.tabData.uniqueId, window).catch((error) => {
-              console.error("Failed to restore recently closed tab:", error);
-            });
-          }
-        }
-      })
-    );
-
-    contextMenu.popup({ window: window.browserWindow });
+    showTabContextMenu(this, tabId, window);
   }
 
   public showPinnedTabContextMenu(pinnedTabId: string, window: BrowserWindow): void {
-    const pinnedTab = this.pinnedTabs.get(pinnedTabId);
-    if (!pinnedTab) return;
-
-    const contextMenu = new Menu();
-
-    contextMenu.append(
-      new MenuItem({
-        label: "Unpin",
-        click: () => {
-          const removedTabIds = this.removePinnedTab(pinnedTabId);
-          for (const removedTabId of removedTabIds) {
-            const tab = this.tabs.get(removedTabId);
-            if (tab && !tab.isDestroyed) {
-              tab.destroy();
-            }
-          }
-        }
-      })
-    );
-
-    contextMenu.append(new MenuItem({ type: "separator" }));
-
-    const currentSpaceId = window.currentSpaceId;
-    const associatedTabId = currentSpaceId ? pinnedTab.getAssociatedTabId(currentSpaceId) : null;
-    const associatedTab = associatedTabId !== null ? this.tabs.get(associatedTabId) : undefined;
-    const isOnDifferentUrl = associatedTab && associatedTab.url !== pinnedTab.defaultUrl;
-
-    contextMenu.append(
-      new MenuItem({
-        label: "Reset to Default",
-        enabled: !!isOnDifferentUrl,
-        click: () => {
-          if (associatedTab && !associatedTab.isDestroyed) {
-            associatedTab.loadURL(pinnedTab.defaultUrl);
-          }
-        }
-      })
-    );
-
-    contextMenu.append(
-      new MenuItem({
-        label: "Copy URL",
-        click: () => {
-          clipboard.writeText(pinnedTab.defaultUrl);
-        }
-      })
-    );
-
-    contextMenu.popup({ window: window.browserWindow });
+    showPinnedTabContextMenu(this, pinnedTabId, window);
   }
 
   // --- Serialization ---

@@ -4,7 +4,7 @@ import { NavigationEntry, Session, WebContents, WebContentsView, WebPreferences 
 import { Layer } from "@/controllers/windows-controller/layer-manager";
 import { BrowserWindow } from "@/controllers/windows-controller/types";
 import { LoadedProfile } from "@/controllers/loaded-profiles-controller";
-import { createModalTo, focusPriorities, zIndexes } from "~/layers";
+import { createModalTo, focusPriorities, LayerType, zIndexes } from "~/layers";
 import { TabOwnerRef } from "~/types/tab-service";
 import { cacheFavicon } from "@/modules/favicons";
 import {
@@ -156,6 +156,9 @@ export class Tab extends TypedEventEmitter<TabEvents> {
   // Coalescing
   private _updatePending: boolean = false;
 
+  // Fullscreen cleanup
+  private _disconnectLeaveFullScreen: (() => void) | null = null;
+
   // View & content objects (nullable when asleep)
   public view: WebContentsView | null = null;
   public webContents: WebContents | null = null;
@@ -275,9 +278,32 @@ export class Tab extends TypedEventEmitter<TabEvents> {
       window.layerManager?.push(this.layer);
     }
 
+    // Re-attach fullscreen listener to new window
+    if (this.view) {
+      this.setupWindowFullScreenListener();
+    }
+
     if (oldWindowId !== undefined) {
       this.emit("window-changed", oldWindowId);
     }
+  }
+
+  /**
+   * Change the layer type (z-index) of this tab's layer.
+   * Used for glance mode: front tab = "tab" (z10), back tab = "tabBack" (z9).
+   */
+  public setLayerType(layerType: LayerType): void {
+    if (!this.view || !this.layer || !this.window) return;
+    if (this.layer.zIndex === zIndexes[layerType]) return;
+
+    const lm = this.window.layerManager;
+    if (!lm) return;
+
+    const wasVisible = this.layer.isVisible();
+    lm.pop(this.layer);
+    this.layer = new Layer(lm, this.view, zIndexes[layerType], focusPriorities[layerType], createModalTo(layerType));
+    lm.push(this.layer);
+    this.layer.setVisible(wasVisible);
   }
 
   // --- Space Management ---
@@ -300,6 +326,7 @@ export class Tab extends TypedEventEmitter<TabEvents> {
     this.window.layerManager.push(this.layer);
 
     this.setupWebContentsListeners();
+    this.setupWindowFullScreenListener();
 
     // Setup web page context menu (right-click on page content)
     createWebContextMenu(this, this.window);
@@ -311,6 +338,12 @@ export class Tab extends TypedEventEmitter<TabEvents> {
 
   public teardownView(): void {
     if (!this.view) return;
+
+    // Disconnect window fullscreen listener
+    if (this._disconnectLeaveFullScreen) {
+      this._disconnectLeaveFullScreen();
+      this._disconnectLeaveFullScreen = null;
+    }
 
     // Unregister from extensions
     if (this.webContents) {
@@ -376,7 +409,9 @@ export class Tab extends TypedEventEmitter<TabEvents> {
     if (!this.webContents || this.webContents.isDestroyed()) return false;
 
     const enterPiP = async function () {
-      const videos = document.querySelectorAll("video");
+      const videos = Array.from(document.querySelectorAll("video")).filter(
+        (video) => !video.paused && !video.ended && video.readyState > 2
+      );
       if (videos.length > 0 && document.pictureInPictureElement !== videos[0]) {
         try {
           const video = videos[0];
@@ -453,12 +488,53 @@ export class Tab extends TypedEventEmitter<TabEvents> {
       if (electronWindow.fullScreen) {
         electronWindow.setFullScreen(false);
       }
-      // Force Chromium to exit fullscreen mode and recognize the viewport change
+
+      // Nudge the view bounds by 1px to force Chromium to recognize the
+      // viewport change, which is needed to properly exit HTML fullscreen.
+      const view = this.view;
+      if (view) {
+        setTimeout(() => {
+          if (this.view !== view || !this.visible) return;
+
+          const bounds = view.getBounds();
+          const nudged = { ...bounds, width: bounds.width - 1 };
+          view.setBounds(nudged);
+
+          setTimeout(() => {
+            if (this.view !== view || !this.visible) return;
+            const current = view.getBounds();
+            if (current.width !== nudged.width || current.height !== nudged.height) return;
+            if (current.x !== nudged.x || current.y !== nudged.y) return;
+            view.setBounds(bounds);
+          }, 50);
+        }, 800);
+      }
+
       if (this.webContents && !this.webContents.isDestroyed()) {
         this.webContents.executeJavaScript(`if (document.fullscreenElement) { document.exitFullscreen(); }`, true);
       }
     }
     this.emit("fullscreen-changed", isFullScreen);
+  }
+
+  /**
+   * Listens for the OS window exiting fullscreen and syncs tab state accordingly.
+   * Idempotent: disconnects any previous listener before registering.
+   */
+  private setupWindowFullScreenListener(): void {
+    if (this._disconnectLeaveFullScreen) {
+      this._disconnectLeaveFullScreen();
+      this._disconnectLeaveFullScreen = null;
+    }
+
+    const window = this.window;
+    if (!window || window.destroyed) return;
+
+    const disconnect = window.connect("leave-full-screen", () => {
+      this.setFullScreen(false);
+    });
+
+    this._disconnectLeaveFullScreen = disconnect;
   }
 
   // --- State Updates ---
@@ -618,6 +694,14 @@ export class Tab extends TypedEventEmitter<TabEvents> {
   public destroy(): void {
     if (this.isDestroyed) return;
     this.isDestroyed = true;
+
+    // Exit OS fullscreen if this tab is currently fullscreen
+    if (this.fullScreen) {
+      const window = this.window;
+      if (window && !window.destroyed) {
+        window.browserWindow.setFullScreen(false);
+      }
+    }
 
     this.teardownView();
     this.emit("destroyed");
