@@ -934,6 +934,12 @@ export class TabService extends TypedEventEmitter<TabServiceEvents> {
       layout = new TabLayout(windowId, spaceId, this.positioner);
       this.layouts.set(key, layout);
 
+      // Set visibility based on whether this space is currently active
+      const window = browserWindowsController.getWindowById(windowId);
+      if (window && window.currentSpaceId === spaceId) {
+        layout.setVisible(true);
+      }
+
       // Forward events
       layout.on("active-changed", (wId, sId) => {
         this.updateTabVisibility(wId, sId);
@@ -1075,24 +1081,28 @@ export class TabService extends TypedEventEmitter<TabServiceEvents> {
     const window = browserWindowsController.getWindowById(windowId);
     if (!window) return;
 
-    // Update visibility for old space (hide tabs) and new space (show tabs)
+    // Toggle layout visibility: hide old space layout, show new space layout
     if (oldSpaceId && oldSpaceId !== spaceId) {
-      // Hide tabs in old space
-      const oldTabs = this.getTabsInWindowSpace(windowId, oldSpaceId);
-      for (const tab of oldTabs) {
-        if (tab.visible) {
-          tab.lastActiveAt = Math.floor(Date.now() / 1000);
-          if (tab.fullScreen) {
-            tab.setFullScreen(false);
-          }
-          tab.visible = false;
-          tab.layer?.setVisible(false);
+      const oldLayout = this.getLayout(windowId, oldSpaceId);
+      if (oldLayout) {
+        oldLayout.setVisible(false);
+        // Hide all visible tabs in old layout
+        const oldTabs = this.getTabsInWindowSpace(windowId, oldSpaceId);
+        for (const tab of oldTabs) {
+          if (tab.visible) {
+            tab.lastActiveAt = Math.floor(Date.now() / 1000);
+            if (tab.fullScreen) {
+              tab.setFullScreen(false);
+            }
+            tab.visible = false;
+            tab.layer?.setVisible(false);
 
-          // Auto-PiP for hidden tabs with playing video
-          if (tab.layer) {
-            const anyTabInPiP = Array.from(this.tabs.values()).some((t) => t.id !== tab.id && t.isPictureInPicture);
-            if (!anyTabInPiP && !this.isTabVisibleInAnotherWindow(tab)) {
-              tab.enterPictureInPicture();
+            // Auto-PiP for hidden tabs with playing video
+            if (tab.layer) {
+              const anyTabInPiP = Array.from(this.tabs.values()).some((t) => t.id !== tab.id && t.isPictureInPicture);
+              if (!anyTabInPiP && !this.isTabVisibleInAnotherWindow(tab)) {
+                tab.enterPictureInPicture();
+              }
             }
           }
         }
@@ -1119,6 +1129,11 @@ export class TabService extends TypedEventEmitter<TabServiceEvents> {
         this.activateTab(sorted[0]);
         return;
       }
+    }
+
+    // Mark new layout as visible
+    if (layout) {
+      layout.setVisible(true);
     }
 
     this.updateTabVisibility(windowId, spaceId);

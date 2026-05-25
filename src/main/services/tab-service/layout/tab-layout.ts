@@ -32,7 +32,6 @@ export class TabLayout extends TypedEventEmitter<TabLayoutEvents> {
   public readonly spaceId: string;
   public readonly positioner: TabPositioner;
   public isDestroyed: boolean = false;
-  public visible: boolean = false;
 
   // Active layout node for this layout
   private activeNode: TabLayoutNode | null = null;
@@ -47,11 +46,25 @@ export class TabLayout extends TypedEventEmitter<TabLayoutEvents> {
 
   private layoutNodeCounter: number = 0;
 
+  /** Whether this layout is currently visible (its space is active in the window). */
+  public visible: boolean = false;
+
   constructor(windowId: number, spaceId: string, positioner: TabPositioner) {
     super();
     this.windowId = windowId;
     this.spaceId = spaceId;
     this.positioner = positioner;
+  }
+
+  /**
+   * Set layout visibility. When hidden, all tabs in the active node are hidden.
+   * When shown, tabs in the active node are made visible.
+   */
+  public setVisible(visible: boolean): void {
+    if (this.visible === visible) return;
+    this.visible = visible;
+    // Actual tab visibility is handled by updateTabVisibility in TabService
+    // which reads the layout's active node state.
   }
 
   // --- Layout Node Management ---
