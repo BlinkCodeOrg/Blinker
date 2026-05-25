@@ -974,13 +974,23 @@ export class TabService extends TypedEventEmitter<TabServiceEvents> {
     for (const pinnedTab of this.pinnedTabs.values()) {
       const liveTab = this.findAssociatedTab(pinnedTab);
       if (!liveTab || liveTab.isDestroyed) continue;
-      if (liveTab.spaceId === spaceId) continue; // already in target space
-      if (liveTab.getWindow().id !== windowId) continue; // belongs to another window
-      // Move the pinned tab's live tab to the new space
-      const oldSpaceForTab = liveTab.spaceId;
-      pinnedTab.dissociate(oldSpaceForTab);
-      pinnedTab.associate(spaceId, liveTab.id);
-      this.moveTabToSpace(liveTab.id, spaceId);
+      if (liveTab.spaceId === spaceId && liveTab.getWindow().id === windowId) continue;
+
+      // Move to this window if needed
+      if (liveTab.getWindow().id !== windowId) {
+        this.migrateTabBetweenLayouts(liveTab, windowId);
+        liveTab.setWindow(window);
+      }
+
+      // Move to the target space if needed
+      if (liveTab.spaceId !== spaceId) {
+        const oldSpaceForTab = liveTab.spaceId;
+        pinnedTab.dissociate(oldSpaceForTab);
+        pinnedTab.associate(spaceId, liveTab.id);
+        this.moveTabToSpace(liveTab.id, spaceId);
+      } else {
+        this.activateTab(liveTab);
+      }
     }
 
     const layout = this.layouts.get(windowId);
