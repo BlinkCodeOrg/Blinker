@@ -1286,6 +1286,8 @@ export class TabService extends TypedEventEmitter<TabServiceEvents> {
       this.removeFromIndex(this.spaceIndex, oldSpaceId, tab);
       this.addToIndex(this.spaceIndex, tab.spaceId, tab);
 
+      // Content change invalidates the serialization cache (spaceId changed)
+      this.emitContentChange(tab.getWindow().id, tab.id);
       this.emitStructuralChange(tab.getWindow().id);
     });
 
