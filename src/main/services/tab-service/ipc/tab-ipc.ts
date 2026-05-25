@@ -188,11 +188,8 @@ export class TabIPC {
       if (requestingWindow && tab.getWindow().id !== requestingWindow.id) {
         if (this.tabService.moveTabToWindowHook) {
           await this.tabService.moveTabToWindowHook(tab, requestingWindow);
-        } else if (tab.owner.kind === "pinned") {
-          // Pinned tab nodes exist in all layouts — just move the view
-          tab.setWindow(requestingWindow);
         } else {
-          this.tabService.migrateTabBetweenLayouts(tab, requestingWindow.id);
+          this.tabService.ensureNodeInLayout(tab, requestingWindow.id);
           tab.setWindow(requestingWindow);
         }
       }

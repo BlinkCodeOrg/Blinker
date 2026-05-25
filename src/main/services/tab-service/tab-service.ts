@@ -405,31 +405,30 @@ export class TabService extends TypedEventEmitter<TabServiceEvents> {
   }
 
   /**
-   * Migrate a tab's layout node from its current window to a new window.
-   * Must be called BEFORE `tab.setWindow(newWindow)` so the old layout is still accessible.
+   * Ensure a tab's node exists in the target window's layout (for STAW cross-window moves).
+   * With multi-layout membership, nodes are never destroyed during cross-window moves.
+   * Instead, the node is registered in the target layout (if not already) and the
+   * activeLayout is updated so the real content renders there.
    */
-  public migrateTabBetweenLayouts(tab: Tab, toWindowId: number): void {
+  public ensureNodeInLayout(tab: Tab, toWindowId: number): void {
     const fromWindowId = tab.getWindow().id;
     if (fromWindowId === toWindowId) return;
 
-    const fromLayout = this.getLayout(fromWindowId, tab.spaceId);
-    const toLayout = this.getOrCreateLayout(toWindowId, tab.spaceId);
+    const spaceId = tab.spaceId;
+    const fromLayout = this.getLayout(fromWindowId, spaceId);
+    const toLayout = this.getOrCreateLayout(toWindowId, spaceId);
 
-    // Remove from old layout
-    if (fromLayout) {
-      const node = fromLayout.getNodeForTab(tab.id);
-      if (node && node.mode === "single") {
-        fromLayout.destroyNode(node.id);
-      } else if (node) {
-        node.removeTab(tab);
+    const node = fromLayout?.getNodeForTab(tab.id);
+    if (node) {
+      // Register in target layout if not already there
+      if (!toLayout.getNode(node.id)) {
+        toLayout.addExistingNode(node);
       }
-      // Note: we intentionally keep the focusedTab in the old layout.
-      // It serves as the window's "memory" of what tab it was viewing, so the
-      // focus handler can pull it back when that window regains focus.
+      node.setActiveLayout(toLayout);
+    } else {
+      // Node doesn't exist in source — create fresh in target
+      toLayout.createSingleNode(tab);
     }
-
-    // Create a new single node in the target layout
-    toLayout.createSingleNode(tab);
   }
 
   /**

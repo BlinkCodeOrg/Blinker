@@ -217,26 +217,13 @@ async function moveTabToWindowIfNeeded(tab: Tab, window: BrowserWindow, isStale?
       sendPlaceholderToRenderer(oldWindow, oldWindow.currentSpaceId ?? tab.spaceId, tab.id, screenshot);
     }
 
-    // Pinned tab nodes are already in all profile layouts — never migrate them.
-    // Just move the view and update activeLayout.
-    if (tab.owner.kind === "pinned") {
-      prepareTabForWindowTransfer(tab);
-      tab.setWindow(window);
-      const targetLayout = tabService.getLayout(window.id, window.currentSpaceId!);
-      if (targetLayout) {
-        const node = targetLayout.getNodeForTab(tab.id);
-        if (node) {
-          node.setActiveLayout(targetLayout);
-        }
-      }
-    } else {
-      // Migrate the layout node BEFORE calling setWindow (so old layout is still accessible)
-      tabService.migrateTabBetweenLayouts(tab, window.id);
+    // Ensure the node exists in the target layout before moving the view.
+    // With multi-layout membership, nodes stay in both layouts (source shows
+    // placeholder, target shows real content via activeLayout).
+    tabService.ensureNodeInLayout(tab, window.id);
 
-      // Move the tab to the new window (emits "window-changed" which triggers structural updates)
-      prepareTabForWindowTransfer(tab);
-      tab.setWindow(window);
-    }
+    prepareTabForWindowTransfer(tab);
+    tab.setWindow(window);
   }
 }
 
@@ -339,15 +326,9 @@ export function relocateTabsFromClosingWindow(closingWindow: BrowserWindow, tabs
 
   for (const [targetWindow, windowTabs] of relocatable) {
     for (const tab of windowTabs) {
-      if (tab.owner.kind === "pinned") {
-        // Pinned tab nodes exist in all layouts — just move the view
-        prepareTabForWindowTransfer(tab);
-        tab.setWindow(targetWindow);
-      } else {
-        tabService.migrateTabBetweenLayouts(tab, targetWindow.id);
-        prepareTabForWindowTransfer(tab);
-        tab.setWindow(targetWindow);
-      }
+      tabService.ensureNodeInLayout(tab, targetWindow.id);
+      prepareTabForWindowTransfer(tab);
+      tab.setWindow(targetWindow);
     }
   }
 
