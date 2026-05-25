@@ -90,7 +90,10 @@ export async function showTabContextMenu(tabService: TabService, tabId: number, 
       click: () => {
         if (tab.url) {
           const targetSpaceId = window.currentSpaceId ?? tab.spaceId;
-          void tabService.createTab(window.id, tab.profileId, targetSpaceId, undefined, { url: tab.url });
+          void tabService.createTab(window.id, tab.profileId, targetSpaceId, undefined, {
+            url: tab.url,
+            position: tab.position + 0.5
+          });
         }
       }
     })
