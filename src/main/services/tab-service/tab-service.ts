@@ -610,6 +610,7 @@ export class TabService extends TypedEventEmitter<TabServiceEvents> {
         pinnedTab.dissociate(oldSpaceId);
         this.moveTabToSpace(existingTab.id, spaceId);
         pinnedTab.associate(spaceId, existingTab.id);
+        this.reorderPinnedTabsInSpace(window.id, spaceId);
         return true;
       }
 
@@ -624,6 +625,7 @@ export class TabService extends TypedEventEmitter<TabServiceEvents> {
     });
 
     pinnedTab.associate(spaceId, tab.id);
+    this.reorderPinnedTabsInSpace(window.id, spaceId);
     this.activateTab(tab);
     return true;
   }
@@ -670,6 +672,7 @@ export class TabService extends TypedEventEmitter<TabServiceEvents> {
         pinnedTab.dissociate(oldSpaceId);
         this.moveTabToSpace(existingTab.id, spaceId);
         pinnedTab.associate(spaceId, existingTab.id);
+        this.reorderPinnedTabsInSpace(window.id, spaceId);
         return true;
       }
       this.activateTab(existingTab);
@@ -1005,6 +1008,8 @@ export class TabService extends TypedEventEmitter<TabServiceEvents> {
         this.activateTab(liveTab);
       }
     }
+
+    this.reorderPinnedTabsInSpace(windowId, spaceId);
 
     const layout = this.layouts.get(windowId);
 
@@ -1347,6 +1352,48 @@ export class TabService extends TypedEventEmitter<TabServiceEvents> {
       if (sorted[i].position !== i) {
         sorted[i].updatePosition(i);
       }
+    }
+  }
+
+  /**
+   * Reorder pinned-tab-owned tabs in a space so their layout positions
+   * match their pinned tab order. Call after creating or moving a pinned
+   * tab's associated tab to keep Ctrl+Tab navigation consistent.
+   */
+  private reorderPinnedTabsInSpace(windowId: number, spaceId: string): void {
+    const allTabs = this.getTabsInWindowSpace(windowId, spaceId);
+    const pinnedOwnedTabs: { tab: Tab; pinnedPosition: number }[] = [];
+    const normalTabs: Tab[] = [];
+
+    for (const tab of allTabs) {
+      if (tab.owner.kind === "pinned") {
+        const pinnedTab = this.pinnedTabs.get(tab.owner.pinnedTabId);
+        pinnedOwnedTabs.push({ tab, pinnedPosition: pinnedTab?.position ?? 0 });
+      } else {
+        normalTabs.push(tab);
+      }
+    }
+
+    if (pinnedOwnedTabs.length === 0) return;
+
+    // Sort pinned-owned tabs by their pinned tab's position
+    pinnedOwnedTabs.sort((a, b) => a.pinnedPosition - b.pinnedPosition);
+
+    // Assign positions: pinned tabs first (in order), then normal tabs
+    let pos = 0;
+    for (const { tab } of pinnedOwnedTabs) {
+      if (tab.position !== pos) {
+        tab.updateStateProperty("position", pos);
+      }
+      pos++;
+    }
+
+    normalTabs.sort((a, b) => a.position - b.position);
+    for (const tab of normalTabs) {
+      if (tab.position !== pos) {
+        tab.updateStateProperty("position", pos);
+      }
+      pos++;
     }
   }
 
