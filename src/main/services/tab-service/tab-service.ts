@@ -65,6 +65,10 @@ export class TabService extends TypedEventEmitter<TabServiceEvents> {
   // Shared positioner
   public readonly positioner: TabPositioner = new TabPositioner();
 
+  // --- Indexes for O(1) lookups ---
+  private readonly windowIndex: Map<number, Set<Tab>> = new Map();
+  private readonly spaceIndex: Map<string, Set<Tab>> = new Map();
+
   /**
    * Hook for tab-sync: moves a tab to another window with placeholder handling.
    * Set by initTabSync() to avoid circular dependency.
@@ -202,8 +206,10 @@ export class TabService extends TypedEventEmitter<TabServiceEvents> {
       ...options
     } as TabCreationOptions);
 
-    // Register tab
+    // Register tab and update indexes
     this.tabs.set(tab.id, tab);
+    this.addToIndex(this.windowIndex, tab.getWindow().id, tab);
+    this.addToIndex(this.spaceIndex, tab.spaceId, tab);
 
     // Get or create layout for this window
     const layout = this.getOrCreateLayout(windowId);
@@ -260,27 +266,26 @@ export class TabService extends TypedEventEmitter<TabServiceEvents> {
   }
 
   public getTabsInWindow(windowId: number): Tab[] {
-    const result: Tab[] = [];
-    for (const tab of this.tabs.values()) {
-      if (tab.getWindow().id === windowId) result.push(tab);
-    }
-    return result;
+    const set = this.windowIndex.get(windowId);
+    return set ? Array.from(set) : [];
   }
 
   public getTabsInSpace(spaceId: string): Tab[] {
-    const result: Tab[] = [];
-    for (const tab of this.tabs.values()) {
-      if (tab.spaceId === spaceId) result.push(tab);
-    }
-    return result;
+    const set = this.spaceIndex.get(spaceId);
+    return set ? Array.from(set) : [];
   }
 
   public getTabsInWindowSpace(windowId: number, spaceId: string): Tab[] {
+    // Use the smaller index as the base for intersection
+    const windowSet = this.windowIndex.get(windowId);
+    const spaceSet = this.spaceIndex.get(spaceId);
+    if (!windowSet || !spaceSet) return [];
+
     const result: Tab[] = [];
-    for (const tab of this.tabs.values()) {
-      if (tab.getWindow().id === windowId && tab.spaceId === spaceId) {
-        result.push(tab);
-      }
+    const smaller = windowSet.size <= spaceSet.size ? windowSet : spaceSet;
+    const larger = smaller === windowSet ? spaceSet : windowSet;
+    for (const tab of smaller) {
+      if (larger.has(tab)) result.push(tab);
     }
     return result;
   }
@@ -1111,13 +1116,21 @@ export class TabService extends TypedEventEmitter<TabServiceEvents> {
       this.emitContentChange(tab.getWindow().id, tab.id);
     });
 
-    tab.on("space-changed", () => {
+    tab.on("space-changed", (oldSpaceId) => {
       if (quitController.isQuitting) return;
+      // Update space index
+      this.removeFromIndex(this.spaceIndex, oldSpaceId, tab);
+      this.addToIndex(this.spaceIndex, tab.spaceId, tab);
+
       this.emitStructuralChange(tab.getWindow().id);
     });
 
     tab.on("window-changed", (oldWindowId) => {
       if (quitController.isQuitting) return;
+      // Update window index
+      this.removeFromIndex(this.windowIndex, oldWindowId, tab);
+      this.addToIndex(this.windowIndex, tab.getWindow().id, tab);
+
       this.emitStructuralChange(tab.getWindow().id);
       if (oldWindowId !== tab.getWindow().id) {
         this.emitStructuralChange(oldWindowId);
@@ -1154,6 +1167,10 @@ export class TabService extends TypedEventEmitter<TabServiceEvents> {
     });
 
     tab.on("destroyed", () => {
+      // Always clean up indexes
+      this.removeFromIndex(this.windowIndex, tab.getWindow().id, tab);
+      this.removeFromIndex(this.spaceIndex, tab.spaceId, tab);
+
       if (quitController.isQuitting) {
         this.tabs.delete(tab.id);
         return;
@@ -1493,5 +1510,24 @@ export class TabService extends TypedEventEmitter<TabServiceEvents> {
       navHistoryIndex,
       owner: tab.owner
     };
+  }
+
+  // --- Index Helpers ---
+
+  private addToIndex<K>(index: Map<K, Set<Tab>>, key: K, tab: Tab): void {
+    let set = index.get(key);
+    if (!set) {
+      set = new Set();
+      index.set(key, set);
+    }
+    set.add(tab);
+  }
+
+  private removeFromIndex<K>(index: Map<K, Set<Tab>>, key: K, tab: Tab): void {
+    const set = index.get(key);
+    if (set) {
+      set.delete(tab);
+      if (set.size === 0) index.delete(key);
+    }
   }
 }

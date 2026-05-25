@@ -17,6 +17,7 @@ type TabLayoutNodeEvents = {
   "tab-added": [Tab];
   "tab-removed": [Tab];
   "front-tab-changed": [Tab | null];
+  "space-changed": [oldSpaceId: string];
   changed: [];
   destroyed: [];
 };
@@ -31,8 +32,11 @@ export class TabLayoutNode extends TypedEventEmitter<TabLayoutNodeEvents> {
   public spaceId: string;
 
   private _tabs: Tab[] = [];
+  private _tabIdSet: Set<number> = new Set();
   private _frontTab: Tab | null = null;
   private _destroyListeners: Map<number, () => void> = new Map();
+  private _cachedPosition: number = 0;
+  private _positionDirty: boolean = true;
 
   constructor(id: string, mode: TabLayoutNodeMode, initialTab: Tab, windowId: number) {
     super();
@@ -62,8 +66,15 @@ export class TabLayoutNode extends TypedEventEmitter<TabLayoutNodeEvents> {
 
   public get position(): number {
     if (this._tabs.length === 0) return 0;
-    // Position is the minimum position of all contained tabs
-    return Math.min(...this._tabs.map((t) => t.position));
+    if (this._positionDirty) {
+      this._cachedPosition = Math.min(...this._tabs.map((t) => t.position));
+      this._positionDirty = false;
+    }
+    return this._cachedPosition;
+  }
+
+  public invalidatePosition(): void {
+    this._positionDirty = true;
   }
 
   public get tabCount(): number {
@@ -73,7 +84,7 @@ export class TabLayoutNode extends TypedEventEmitter<TabLayoutNodeEvents> {
   // --- Tab Management ---
 
   public hasTab(tabId: number): boolean {
-    return this._tabs.some((t) => t.id === tabId);
+    return this._tabIdSet.has(tabId);
   }
 
   public getTab(tabId: number): Tab | undefined {
@@ -83,9 +94,11 @@ export class TabLayoutNode extends TypedEventEmitter<TabLayoutNodeEvents> {
   public addTab(tab: Tab): boolean {
     this.checkNotDestroyed();
 
-    if (this.hasTab(tab.id)) return false;
+    if (this._tabIdSet.has(tab.id)) return false;
 
     this._tabs.push(tab);
+    this._tabIdSet.add(tab.id);
+    this._positionDirty = true;
 
     // Set front tab for single-tab nodes
     if (this._tabs.length === 1) {
@@ -124,6 +137,8 @@ export class TabLayoutNode extends TypedEventEmitter<TabLayoutNodeEvents> {
     }
 
     this._tabs.splice(index, 1);
+    this._tabIdSet.delete(tab.id);
+    this._positionDirty = true;
 
     // Update front tab if needed
     if (this._frontTab?.id === tab.id) {
@@ -161,10 +176,12 @@ export class TabLayoutNode extends TypedEventEmitter<TabLayoutNodeEvents> {
     this.checkNotDestroyed();
     if (this.spaceId === spaceId) return;
 
+    const oldSpaceId = this.spaceId;
     this.spaceId = spaceId;
     for (const tab of this._tabs) {
       tab.setSpace(spaceId);
     }
+    this.emit("space-changed", oldSpaceId);
     this.emit("changed");
   }
 

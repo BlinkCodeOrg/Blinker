@@ -40,6 +40,10 @@ export class TabLayout extends TypedEventEmitter<TabLayoutEvents> {
   private activationHistory: Map<WindowSpaceKey, string[]> = new Map();
   // All layout nodes in this window
   private layoutNodes: Map<string, TabLayoutNode> = new Map();
+  // Index: tabId → node (for O(1) getNodeForTab)
+  private tabToNode: Map<number, TabLayoutNode> = new Map();
+  // Index: spaceId → Set<node> (for O(1) getNodesInSpace)
+  private spaceToNodes: Map<string, Set<TabLayoutNode>> = new Map();
 
   private layoutNodeCounter: number = 0;
 
@@ -87,11 +91,11 @@ export class TabLayout extends TypedEventEmitter<TabLayoutEvents> {
    * Get all layout nodes in a space.
    */
   public getNodesInSpace(spaceId: string): TabLayoutNode[] {
+    const set = this.spaceToNodes.get(spaceId);
+    if (!set) return [];
     const result: TabLayoutNode[] = [];
-    for (const node of this.layoutNodes.values()) {
-      if (node.spaceId === spaceId && !node.isDestroyed) {
-        result.push(node);
-      }
+    for (const node of set) {
+      if (!node.isDestroyed) result.push(node);
     }
     return result;
   }
@@ -100,17 +104,19 @@ export class TabLayout extends TypedEventEmitter<TabLayoutEvents> {
    * Find the layout node containing a specific tab.
    */
   public getNodeForTab(tabId: number): TabLayoutNode | undefined {
-    for (const node of this.layoutNodes.values()) {
-      if (node.hasTab(tabId)) return node;
-    }
-    return undefined;
+    return this.tabToNode.get(tabId);
   }
 
   /**
    * Get all layout nodes, sorted by position.
    */
   public getAllNodesSorted(spaceId: string): TabLayoutNode[] {
-    return this.getNodesInSpace(spaceId).sort((a, b) => a.position - b.position);
+    const nodes = this.getNodesInSpace(spaceId);
+    // Invalidate cached positions since tab positions may have changed
+    for (const node of nodes) {
+      node.invalidatePosition();
+    }
+    return nodes.sort((a, b) => a.position - b.position);
   }
 
   /**
@@ -278,6 +284,8 @@ export class TabLayout extends TypedEventEmitter<TabLayoutEvents> {
     this.activeNodeMap.clear();
     this.focusedTabMap.clear();
     this.activationHistory.clear();
+    this.tabToNode.clear();
+    this.spaceToNodes.clear();
 
     this.emit("destroyed");
     this.destroyEmitter();
@@ -296,13 +304,57 @@ export class TabLayout extends TypedEventEmitter<TabLayoutEvents> {
   private registerNode(node: TabLayoutNode): void {
     this.layoutNodes.set(node.id, node);
 
+    // Update indexes
+    for (const tab of node.tabs) {
+      this.tabToNode.set(tab.id, node);
+    }
+    this.addNodeToSpaceIndex(node);
+
+    // Listen for tab additions/removals to maintain indexes
+    node.on("tab-added", (tab) => {
+      this.tabToNode.set(tab.id, node);
+    });
+    node.on("tab-removed", (tab) => {
+      this.tabToNode.delete(tab.id);
+    });
+    node.on("space-changed", (oldSpaceId) => {
+      const oldSet = this.spaceToNodes.get(oldSpaceId);
+      if (oldSet) {
+        oldSet.delete(node);
+        if (oldSet.size === 0) this.spaceToNodes.delete(oldSpaceId);
+      }
+      this.addNodeToSpaceIndex(node);
+    });
+
     node.on("destroyed", () => {
       this.layoutNodes.delete(node.id);
       this.removeFromAllHistory(node.id);
+      // Clean up indexes
+      for (const tab of node.tabs) {
+        this.tabToNode.delete(tab.id);
+      }
+      this.removeNodeFromSpaceIndex(node);
       this.emit("layout-node-destroyed", node);
     });
 
     this.emit("layout-node-created", node);
+  }
+
+  private addNodeToSpaceIndex(node: TabLayoutNode): void {
+    let set = this.spaceToNodes.get(node.spaceId);
+    if (!set) {
+      set = new Set();
+      this.spaceToNodes.set(node.spaceId, set);
+    }
+    set.add(node);
+  }
+
+  private removeNodeFromSpaceIndex(node: TabLayoutNode): void {
+    const set = this.spaceToNodes.get(node.spaceId);
+    if (set) {
+      set.delete(node);
+      if (set.size === 0) this.spaceToNodes.delete(node.spaceId);
+    }
   }
 
   private removeFromAllHistory(nodeId: string): void {

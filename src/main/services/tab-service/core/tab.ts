@@ -36,7 +36,7 @@ type TabContentProperty = "title" | "url" | "isLoading" | "audible" | "muted" | 
 export type TabPublicProperty = TabStateProperty | TabContentProperty;
 
 export type TabEvents = {
-  "space-changed": [];
+  "space-changed": [oldSpaceId: string];
   "window-changed": [oldWindowId: number];
   "fullscreen-changed": [boolean];
   "target-url-changed": [url: string];
@@ -323,8 +323,9 @@ export class Tab extends TypedEventEmitter<TabEvents> {
 
   public setSpace(spaceId: string): void {
     if (this.spaceId === spaceId) return;
+    const oldSpaceId = this.spaceId;
     this.spaceId = spaceId;
-    this.emit("space-changed");
+    this.emit("space-changed", oldSpaceId);
   }
 
   // --- View Management ---

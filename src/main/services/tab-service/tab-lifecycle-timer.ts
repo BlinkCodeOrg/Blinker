@@ -41,29 +41,30 @@ export function startTabLifecycleTimer(tabs: Map<number, Tab>): void {
 
     const nowSec = Math.floor(Date.now() / 1000);
 
+    // Read settings once per tick (not per tab)
+    const archiveAfter = getSettingValueById("archiveTabAfter");
+    const archiveSec =
+      typeof archiveAfter === "string" && archiveAfter !== "never" ? parseDurationToSeconds(archiveAfter) : 0;
+
+    const sleepAfter = getSettingValueById("sleepTabAfter");
+    const sleepSec =
+      typeof sleepAfter === "string" && sleepAfter !== "never"
+        ? (SleepTabValueMap[sleepAfter as keyof typeof SleepTabValueMap] ?? 0)
+        : 0;
+
     for (const tab of tabs.values()) {
       if (tab.owner.kind !== "normal") continue;
       if (tab.visible) continue;
 
       // Auto-archive (destroy) tabs inactive too long
-      const archiveAfter = getSettingValueById("archiveTabAfter");
-      if (typeof archiveAfter === "string" && archiveAfter !== "never") {
-        const archiveSec = parseDurationToSeconds(archiveAfter);
-        if (archiveSec > 0 && nowSec - tab.lastActiveAt >= archiveSec) {
-          tab.destroy();
-          continue;
-        }
+      if (archiveSec > 0 && nowSec - tab.lastActiveAt >= archiveSec) {
+        tab.destroy();
+        continue;
       }
 
       // Auto-sleep tabs inactive past threshold
-      if (!tab.asleep) {
-        const sleepAfter = getSettingValueById("sleepTabAfter");
-        if (typeof sleepAfter === "string" && sleepAfter !== "never") {
-          const sleepSeconds = SleepTabValueMap[sleepAfter as keyof typeof SleepTabValueMap];
-          if (typeof sleepSeconds === "number" && nowSec - tab.lastActiveAt >= sleepSeconds) {
-            tab.putToSleep();
-          }
-        }
+      if (!tab.asleep && sleepSec > 0 && nowSec - tab.lastActiveAt >= sleepSec) {
+        tab.putToSleep();
       }
     }
   }, 10_000);
