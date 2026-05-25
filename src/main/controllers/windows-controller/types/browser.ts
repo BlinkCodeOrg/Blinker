@@ -386,10 +386,11 @@ export class BrowserWindow extends BaseWindow<BrowserWindowEvents> {
   public currentSpaceId: string | null = null;
 
   setCurrentSpace(spaceId: string) {
+    const oldSpaceId = this.currentSpaceId;
     this.currentSpaceId = spaceId;
     this.emit("current-space-changed", spaceId);
     appMenuController.render();
-    tabService.setCurrentWindowSpace(this.id, spaceId);
+    tabService.setCurrentWindowSpace(this.id, spaceId, oldSpaceId);
   }
 
   // Override Destroy Method to Cleanup Window //
