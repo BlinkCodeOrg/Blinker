@@ -86,14 +86,19 @@ export class PinnedTab extends TypedEventEmitter<PinnedTabEvents> {
   }
 
   public dissociateByTabId(tabId: number): boolean {
+    let changed = false;
+
     for (const [spaceId, associatedTabId] of this._associations) {
       if (associatedTabId === tabId) {
         this._associations.delete(spaceId);
-        this.emit("association-changed");
-        return true;
+        changed = true;
       }
     }
-    return false;
+
+    if (changed) {
+      this.emit("association-changed");
+    }
+    return changed;
   }
 
   public hasAssociation(tabId: number): boolean {

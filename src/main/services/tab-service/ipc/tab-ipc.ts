@@ -321,8 +321,10 @@ export class TabIPC {
       return true;
     });
 
-    ipcMain.handle("tab-service:pinned-tabs-unpin", async (_event, pinnedTabId: string) => {
-      return this.tabService.unpinToTabList(pinnedTabId);
+    ipcMain.handle("tab-service:pinned-tabs-unpin", async (event, pinnedTabId: string, position?: number) => {
+      const webContents = event.sender;
+      const window = browserWindowsController.getWindowFromWebContents(webContents);
+      return this.tabService.unpinToTabList(pinnedTabId, window ?? undefined, position);
     });
 
     ipcMain.handle("tab-service:pinned-tabs-reorder", async (_event, pinnedTabId: string, newPosition: number) => {

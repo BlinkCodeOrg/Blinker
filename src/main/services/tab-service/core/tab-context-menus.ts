@@ -147,7 +147,7 @@ export async function showTabContextMenu(tabService: TabService, tabId: number, 
       enabled: hasURL,
       click: () => {
         if (tab.owner.kind === "pinned") {
-          tabService.unpinToTabList(tab.owner.pinnedTabId);
+          void tabService.unpinToTabList(tab.owner.pinnedTabId, window, tab.position);
         } else {
           tabService.createPinnedTabFromTab(tabId);
         }
@@ -218,7 +218,7 @@ export async function showPinnedTabContextMenu(
     new MenuItem({
       label: "Unpin Tab",
       click: () => {
-        tabService.unpinToTabList(pinnedTabId);
+        void tabService.unpinToTabList(pinnedTabId, window);
       }
     })
   );

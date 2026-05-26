@@ -98,7 +98,8 @@ export function createTabServicePreloadAPI(ipcRenderer: IpcRenderer, listenOnIPC
 
     removePinnedTab: (pinnedTabId: string) => ipcRenderer.invoke("tab-service:pinned-tabs-remove", pinnedTabId),
 
-    unpinToTabList: (pinnedTabId: string) => ipcRenderer.invoke("tab-service:pinned-tabs-unpin", pinnedTabId),
+    unpinToTabList: (pinnedTabId: string, position?: number) =>
+      ipcRenderer.invoke("tab-service:pinned-tabs-unpin", pinnedTabId, position),
 
     reorderPinnedTab: (pinnedTabId: string, newPosition: number) =>
       ipcRenderer.invoke("tab-service:pinned-tabs-reorder", pinnedTabId, newPosition),

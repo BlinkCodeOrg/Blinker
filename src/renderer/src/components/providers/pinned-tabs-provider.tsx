@@ -76,8 +76,8 @@ export const PinnedTabsProvider = ({ children }: PinnedTabsProviderProps) => {
     return flow.tabService.doubleClickPinnedTab(pinnedTabId);
   }, []);
 
-  const unpinToTabList = useCallback(async (pinnedTabId: string) => {
-    return flow.tabService.unpinToTabList(pinnedTabId);
+  const unpinToTabList = useCallback(async (pinnedTabId: string, position?: number) => {
+    return flow.tabService.unpinToTabList(pinnedTabId, position);
   }, []);
 
   const reorder = useCallback(async (pinnedTabId: string, newPosition: number) => {

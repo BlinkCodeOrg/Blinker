@@ -102,7 +102,7 @@ export interface FlowTabServiceAPI {
   removePinnedTab: (pinnedTabId: string) => Promise<boolean>;
 
   /** Unpin back to tab list. */
-  unpinToTabList: (pinnedTabId: string) => Promise<boolean>;
+  unpinToTabList: (pinnedTabId: string, position?: number) => Promise<boolean>;
 
   /** Reorder a pinned tab. */
   reorderPinnedTab: (pinnedTabId: string, newPosition: number) => Promise<boolean>;

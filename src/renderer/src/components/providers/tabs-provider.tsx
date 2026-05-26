@@ -191,9 +191,10 @@ export const TabsProvider = ({ children }: TabsProviderProps) => {
       // Find the node to get its tab IDs
       const node = tabsData.layoutNodes.find((n) => n.id === activeNodeId);
       if (node) return node.tabIds;
-      // For single nodes (not in layoutNodes), the node ID is the tab ID string
-      const tabId = parseInt(activeNodeId);
-      if (!isNaN(tabId)) return [tabId];
+      // Single nodes are not serialized in layoutNodes. Main still sends their
+      // real ln-* node IDs, so resolve active single tabs via the focused tab.
+      const focusedTabId = tabsData.focusedTabIds[spaceId];
+      if (focusedTabId !== undefined) return [focusedTabId];
       return null;
     },
     [tabsData]
@@ -234,6 +235,7 @@ export const TabsProvider = ({ children }: TabsProviderProps) => {
       for (const [spaceId, nodeId] of Object.entries(tabsData.activeLayoutNodeIds)) {
         activeNodeBySpace.set(spaceId, nodeId);
       }
+      const serializedLayoutNodeIds = new Set(tabsData.layoutNodes.map((node) => node.id));
 
       for (const [spaceId, focusedTabId] of Object.entries(tabsData.focusedTabIds)) {
         focusedTabBySpaceId.set(spaceId, tabById.get(focusedTabId) ?? null);
@@ -309,10 +311,11 @@ export const TabsProvider = ({ children }: TabsProviderProps) => {
         if (activeNodeId) {
           if (nodeData.id === activeNodeId) {
             isActive = true;
-          } else if (nodeData.mode === "single") {
-            // Single-node ID format: check if active node references this tab
-            const activeTabId = parseInt(activeNodeId);
-            if (!isNaN(activeTabId) && nodeData.tabIds.includes(activeTabId)) {
+          } else if (nodeData.mode === "single" && !serializedLayoutNodeIds.has(activeNodeId)) {
+            // Main omits single nodes from layoutNodes but still reports their
+            // real ln-* IDs. The focused tab is the active single node's tab.
+            const focusedTabId = tabsData.focusedTabIds[nodeData.spaceId];
+            if (focusedTabId !== undefined && nodeData.tabIds.includes(focusedTabId)) {
               isActive = true;
             }
           }

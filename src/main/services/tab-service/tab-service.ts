@@ -551,7 +551,11 @@ export class TabService extends TypedEventEmitter<TabServiceEvents> {
       }
     }
 
-    return layout.createMultiNode(mode, tabs);
+    const node = layout.createMultiNode(mode, tabs);
+    if (node) {
+      this.emitStructuralChange(windowId);
+    }
+    return node;
   }
 
   /**
@@ -635,10 +639,10 @@ export class TabService extends TypedEventEmitter<TabServiceEvents> {
     const pinnedTab = this.pinnedTabs.get(pinnedTabId);
     if (!pinnedTab) return [];
 
-    const associatedTabIds: number[] = [];
+    const associatedTabIds = new Set<number>();
     const affectedWindowIds = new Set<number>();
-    for (const tabId of pinnedTab.associations.values()) {
-      associatedTabIds.push(tabId);
+    for (const tabId of new Set(pinnedTab.associations.values())) {
+      associatedTabIds.add(tabId);
       // Make associated tabs normal again
       const tab = this.tabs.get(tabId);
       if (tab) {
@@ -656,7 +660,7 @@ export class TabService extends TypedEventEmitter<TabServiceEvents> {
     for (const windowId of affectedWindowIds) {
       this.emitStructuralChange(windowId);
     }
-    return associatedTabIds;
+    return [...associatedTabIds];
   }
 
   /**
@@ -811,19 +815,59 @@ export class TabService extends TypedEventEmitter<TabServiceEvents> {
   /**
    * Unpin a tab back to the tab list.
    */
-  public unpinToTabList(pinnedTabId: string): boolean {
+  public async unpinToTabList(pinnedTabId: string, window?: BrowserWindow, position?: number): Promise<boolean> {
     const pinnedTab = this.pinnedTabs.get(pinnedTabId);
     if (!pinnedTab) return false;
 
     // Collect affected window IDs before destroying (which clears associations)
     const affectedWindowIds = new Set<number>();
-    for (const tabId of pinnedTab.associations.values()) {
+    let convertedTab: Tab | null = null;
+
+    const targetWindow = window && !window.destroyed ? window : browserWindowsController.getFocusedWindow();
+    const currentSpaceId = targetWindow?.currentSpaceId;
+    const currentSpaceTabId = currentSpaceId ? pinnedTab.getAssociatedTabId(currentSpaceId) : null;
+    if (currentSpaceTabId !== null) {
+      convertedTab = this.tabs.get(currentSpaceTabId) ?? null;
+    }
+
+    if (!convertedTab && targetWindow && currentSpaceId) {
+      const space = await spacesController.get(currentSpaceId);
+      if (space?.profileId === pinnedTab.profileId) {
+        convertedTab = await this.createTab(targetWindow.id, pinnedTab.profileId, currentSpaceId, undefined, {
+          url: pinnedTab.defaultUrl,
+          owner: { kind: "normal" },
+          position,
+          makeActive: true
+        });
+        affectedWindowIds.add(convertedTab.getWindow().id);
+        if (position !== undefined) {
+          this.positioner.normalizePositions(
+            this.getTabsInWindowSpace(convertedTab.getWindow().id, convertedTab.spaceId)
+          );
+        }
+      }
+    }
+
+    if (!convertedTab) {
+      convertedTab = this.findAssociatedTab(pinnedTab);
+    }
+    if (!convertedTab) return false;
+
+    for (const tabId of new Set(pinnedTab.associations.values())) {
       const tab = this.tabs.get(tabId);
       if (tab) {
         tab.owner = { kind: "normal" };
+        if (tab === convertedTab && position !== undefined) {
+          tab.updateStateProperty("position", position);
+          this.positioner.normalizePositions(this.getTabsInWindowSpace(tab.getWindow().id, tab.spaceId));
+        }
         affectedWindowIds.add(tab.getWindow().id);
         this.emitContentChange(tab.getWindow().id, tab.id);
       }
+    }
+
+    if (convertedTab && !pinnedTab.hasAssociation(convertedTab.id)) {
+      affectedWindowIds.add(convertedTab.getWindow().id);
     }
 
     this.pinnedTabs.delete(pinnedTabId);
@@ -897,11 +941,20 @@ export class TabService extends TypedEventEmitter<TabServiceEvents> {
     const tab = this.tabs.get(tabId);
     if (!tab) return;
 
-    tab.updateStateProperty("position", newPosition);
-    this.positioner.normalizePositions(this.getTabsInWindowSpace(tab.getWindow().id, tab.spaceId));
+    const windowId = tab.getWindow().id;
+    const spaceId = tab.spaceId;
+    const layout = this.getLayout(windowId, spaceId);
+    const needsLayoutRefresh = layout?.getNodes().some((node) => node.mode !== "single") ?? false;
+
+    const positionChanged = tab.updateStateProperty("position", newPosition);
+    this.positioner.normalizePositions(this.getTabsInWindowSpace(windowId, spaceId));
+
+    if (positionChanged && needsLayoutRefresh) {
+      this.emitStructuralChange(windowId);
+    }
 
     // Notify extensions that indices shifted after reorder
-    this.notifyIndexChanges(tab.getWindow().id, tab.profileId);
+    this.notifyIndexChanges(windowId, tab.profileId);
   }
 
   /**

@@ -51,6 +51,7 @@ export class TabPersistenceService {
   private dirtyTabs = new Map<string, PersistedTabData>();
   private removedTabs = new Set<string>();
   private dirtyWindowStates = new Map<string, PersistedWindowState>();
+  private layoutNodesDirty = false;
   private flushInterval: ReturnType<typeof setInterval> | null = null;
   private started = false;
 
@@ -78,6 +79,9 @@ export class TabPersistenceService {
       if (tab.owner.kind === "normal") {
         this.markRemoved(tab.uniqueId);
       }
+    });
+    this.tabService.on("structural-change", () => {
+      this.markLayoutNodesDirty();
     });
   }
 
@@ -113,10 +117,19 @@ export class TabPersistenceService {
     this.dirtyWindowStates.set(windowGroupId, state);
   }
 
+  public markLayoutNodesDirty(): void {
+    this.layoutNodesDirty = true;
+  }
+
   // --- Flush ---
 
   public async flush(): Promise<void> {
-    if (this.dirtyTabs.size === 0 && this.removedTabs.size === 0 && this.dirtyWindowStates.size === 0) {
+    if (
+      this.dirtyTabs.size === 0 &&
+      this.removedTabs.size === 0 &&
+      this.dirtyWindowStates.size === 0 &&
+      !this.layoutNodesDirty
+    ) {
       return;
     }
 
@@ -129,6 +142,8 @@ export class TabPersistenceService {
     this.removedTabs.clear();
     const windowSnapshot = new Map(this.dirtyWindowStates);
     this.dirtyWindowStates.clear();
+    const layoutNodesDirtySnapshot = this.layoutNodesDirty;
+    this.layoutNodesDirty = false;
 
     try {
       const db = getDb();
@@ -168,6 +183,25 @@ export class TabPersistenceService {
             })
             .run();
         }
+
+        if (layoutNodesDirtySnapshot) {
+          tx.delete(schema.tabGroups).run();
+
+          for (const node of this.getPersistableLayoutNodes()) {
+            const data = this.serializeLayoutNode(node);
+            tx.insert(schema.tabGroups)
+              .values({
+                groupId: data.id,
+                mode: data.mode,
+                profileId: data.profileId,
+                spaceId: data.spaceId,
+                tabUniqueIds: data.tabUniqueIds,
+                glanceFrontTabUniqueId: data.frontTabUniqueId ?? null,
+                position: data.position
+              })
+              .run();
+          }
+        }
       });
     } catch (err) {
       // Re-queue entries that haven't been superseded by newer mutations
@@ -185,6 +219,9 @@ export class TabPersistenceService {
         if (!this.dirtyWindowStates.has(windowGroupId)) {
           this.dirtyWindowStates.set(windowGroupId, state);
         }
+      }
+      if (layoutNodesDirtySnapshot) {
+        this.layoutNodesDirty = true;
       }
       throw err;
     }
@@ -286,6 +323,19 @@ export class TabPersistenceService {
   }
 
   // --- Private ---
+
+  private getPersistableLayoutNodes(): TabLayoutNode[] {
+    const nodes = new Map<string, TabLayoutNode>();
+    for (const layout of this.tabService.layouts.values()) {
+      for (const node of layout.getNodes()) {
+        if (node.mode === "single") continue;
+        if (node.isDestroyed || node.tabCount < 2) continue;
+        if (!node.tabs.every((tab) => tab.owner.kind === "normal")) continue;
+        nodes.set(node.id, node);
+      }
+    }
+    return [...nodes.values()];
+  }
 
   private persistedDataToInsert(data: PersistedTabData) {
     return {
