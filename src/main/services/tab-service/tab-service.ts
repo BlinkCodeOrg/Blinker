@@ -310,6 +310,9 @@ export class TabService extends TypedEventEmitter<TabServiceEvents> {
   }
 
   public getTabsInWindowProfile(windowId: number, profileId: string): Tab[] {
+    // Gather tabs from all layouts for this window+profile, ordered by:
+    // 1. Space order (lower space order first)
+    // 2. Tab position within each space
     const layouts = this.getLayoutsForWindow(windowId)
       .filter((layout) => spacesController.getFromCache(layout.spaceId)?.profileId === profileId)
       .sort((a, b) => {
@@ -326,21 +329,22 @@ export class TabService extends TypedEventEmitter<TabServiceEvents> {
     const seenTabIds = new Set<number>();
 
     for (const layout of layouts) {
-      for (const node of layout.getAllNodesSorted()) {
-        for (const tab of node.tabs) {
-          if (tab.profileId !== profileId) continue;
-          if (tab.getWindow().id !== windowId) continue;
-          if (seenTabIds.has(tab.id)) continue;
+      // Get tabs in this space sorted by position (primary sort for extension index)
+      const tabsInSpace = this.getTabsInWindowSpace(windowId, layout.spaceId)
+        .filter((tab) => tab.profileId === profileId)
+        .sort((a, b) => a.position - b.position);
 
-          seenTabIds.add(tab.id);
-          result.push(tab);
-        }
+      for (const tab of tabsInSpace) {
+        if (seenTabIds.has(tab.id)) continue;
+        seenTabIds.add(tab.id);
+        result.push(tab);
       }
     }
 
+    // Fallback: any tabs in this window+profile not in a layout (shouldn't happen normally)
     const remainingTabs = this.getTabsInWindow(windowId)
       .filter((tab) => tab.profileId === profileId && !seenTabIds.has(tab.id))
-      .sort((a, b) => a.createdAt - b.createdAt);
+      .sort((a, b) => a.position - b.position);
 
     result.push(...remainingTabs);
     return result;
