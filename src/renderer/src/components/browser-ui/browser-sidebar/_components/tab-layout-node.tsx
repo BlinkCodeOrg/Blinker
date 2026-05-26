@@ -235,7 +235,14 @@ interface TabLayoutNodeProps {
 }
 
 export const TabLayoutNode = memo(
-  function TabLayoutNode({ layoutNode, isFocused, isSpaceLight, position, moveTab, unpinToTabList }: TabLayoutNodeProps) {
+  function TabLayoutNode({
+    layoutNode,
+    isFocused,
+    isSpaceLight,
+    position,
+    moveTab,
+    unpinToTabList
+  }: TabLayoutNodeProps) {
     const { tabs, focusedTab } = layoutNode;
     const ref = useRef<HTMLDivElement>(null);
     const [closestEdge, setClosestEdge] = useState<Edge | null>(null);

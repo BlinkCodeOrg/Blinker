@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { dropTargetForElements } from "@atlaskit/pragmatic-drag-and-drop/element/adapter";
-import { isPinnedTabSource, isTabLayoutNodeSource } from "@/components/browser-ui/browser-sidebar/_components/drag-utils";
+import {
+  isPinnedTabSource,
+  isTabLayoutNodeSource
+} from "@/components/browser-ui/browser-sidebar/_components/drag-utils";
 import { findClosestPinEdge, type GridIndicator } from "./find-closest-pin-edge";
 
 interface UsePinGridDropTargetOptions {

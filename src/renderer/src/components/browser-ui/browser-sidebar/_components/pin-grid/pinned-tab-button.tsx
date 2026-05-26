@@ -5,7 +5,10 @@ import { draggable, dropTargetForElements } from "@atlaskit/pragmatic-drag-and-d
 import { attachClosestEdge, extractClosestEdge } from "@atlaskit/pragmatic-drag-and-drop-hitbox/closest-edge";
 import { motion } from "motion/react";
 import type { PinnedTabData } from "~/types/tab-service";
-import { isPinnedTabSource, isTabLayoutNodeSource } from "@/components/browser-ui/browser-sidebar/_components/drag-utils";
+import {
+  isPinnedTabSource,
+  isTabLayoutNodeSource
+} from "@/components/browser-ui/browser-sidebar/_components/drag-utils";
 import { generateBorderGradient } from "@/components/browser-ui/browser-sidebar/_components/pin-grid/pin-visual";
 import "./pin.css";
 
