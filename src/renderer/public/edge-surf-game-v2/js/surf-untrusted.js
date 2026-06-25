@@ -1752,7 +1752,7 @@
                 "settingsSpecialThanks",
                 "Jonathan Merrin, Patrick Evan Little, Charles Duval, Addison Kaufmann, Rachel Weil, Joseph Oak, Amanda Velasco Gallardo, Ramya Challa, Chris Pirih"
               ),
-              this.addNames("settingsModifiedBy", "iamEvanYT, yell0wsuit");
+              this.addNames("settingsModifiedBy", "lovlygod, yell0wsuit");
             const e = y.create("div", this.flyout, void 0, "modal-row"),
               s = H.getString("actionClose"),
               n = y.createTextButton(e, s, "btn-half");

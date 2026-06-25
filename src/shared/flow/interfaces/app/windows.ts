@@ -3,12 +3,12 @@ import { IPCListener, WindowState } from "~/flow/types";
 // API //
 export interface FlowWindowsAPI {
   /**
-   * Opens the settings window
+   * Opens the settings page
    */
   openSettingsWindow: () => void;
 
   /**
-   * Closes the settings window
+   * Closes the legacy settings window
    */
   closeSettingsWindow: () => void;
 

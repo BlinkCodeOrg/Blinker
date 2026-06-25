@@ -12,6 +12,7 @@ import {
   DialogHeader,
   DialogTitle
 } from "@/components/ui/dialog";
+import { t } from "@/lib/i18n";
 
 // Delete Confirmation Dialog Component
 interface DeleteConfirmDialogProps {
@@ -27,23 +28,21 @@ export function DeleteConfirmDialog({ isOpen, onClose, spaceName, isDeleting, on
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Delete Space</DialogTitle>
-          <DialogDescription>
-            {`Are you sure you want to delete the space "${spaceName}"? This action cannot be undone.`}
-          </DialogDescription>
+          <DialogTitle>{t("profiles.deleteSpace")}</DialogTitle>
+          <DialogDescription>{t("profiles.deleteSpaceDescription", { space: spaceName })}</DialogDescription>
         </DialogHeader>
         <DialogFooter>
           <Button variant="outline" onClick={() => onClose(false)} disabled={isDeleting}>
-            Cancel
+            {t("action.cancel")}
           </Button>
           <Button variant="destructive" onClick={onConfirm} disabled={isDeleting} className="gap-2">
             {isDeleting ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
-                Deleting...
+                {t("action.deleting")}
               </>
             ) : (
-              "Delete"
+              t("action.delete")
             )}
           </Button>
         </DialogFooter>
@@ -80,17 +79,17 @@ export function CreateSpaceDialog({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Create New Space</DialogTitle>
-          <DialogDescription>Enter a name for your new browsing space.</DialogDescription>
+          <DialogTitle>{t("profiles.createSpace")}</DialogTitle>
+          <DialogDescription>{t("profiles.createSpacePlainDescription")}</DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="profile-select" className="text-right">
-              Profile
+              {t("passwords.profile")}
             </Label>
             <Select value={selectedProfile ?? ""} onValueChange={setSelectedProfile}>
               <SelectTrigger className="col-span-3">
-                <SelectValue placeholder="Select a profile" />
+                <SelectValue placeholder={t("profiles.selectProfile")} />
               </SelectTrigger>
               <SelectContent>
                 {profiles.map((profile) => (
@@ -103,11 +102,11 @@ export function CreateSpaceDialog({
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="space-name" className="text-right">
-              Name
+              {t("profiles.name")}
             </Label>
             <Input
               id="space-name"
-              placeholder="Enter space name"
+              placeholder={t("profiles.spaceNamePlaceholder")}
               value={spaceName}
               onChange={(e) => setSpaceName(e.target.value)}
               onKeyDown={(e) => {
@@ -122,16 +121,16 @@ export function CreateSpaceDialog({
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onClose(false)} disabled={isCreating}>
-            Cancel
+            {t("action.cancel")}
           </Button>
           <Button onClick={onCreate} disabled={isCreating || !spaceName.trim() || !selectedProfile} className="gap-2">
             {isCreating ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
-                Creating...
+                {t("action.creating")}
               </>
             ) : (
-              "Create"
+              t("action.create")
             )}
           </Button>
         </DialogFooter>

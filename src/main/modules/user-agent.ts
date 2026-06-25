@@ -21,13 +21,13 @@ export function transformUserAgentHeader(userAgent: string, url: URL | null) {
   const removeElectronUserAgent = true;
 
   // Remove App User Agent:
-  // - Flow will be less identifiable
+  // - Blinker will be less identifiable
   let removeAppUserAgent = false;
 
   if (url) {
     const hostname = url.hostname.toLowerCase();
 
-    // WhatsApp does not like the 'Flow' User Agent
+    // WhatsApp does not like the 'Blinker' User Agent
     // Removing it fixes the issue and finally lets us use https://web.whatsapp.com/
     if (hostname.endsWith(".whatsapp.com")) {
       removeAppUserAgent = true;

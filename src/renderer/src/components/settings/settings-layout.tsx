@@ -1,6 +1,5 @@
-import { useState, useMemo } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { SettingsSidebar } from "./settings-sidebar";
-import { SettingsTitlebar } from "./settings-titlebar";
 import { GeneralSettings } from "@/components/settings/sections/general/section";
 import { IconSettings } from "@/components/settings/sections/icon/section";
 import { AboutSettings } from "@/components/settings/sections/about/section";
@@ -8,24 +7,36 @@ import { ProfilesSettings } from "@/components/settings/sections/profiles/sectio
 import { SpacesSettings } from "@/components/settings/sections/spaces/section";
 import { ExternalAppsSettings } from "@/components/settings/sections/external-apps/section";
 import { ShortcutsSettings } from "@/components/settings/sections/shortcuts/section";
+import { PasswordsSettings } from "@/components/settings/sections/passwords/section";
+import { ImportDataSettings } from "@/components/settings/sections/import-data/section";
 import { SettingsProvider } from "@/components/providers/settings-provider";
 import { AppUpdatesProvider } from "@/components/providers/app-updates-provider";
-import { Globe, DockIcon, UsersIcon, OrbitIcon, BlocksIcon, Info, KeyboardIcon } from "lucide-react";
+import { Globe, DockIcon, UsersIcon, OrbitIcon, BlocksIcon, Info, KeyboardIcon, KeyRound, Import } from "lucide-react";
 import { ShortcutsProvider } from "@/components/providers/shortcuts-provider";
+import { LANGUAGE_CHANGED_EVENT, t } from "@/lib/i18n";
 
 export function SettingsLayout() {
-  const [activeSection, setActiveSection] = useState("general");
+  const [activeSection, setActiveSection] = useState(() => window.location.hash.replace("#", "") || "general");
   const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null);
   const [selectedSpaceId, setSelectedSpaceId] = useState<string | null>(null);
+  const [languageRevision, setLanguageRevision] = useState(0);
+
+  useEffect(() => {
+    const handleLanguageChanged = () => setLanguageRevision((revision) => revision + 1);
+    window.addEventListener(LANGUAGE_CHANGED_EVENT, handleLanguageChanged);
+    return () => window.removeEventListener(LANGUAGE_CHANGED_EVENT, handleLanguageChanged);
+  }, []);
 
   const sections = [
-    { id: "general", label: "General", icon: <Globe className="h-4 w-4 mr-2" /> },
-    { id: "icons", label: "Icon", icon: <DockIcon className="h-4 w-4 mr-2" /> },
-    { id: "profiles", label: "Profiles", icon: <UsersIcon className="h-4 w-4 mr-2" /> },
-    { id: "spaces", label: "Spaces", icon: <OrbitIcon className="h-4 w-4 mr-2" /> },
-    { id: "external-apps", label: "External Apps", icon: <BlocksIcon className="h-4 w-4 mr-2" /> },
-    { id: "shortcuts", label: "Shortcuts", icon: <KeyboardIcon className="h-4 w-4 mr-2" /> },
-    { id: "about", label: "About", icon: <Info className="h-4 w-4 mr-2" /> }
+    { id: "general", label: t("settings.general"), icon: <Globe className="h-4 w-4 mr-2" /> },
+    { id: "import-data", label: t("settings.importData"), icon: <Import className="h-4 w-4 mr-2" /> },
+    { id: "passwords", label: t("settings.passwords"), icon: <KeyRound className="h-4 w-4 mr-2" /> },
+    { id: "icons", label: t("settings.icon"), icon: <DockIcon className="h-4 w-4 mr-2" /> },
+    { id: "profiles", label: t("settings.profiles"), icon: <UsersIcon className="h-4 w-4 mr-2" /> },
+    { id: "spaces", label: t("settings.spaces"), icon: <OrbitIcon className="h-4 w-4 mr-2" /> },
+    { id: "external-apps", label: t("settings.externalApps"), icon: <BlocksIcon className="h-4 w-4 mr-2" /> },
+    { id: "shortcuts", label: t("settings.shortcuts"), icon: <KeyboardIcon className="h-4 w-4 mr-2" /> },
+    { id: "about", label: t("settings.about"), icon: <Info className="h-4 w-4 mr-2" /> }
   ];
 
   const navigateToSpaces = (profileId: string) => {
@@ -44,6 +55,10 @@ export function SettingsLayout() {
     switch (activeSection) {
       case "general":
         return <GeneralSettings />;
+      case "passwords":
+        return <PasswordsSettings />;
+      case "import-data":
+        return <ImportDataSettings />;
       case "icons":
         return <IconSettings />;
       case "about":
@@ -59,15 +74,14 @@ export function SettingsLayout() {
       default:
         return <GeneralSettings />;
     }
-  }, [activeSection, selectedProfileId, selectedSpaceId]);
+  }, [activeSection, selectedProfileId, selectedSpaceId, languageRevision]);
 
   return (
     <AppUpdatesProvider>
       <ShortcutsProvider>
         <SettingsProvider>
           <div className="select-none flex flex-col h-screen bg-background text-gray-600 dark:text-gray-300">
-            <title>Flow Settings</title>
-            <SettingsTitlebar />
+            <title>{t("settings.title")}</title>
             <div className="flex flex-1 overflow-hidden">
               <SettingsSidebar activeSection={activeSection} setActiveSection={setActiveSection} sections={sections} />
               <main className="flex-1 flex flex-col overflow-hidden">

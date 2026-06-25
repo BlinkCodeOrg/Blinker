@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import type { BasicSetting, BasicSettingCard } from "~/types/settings";
+import { setLocalePreference } from "@/lib/i18n";
 
 interface SettingsContextValue {
   settings: BasicSetting[];
@@ -29,6 +30,12 @@ interface SettingsProviderProps {
   children: React.ReactNode;
 }
 
+function syncRendererSetting(settingId: string, value: unknown) {
+  if (settingId === "appLanguage" && typeof value === "string") {
+    setLocalePreference(value);
+  }
+}
+
 export const SettingsProvider = ({ children }: SettingsProviderProps) => {
   const [settings, setSettings] = useState<BasicSetting[]>([]);
   const [cards, setCards] = useState<BasicSettingCard[]>([]);
@@ -43,6 +50,7 @@ export const SettingsProvider = ({ children }: SettingsProviderProps) => {
 
     const promises = fetchedSettings.map(async (setting) => {
       const value = await flow.settings.getSetting(setting.id);
+      syncRendererSetting(setting.id, value);
       setSettingsValues((prev) => ({ ...prev, [setting.id]: value }));
     });
 
@@ -71,8 +79,13 @@ export const SettingsProvider = ({ children }: SettingsProviderProps) => {
     [settingsValues]
   );
 
-  const setSetting = useCallback((settingId: string, value: unknown) => {
-    return flow.settings.setSetting(settingId, value);
+  const setSetting = useCallback(async (settingId: string, value: unknown) => {
+    const saved = await flow.settings.setSetting(settingId, value);
+    if (saved) {
+      syncRendererSetting(settingId, value);
+      setSettingsValues((prev) => ({ ...prev, [settingId]: value }));
+    }
+    return saved;
   }, []);
 
   return (

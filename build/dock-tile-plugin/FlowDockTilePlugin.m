@@ -1,18 +1,18 @@
 /**
  * FlowDockTilePlugin — NSDockTilePlugIn implementation
  *
- * The Dock loads this plugin even when Flow isn't running.
+ * The Dock loads this plugin even when Blinker isn't running.
  * It reads a shared file to determine which icon to display:
  *   - File missing/empty → default (Liquid Glass from Assets.car)
  *   - File contains absolute path → custom icon
  *
  * Shared file location:
- *   ~/Library/Application Support/Flow/dock-tile-icon-path
+ *   ~/Library/Application Support/Blinker/dock-tile-icon-path
  */
 
 #import <Cocoa/Cocoa.h>
 
-static NSString * const FlowDockTileUpdateNotification = @"dev.iamevan.flow.dock-tile.update";
+static NSString * const FlowDockTileUpdateNotification = @"dev.lovly.blinker.dock-tile.update";
 
 @interface FlowDockTilePlugin : NSObject <NSDockTilePlugIn>
 @property (nonatomic, strong) NSDockTile *dockTile;
@@ -56,7 +56,7 @@ static NSString * const FlowDockTileUpdateNotification = @"dev.iamevan.flow.dock
     // Resolve the shared file path
     NSString *appSupport = [NSSearchPathForDirectoriesInDomains(
         NSApplicationSupportDirectory, NSUserDomainMask, YES) firstObject];
-    NSString *sharedFile = [appSupport stringByAppendingPathComponent:@"Flow/dock-tile-icon-path"];
+    NSString *sharedFile = [appSupport stringByAppendingPathComponent:@"Blinker/dock-tile-icon-path"];
 
     // Read the icon path from the shared file
     NSString *iconPath = [NSString stringWithContentsOfFile:sharedFile

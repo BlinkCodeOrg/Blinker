@@ -20,11 +20,11 @@ registerExtensionIconRoutes(app);
 registerPdfCacheRoutes(app);
 
 // Catch-all Route
-registerStaticDomainsRoutes("flow", app);
+registerStaticDomainsRoutes("blinker", app);
 
 // Export Protocol Handler
 export function registerFlowProtocol(protocol: Protocol) {
-  protocol.handle("flow", async (request) => {
+  protocol.handle("blinker", async (request) => {
     return app.fetch(request);
   });
 }

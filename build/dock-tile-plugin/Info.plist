@@ -7,7 +7,7 @@
 	<key>CFBundleExecutable</key>
 	<string>DockTilePlugin</string>
 	<key>CFBundleIdentifier</key>
-	<string>dev.iamevan.flow.DockTilePlugin</string>
+	<string>dev.lovly.blinker.DockTilePlugin</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>

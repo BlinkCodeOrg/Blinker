@@ -4,9 +4,40 @@ import { onSettingsCached } from "@/saving/settings";
 import { tabsController } from "@/controllers/tabs-controller";
 import { browserWindowsController } from "@/controllers/windows-controller/interfaces/browser";
 import { shouldArchiveTab } from "@/saving/tabs";
-import { app } from "electron";
+import { app, screen } from "electron";
 import { GlanceTabGroup } from "@/controllers/tabs-controller/tab-groups/glance";
 import type { BrowserWindowCreationOptions, BrowserWindowType } from "@/controllers/windows-controller/types/browser";
+
+function intersects(a: Electron.Rectangle, b: Electron.Rectangle): boolean {
+  return a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y;
+}
+
+function getRestorableWindowOptions(windowState: {
+  width: number;
+  height: number;
+  x?: number;
+  y?: number;
+}): BrowserWindowCreationOptions {
+  const minWidth = 800;
+  const minHeight = 400;
+  const width = Math.max(minWidth, windowState.width);
+  const height = Math.max(minHeight, windowState.height);
+  const options: BrowserWindowCreationOptions = { width, height };
+
+  if (windowState.x === undefined || windowState.y === undefined) {
+    return options;
+  }
+
+  const restoredBounds = { x: windowState.x, y: windowState.y, width, height };
+  const visibleOnDisplay = screen.getAllDisplays().some((display) => intersects(restoredBounds, display.workArea));
+  if (!visibleOnDisplay) {
+    return options;
+  }
+
+  options.x = windowState.x;
+  options.y = windowState.y;
+  return options;
+}
 
 /**
  * Loads tabs and tab groups from storage, filters archived ones,
@@ -72,13 +103,7 @@ async function createTabsFromPersistedData(tabDatas: PersistedTabData[]): Promis
     const windowState = windowStates.get(windowGroupId);
 
     const windowType: BrowserWindowType = windowState?.isPopup ? "popup" : "normal";
-    const windowOptions: BrowserWindowCreationOptions = {};
-    if (windowState) {
-      windowOptions.width = windowState.width;
-      windowOptions.height = windowState.height;
-      if (windowState.x !== undefined) windowOptions.x = windowState.x;
-      if (windowState.y !== undefined) windowOptions.y = windowState.y;
-    }
+    const windowOptions: BrowserWindowCreationOptions = windowState ? getRestorableWindowOptions(windowState) : {};
     const window = await browserWindowsController.create(windowType, windowOptions);
 
     for (const tabData of tabs) {

@@ -17,7 +17,7 @@ interface SettingsSidebarProps {
 
 export function SettingsSidebar({ activeSection, setActiveSection, sections }: SettingsSidebarProps) {
   return (
-    <div className="w-48 border-r bg-muted/30 p-4 px-3 flex flex-col gap-2">
+    <div className="w-60 border-r bg-muted/30 p-4 px-3 flex flex-col gap-2">
       <nav className="flex flex-col gap-1">
         {sections.map((section) => (
           <motion.button
@@ -28,7 +28,7 @@ export function SettingsSidebar({ activeSection, setActiveSection, sections }: S
             layout
           >
             {section.icon}
-            <span>{section.label}</span>
+            <span className="truncate">{section.label}</span>
           </motion.button>
         ))}
       </nav>

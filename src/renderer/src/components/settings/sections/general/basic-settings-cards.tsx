@@ -8,6 +8,55 @@ import { ResetOnboardingCard } from "@/components/settings/sections/general/rese
 import { UpdateCard } from "@/components/settings/sections/general/update-card";
 import { SetAsDefaultBrowserSetting } from "@/components/settings/sections/general/set-as-default-browser-setting";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { t } from "@/lib/i18n";
+
+const cardTranslationKeys: Record<string, { title: string; subtitle: string }> = {
+  "autoUpdate,syncTabsAcrossWindows,appLanguage,defaultSearchEngine,contentBlocker,internal_setAsDefaultBrowser": {
+    title: "card.general.title",
+    subtitle: "card.general.subtitle"
+  },
+  newTabMode: {
+    title: "card.newTab.title",
+    subtitle: "card.newTab.subtitle"
+  },
+  commandPaletteOpacity: {
+    title: "card.commandPalette.title",
+    subtitle: "card.commandPalette.subtitle"
+  },
+  sidebarSide: {
+    title: "card.sidebar.title",
+    subtitle: "card.sidebar.subtitle"
+  },
+  "archiveTabAfter,sleepTabAfter": {
+    title: "card.performance.title",
+    subtitle: "card.performance.subtitle"
+  },
+  enableFlowPdfViewer: {
+    title: "card.experimental.title",
+    subtitle: "card.experimental.subtitle"
+  },
+  enableMv2Extensions: {
+    title: "card.advanced.title",
+    subtitle: "card.advanced.subtitle"
+  }
+};
+
+function getSettingLabel(setting: BasicSetting) {
+  return t(`setting.${setting.id}`);
+}
+
+function getOptionLabel(optionId: string, fallback: string) {
+  return t(`setting.option.${optionId}`) || fallback;
+}
+
+function getCardLabels(card: BasicSettingCard) {
+  const keys = cardTranslationKeys[card.settings.join(",")];
+  if (!keys) {
+    return { title: card.title, subtitle: card.subtitle };
+  }
+
+  return { title: t(keys.title), subtitle: t(keys.subtitle) };
+}
 
 export function SettingsInput({ setting }: { setting: BasicSetting }) {
   const { getSetting, setSetting } = useSettings();
@@ -27,7 +76,7 @@ export function SettingsInput({ setting }: { setting: BasicSetting }) {
           <SelectContent className="remove-app-drag z-popover">
             {setting.options.map((option) => (
               <SelectItem key={option.id} value={option.id}>
-                {option.name}
+                {getOptionLabel(option.id, option.name)}
               </SelectItem>
             ))}
           </SelectContent>
@@ -44,6 +93,7 @@ export function SettingsInput({ setting }: { setting: BasicSetting }) {
 
 export function BasicSettingsCard({ card, transparent }: { card: BasicSettingCard; transparent?: boolean }) {
   const { settings } = useSettings();
+  const cardLabels = getCardLabels(card);
 
   if (card.title === "INTERNAL_UPDATE") {
     return <UpdateCard />;
@@ -55,8 +105,8 @@ export function BasicSettingsCard({ card, transparent }: { card: BasicSettingCar
     <TooltipProvider>
       <div className={cn("remove-app-drag rounded-lg border p-6", transparent ? "bg-muted/30" : "bg-card")}>
         <div className="mb-4">
-          <h3 className="text-xl font-semibold tracking-tight text-card-foreground">{card.title}</h3>
-          {card.subtitle && <p className="text-sm text-muted-foreground mt-1">{card.subtitle}</p>}
+          <h3 className="text-xl font-semibold tracking-tight text-card-foreground">{cardLabels.title}</h3>
+          {cardLabels.subtitle && <p className="text-sm text-muted-foreground mt-1">{cardLabels.subtitle}</p>}
         </div>
         <div className="space-y-4">
           {card.settings.map((settingId) => {
@@ -76,7 +126,7 @@ export function BasicSettingsCard({ card, transparent }: { card: BasicSettingCar
               >
                 <div className="flex-1 space-y-0.5">
                   <Label htmlFor={setting.id} className="text-sm font-medium">
-                    {setting.name}
+                    {getSettingLabel(setting)}
                   </Label>
                   {setting.showName !== false && settingDescription && (
                     <p className="text-xs text-muted-foreground">{settingDescription}</p>

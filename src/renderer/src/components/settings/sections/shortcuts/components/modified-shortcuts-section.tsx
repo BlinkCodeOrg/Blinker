@@ -3,6 +3,7 @@ import { ShortcutAction } from "~/types/shortcuts";
 import { AnimatePresence, motion } from "motion/react";
 import { InfoIcon } from "lucide-react";
 import { ShortcutItem } from "../shortcut-item";
+import { t } from "@/lib/i18n";
 
 interface ModifiedShortcutsSectionProps {
   shortcuts: ShortcutAction[];
@@ -44,7 +45,7 @@ export function ModifiedShortcutsSection({
       <div className="bg-primary/5 p-4 rounded-lg border border-primary/30">
         <h3 className="text-lg font-semibold text-primary mb-3 border-b border-primary/30 pb-2 flex items-center">
           <InfoIcon className="h-5 w-5 mr-2" />
-          Modified Shortcuts ({shortcuts.length})
+          {t("shortcuts.modifiedTitle", { count: shortcuts.length })}
         </h3>
         <div className="space-y-2">
           <AnimatePresence>

@@ -16,11 +16,11 @@ registerActiveFaviconRoutes(app);
 registerTabSnapshotRoutes(app);
 
 // Catch-all Route
-registerStaticDomainsRoutes("flow-internal", app);
+registerStaticDomainsRoutes("blinker-internal", app);
 
 // Export Protocol Handler
 export function registerFlowInternalProtocol(protocol: Protocol) {
-  protocol.handle("flow-internal", async (request) => {
+  protocol.handle("blinker-internal", async (request) => {
     return app.fetch(request);
   });
 }

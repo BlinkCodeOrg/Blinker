@@ -58,7 +58,7 @@ export function BottomExtrasMenu() {
               id="history"
               Icon={HistoryIcon}
               label="History"
-              url="flow://history"
+              url="blinker://history"
               onItemSelected={onItemSelected}
             />
             <BottomExtrasMenuItem

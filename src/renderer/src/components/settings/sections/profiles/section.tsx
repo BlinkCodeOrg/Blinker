@@ -15,6 +15,7 @@ import {
   DialogTitle
 } from "@/components/ui/dialog";
 import { useEffect, useState } from "react";
+import { t } from "@/lib/i18n";
 
 // ==============================
 // Profile Card Component
@@ -64,22 +65,22 @@ function BasicSettingsTab({ profile, editedProfile, handleNameChange }: BasicSet
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-xl">Basic Information</CardTitle>
-        <CardDescription>{"Manage your profile's basic settings"}</CardDescription>
+        <CardTitle className="text-xl">{t("profiles.basicInfo")}</CardTitle>
+        <CardDescription>{t("profiles.basicInfoDescription")}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="profile-name">Profile Name</Label>
+          <Label htmlFor="profile-name">{t("profiles.profileName")}</Label>
           <Input
             id="profile-name"
             value={editedProfile.name}
             onChange={handleNameChange}
-            placeholder="Enter profile name"
+            placeholder={t("profiles.namePlaceholder")}
           />
         </div>
 
         <div className="space-y-2">
-          <Label>Profile ID</Label>
+          <Label>{t("profiles.profileId")}</Label>
           <div className="p-2 bg-muted rounded-md text-sm">{profile.id}</div>
         </div>
       </CardContent>
@@ -92,13 +93,13 @@ function SearchSettingsTab() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-xl">Search Engines</CardTitle>
-        <CardDescription>Configure your search engines preferences</CardDescription>
+        <CardTitle className="text-xl">{t("profiles.searchEngines")}</CardTitle>
+        <CardDescription>{t("setting.defaultSearchEngine")}</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="rounded-md bg-muted p-4 text-sm">
           <p className="text-muted-foreground">
-            Search engine settings are coming soon. This feature is currently in development.
+            {t("profiles.searchDescription")}
           </p>
         </div>
       </CardContent>
@@ -140,19 +141,19 @@ function SpacesTab({ profile, spaces, onRefreshSpaces, navigateToSpace }: Spaces
     <Card>
       <CardHeader className="flex flex-row items-center justify-between pb-2">
         <div>
-          <CardTitle className="text-xl">Spaces</CardTitle>
-          <CardDescription>Manage spaces in this profile</CardDescription>
+          <CardTitle className="text-xl">{t("profiles.spaces")}</CardTitle>
+          <CardDescription>{t("profiles.manageSpaces")}</CardDescription>
         </div>
         <div className="flex gap-2">
           <Button onClick={() => setCreateDialogOpen(true)} size="sm" className="gap-1">
-            <Plus className="h-4 w-4" /> New Space
+            <Plus className="h-4 w-4" /> {t("profiles.newSpace")}
           </Button>
         </div>
       </CardHeader>
       <CardContent>
         {spaces.length === 0 ? (
           <div className="text-center p-6 text-muted-foreground">
-            No spaces found. Create your first space to get started.
+            {t("profiles.noSpaces")}
           </div>
         ) : (
           <div className="grid gap-3">
@@ -178,17 +179,17 @@ function SpacesTab({ profile, spaces, onRefreshSpaces, navigateToSpace }: Spaces
         <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
           <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
-              <DialogTitle>Create New Space</DialogTitle>
-              <DialogDescription>{`Enter a name for the new space in profile "${profile.name}".`}</DialogDescription>
+              <DialogTitle>{t("profiles.createSpace")}</DialogTitle>
+              <DialogDescription>{t("profiles.createSpaceDescription", { profile: profile.name })}</DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="space-name" className="text-right">
-                  Name
+                  {t("profiles.name")}
                 </Label>
                 <Input
                   id="space-name"
-                  placeholder="Enter space name"
+                  placeholder={t("profiles.spaceNamePlaceholder")}
                   value={newSpaceName}
                   onChange={(e) => setNewSpaceName(e.target.value)}
                   onKeyDown={(e) => {
@@ -203,16 +204,16 @@ function SpacesTab({ profile, spaces, onRefreshSpaces, navigateToSpace }: Spaces
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setCreateDialogOpen(false)} disabled={isCreating}>
-                Cancel
+                {t("action.cancel")}
               </Button>
               <Button onClick={handleCreateSpace} disabled={isCreating || !newSpaceName.trim()} className="gap-2">
                 {isCreating ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    Creating...
+                    {t("action.creating")}
                   </>
                 ) : (
-                  "Create"
+                  t("action.create")
                 )}
               </Button>
             </DialogFooter>
@@ -237,23 +238,21 @@ function DeleteConfirmDialog({ isOpen, onClose, profileName, isDeleting, onConfi
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Delete Profile</DialogTitle>
-          <DialogDescription>
-            {`Are you sure you want to delete the profile "${profileName}"? This action cannot be undone.`}
-          </DialogDescription>
+          <DialogTitle>{t("profiles.deleteTitle")}</DialogTitle>
+          <DialogDescription>{t("profiles.deleteDescription", { profile: profileName })}</DialogDescription>
         </DialogHeader>
         <DialogFooter>
           <Button variant="outline" onClick={() => onClose(false)} disabled={isDeleting}>
-            Cancel
+            {t("action.cancel")}
           </Button>
           <Button variant="destructive" onClick={onConfirm} disabled={isDeleting} className="gap-2">
             {isDeleting ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
-                Deleting...
+                {t("action.deleting")}
               </>
             ) : (
-              "Delete"
+              t("action.delete")
             )}
           </Button>
         </DialogFooter>
@@ -379,8 +378,8 @@ function ProfileEditor({
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div className="flex-1">
-          <h2 className="text-lg font-medium">Edit Profile</h2>
-          <p className="text-sm text-muted-foreground">Customize your browsing profile</p>
+          <h2 className="text-lg font-medium">{t("profiles.edit")}</h2>
+          <p className="text-sm text-muted-foreground">{t("profiles.customize")}</p>
         </div>
         <div className="flex gap-2">
           <Button
@@ -389,21 +388,21 @@ function ProfileEditor({
             onClick={() => setDeleteDialogOpen(true)}
             className="gap-1"
             disabled={isLastProfile}
-            title={isLastProfile ? "Cannot delete the last remaining profile" : "Delete profile"}
+            title={isLastProfile ? t("profiles.deleteLast") : t("profiles.deleteProfile")}
           >
             <Trash2 className="h-4 w-4" />
-            Delete
+            {t("action.delete")}
           </Button>
           <Button variant="default" size="sm" onClick={handleSave} className="gap-1" disabled={isSaving}>
             {isSaving ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
-                Saving...
+                {t("action.saving")}
               </>
             ) : (
               <>
                 <Save className="h-4 w-4" />
-                Save
+                {t("action.save")}
               </>
             )}
           </Button>
@@ -421,7 +420,7 @@ function ProfileEditor({
               onClick={() => setActiveTab("basic")}
             >
               <Settings className="mr-2 h-5 w-5" />
-              Basic Settings
+              {t("profiles.basicSettings")}
             </Button>
             <Button
               variant={activeTab === "spaces" ? "secondary" : "ghost"}
@@ -429,7 +428,7 @@ function ProfileEditor({
               onClick={() => setActiveTab("spaces")}
             >
               <Box className="mr-2 h-5 w-5" />
-              Spaces
+              {t("profiles.spaces")}
             </Button>
             <Button
               variant={activeTab === "search" ? "secondary" : "ghost"}
@@ -437,7 +436,7 @@ function ProfileEditor({
               onClick={() => setActiveTab("search")}
             >
               <Globe className="mr-2 h-5 w-5" />
-              Search Engines
+              {t("profiles.searchEngines")}
             </Button>
           </nav>
         </div>
@@ -454,7 +453,7 @@ function ProfileEditor({
             <div className="space-y-6">
               {loadingSpaces ? (
                 <div className="flex items-center justify-center h-40">
-                  <div className="animate-pulse text-muted-foreground">Loading spaces...</div>
+                  <div className="animate-pulse text-muted-foreground">{t("profiles.loadingSpaces")}</div>
                 </div>
               ) : (
                 <SpacesTab
@@ -511,17 +510,17 @@ function CreateProfileDialog({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Create New Profile</DialogTitle>
-          <DialogDescription>Enter a name for your new browser profile.</DialogDescription>
+          <DialogTitle>{t("profiles.createTitle")}</DialogTitle>
+          <DialogDescription>{t("profiles.createDescription")}</DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="profile-name" className="text-right">
-              Name
+              {t("profiles.name")}
             </Label>
             <Input
               id="profile-name"
-              placeholder="Enter profile name"
+              placeholder={t("profiles.namePlaceholder")}
               value={profileName}
               onChange={(e) => setProfileName(e.target.value)}
               onKeyDown={(e) => {
@@ -536,16 +535,16 @@ function CreateProfileDialog({
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onClose(false)} disabled={isCreating}>
-            Cancel
+            {t("action.cancel")}
           </Button>
           <Button onClick={onCreate} disabled={isCreating || !profileName.trim()} className="gap-2">
             {isCreating ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
-                Creating...
+                {t("action.creating")}
               </>
             ) : (
-              "Create"
+              t("action.create")
             )}
           </Button>
         </DialogFooter>
@@ -645,24 +644,24 @@ export function ProfilesSettings({ navigateToSpaces, navigateToSpace }: Profiles
       <Card className="flex-1">
         <CardHeader className="pb-2 flex flex-row items-center justify-between">
           <div>
-            <CardTitle className="text-lg">Browser Profiles</CardTitle>
-            <CardDescription className="text-sm">Manage your browser profiles and their settings</CardDescription>
+            <CardTitle className="text-lg">{t("profiles.browserProfiles")}</CardTitle>
+            <CardDescription className="text-sm">{t("profiles.description")}</CardDescription>
           </div>
           <Button onClick={() => setCreateDialogOpen(true)} size="sm" className="gap-2">
             <Plus className="h-4 w-4" />
-            Create Profile
+            {t("profiles.create")}
           </Button>
         </CardHeader>
         <CardContent>
           {isLoading ? (
             <div className="flex items-center justify-center h-40">
-              <div className="animate-pulse text-muted-foreground">Loading profiles...</div>
+              <div className="animate-pulse text-muted-foreground">{t("profiles.loading")}</div>
             </div>
           ) : (
             <div className="flex flex-col gap-4">
               {profiles.length === 0 ? (
                 <div className="text-center p-6 text-muted-foreground">
-                  No profiles found. Create your first profile to get started.
+                  {t("profiles.empty")}
                 </div>
               ) : (
                 profiles.map((profile) => (

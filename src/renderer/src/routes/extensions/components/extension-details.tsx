@@ -119,7 +119,7 @@ function ExtensionDetails({
             <Switch disabled />
           </div>
           <p className="text-xs text-muted-foreground">
-            Warning: Flow cannot prevent extensions from recording your browsing history. To disable this extension in
+            Warning: Blinker cannot prevent extensions from recording your browsing history. To disable this extension in
             Incognito mode, unselect this option.
           </p>
         </div>

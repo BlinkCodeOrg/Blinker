@@ -1,5 +1,6 @@
 import { AlertCircleIcon, Loader2, SearchIcon } from "lucide-react";
 import { motion } from "motion/react";
+import { t } from "@/lib/i18n";
 
 interface EmptyStateProps {
   type: "loading" | "no-results" | "no-shortcuts";
@@ -16,7 +17,7 @@ export function EmptyState({ type, searchTerm }: EmptyStateProps) {
         exit={{ opacity: 0 }}
       >
         <Loader2 className="h-8 w-8 text-primary animate-spin mb-3" />
-        <p className="text-muted-foreground">Loading keyboard shortcuts...</p>
+        <p className="text-muted-foreground">{t("shortcuts.loading")}</p>
       </motion.div>
     );
   }
@@ -30,9 +31,9 @@ export function EmptyState({ type, searchTerm }: EmptyStateProps) {
         transition={{ duration: 0.3 }}
       >
         <SearchIcon className="h-10 w-10 text-muted-foreground mb-3" />
-        <p className="font-medium text-card-foreground">No matching shortcuts found</p>
+        <p className="font-medium text-card-foreground">{t("shortcuts.noMatches")}</p>
         <p className="text-sm text-muted-foreground mt-1">
-          {searchTerm ? `No results for "${searchTerm}". Try a different search term.` : "Try a different search term."}
+          {searchTerm ? t("shortcuts.noResultsFor", { term: searchTerm }) : t("shortcuts.tryDifferent")}
         </p>
       </motion.div>
     );
@@ -46,8 +47,8 @@ export function EmptyState({ type, searchTerm }: EmptyStateProps) {
       transition={{ duration: 0.3 }}
     >
       <AlertCircleIcon className="h-10 w-10 text-muted-foreground mb-3" />
-      <p className="font-medium text-card-foreground">No shortcuts available</p>
-      <p className="text-sm text-muted-foreground mt-1">Shortcuts could not be loaded or none are defined.</p>
+      <p className="font-medium text-card-foreground">{t("shortcuts.none")}</p>
+      <p className="text-sm text-muted-foreground mt-1">{t("shortcuts.noneDescription")}</p>
     </motion.div>
   );
 }

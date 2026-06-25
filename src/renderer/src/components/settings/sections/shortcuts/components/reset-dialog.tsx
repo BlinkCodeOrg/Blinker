@@ -7,6 +7,7 @@ import {
   DialogTitle
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { t } from "@/lib/i18n";
 
 interface ResetDialogProps {
   isOpen: boolean;
@@ -19,14 +20,12 @@ export function ResetDialog({ isOpen, onOpenChange, onConfirm }: ResetDialogProp
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Reset All Shortcuts</DialogTitle>
-          <DialogDescription>
-            Are you sure you want to reset all shortcuts to their default values? This action cannot be undone.
-          </DialogDescription>
+          <DialogTitle>{t("shortcuts.resetTitle")}</DialogTitle>
+          <DialogDescription>{t("shortcuts.resetDescription")}</DialogDescription>
         </DialogHeader>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
+            {t("action.cancel")}
           </Button>
           <Button
             variant="destructive"
@@ -35,7 +34,7 @@ export function ResetDialog({ isOpen, onOpenChange, onConfirm }: ResetDialogProp
               onConfirm();
             }}
           >
-            Reset All
+            {t("shortcuts.resetButton")}
           </Button>
         </DialogFooter>
       </DialogContent>

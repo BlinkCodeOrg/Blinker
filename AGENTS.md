@@ -2,7 +2,7 @@
 
 ### Overview
 
-Flow Browser is an Electron-based web browser built with React 19, TypeScript, Vite, and TailwindCSS 4. It uses an embedded SQLite database (via `better-sqlite3` / Drizzle ORM) and has no external backend services.
+Blinker Browser is an Electron-based web browser built with React 19, TypeScript, Vite, and TailwindCSS 4. It uses an embedded SQLite database (via `better-sqlite3` / Drizzle ORM) and has no external backend services.
 
 ### Prerequisites
 
@@ -41,4 +41,4 @@ Standard dev commands are in `package.json`. Quick reference:
 
 - The VM already has a display at `DISPLAY=:1`. Run `bun dev` directly; no `xvfb-run` wrapper is needed.
 - GLib-GObject and D-Bus warnings in the Electron stderr output are harmless on headless Linux and can be ignored.
-- On first launch, Flow Browser shows an onboarding wizard that must be completed before the main browser window appears.
+- On first launch, Blinker Browser shows an onboarding wizard that must be completed before the main browser window appears.

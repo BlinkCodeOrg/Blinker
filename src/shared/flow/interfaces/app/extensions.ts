@@ -32,4 +32,9 @@ export interface FlowExtensionsAPI {
    * Set the pinned state of an extension
    */
   setExtensionPinned: (extensionId: string, pinned: boolean) => Promise<boolean>;
+
+  /**
+   * Import an unpacked extension folder into the current profile
+   */
+  importUnpacked: () => Promise<SharedExtensionData | null>;
 }

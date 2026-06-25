@@ -22,7 +22,7 @@ import { NSClassFromString } from "objcjs-types/Foundation/functions";
 
 const SHARED_DIR = FLOW_DATA_DIR;
 const SHARED_FILE = path.join(SHARED_DIR, "dock-tile-icon-path");
-const DOCK_TILE_UPDATE_NOTIFICATION = "dev.iamevan.flow.dock-tile.update";
+const DOCK_TILE_UPDATE_NOTIFICATION = "dev.lovly.blinker.dock-tile.update";
 
 // ---------------------------------------------------------------------------
 // App-bundle path resolution

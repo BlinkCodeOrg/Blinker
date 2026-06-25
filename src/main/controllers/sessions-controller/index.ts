@@ -21,7 +21,7 @@ class SessionsController {
     const profileSession = session.fromPath(profileSessionPath);
 
     // Register protocols and callbacks
-    registerProtocolsWithSession(profileSession, ["flow", "flow-external"]);
+    registerProtocolsWithSession(profileSession, ["blinker", "blinker-external"]);
     registerHandlersWithSession(profileSession);
 
     // Register Preload Script and Network Intercept Rules

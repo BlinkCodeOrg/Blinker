@@ -10,6 +10,7 @@ import type { Space } from "~/flow/interfaces/sessions/spaces";
 import type { Profile } from "~/flow/interfaces/sessions/profiles";
 import { Reorder, useDragControls } from "motion/react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { t } from "@/lib/i18n";
 
 // ==============================
 // Main Spaces Settings Component
@@ -141,8 +142,8 @@ export function SpacesSettings({ initialSelectedProfile, initialSelectedSpace }:
 
   // Get selected profile name for display
   const selectedProfileName = selectedProfile
-    ? profiles.find((p) => p.id === selectedProfile)?.name || "Selected Profile"
-    : "All Profiles";
+    ? profiles.find((p) => p.id === selectedProfile)?.name || t("profiles.profileName")
+    : t("profiles.allProfiles");
 
   // Render space editor if a space is active
   if (activeSpace) {
@@ -170,9 +171,9 @@ export function SpacesSettings({ initialSelectedProfile, initialSelectedSpace }:
           <div className="flex items-center gap-4">
             <div>
               <CardTitle className="text-lg">
-                {selectedProfile ? `Spaces for ${selectedProfileName}` : "All Browser Spaces"}
+                {selectedProfile ? t("profiles.spacesFor", { profile: selectedProfileName }) : t("profiles.allSpaces")}
               </CardTitle>
-              <CardDescription className="text-sm">Manage your browsing spaces and their settings</CardDescription>
+              <CardDescription className="text-sm">{t("profiles.manageSpaces")}</CardDescription>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -181,10 +182,10 @@ export function SpacesSettings({ initialSelectedProfile, initialSelectedSpace }:
               onValueChange={(value) => setSelectedProfile(value === "all" ? null : value)}
             >
               <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Select profile" />
+                <SelectValue placeholder={t("profiles.selectProfile")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Profiles</SelectItem>
+                <SelectItem value="all">{t("profiles.allProfiles")}</SelectItem>
                 {profiles.map((profile) => (
                   <SelectItem key={profile.id} value={profile.id}>
                     {profile.name}
@@ -194,20 +195,20 @@ export function SpacesSettings({ initialSelectedProfile, initialSelectedSpace }:
             </Select>
             <Button onClick={() => setCreateDialogOpen(true)} size="sm" className="gap-2">
               <Plus className="h-4 w-4" />
-              Create Space
+              {t("profiles.createSpace")}
             </Button>
           </div>
         </CardHeader>
         <CardContent>
           {isLoading ? (
             <div className="flex items-center justify-center h-40">
-              <div className="animate-pulse text-muted-foreground">Loading spaces...</div>
+              <div className="animate-pulse text-muted-foreground">{t("profiles.loadingSpaces")}</div>
             </div>
           ) : (
             <div className="flex flex-col gap-4">
               {filteredSpaces.length === 0 ? (
                 <div className="text-center p-6 text-muted-foreground">
-                  No spaces found. Create your first space to get started.
+                  {t("profiles.noSpaces")}
                 </div>
               ) : (
                 <Reorder.Group

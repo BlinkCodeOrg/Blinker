@@ -409,6 +409,33 @@ export class ExtensionManager extends TypedEventEmitter<{
       .catch(() => false);
   }
 
+  public async importUnpackedExtension(sourcePath: string): Promise<string | null> {
+    const manifest = await getManifest(sourcePath);
+    if (!manifest) return null;
+
+    const extension = await this.profileSession.extensions.loadExtension(sourcePath);
+    if (!extension) return null;
+
+    const extensionId = extension.id;
+    const unpackedPath = this.getExtensionsPath("unpacked");
+    const destinationPath = path.join(unpackedPath, extensionId);
+    const sourcePathResolved = path.resolve(sourcePath);
+    const destinationPathResolved = path.resolve(destinationPath);
+
+    await fs.mkdir(unpackedPath, { recursive: true });
+    if (sourcePathResolved !== destinationPathResolved) {
+      await fs.rm(destinationPath, { recursive: true, force: true });
+      await fs.cp(sourcePath, destinationPath, { recursive: true });
+    }
+    await this.profileSession.extensions.removeExtension(extensionId);
+
+    const added = await this.addInstalledExtension("unpacked", extensionId);
+    if (!added) return null;
+
+    await this.loadExtensionWithData(extensionId, { type: "unpacked", disabled: false, pinned: DEFAULT_PINNED_STATE });
+    return extensionId;
+  }
+
   /**
    * Remove an installed extension from a profile
    * @param extensionId - The ID of the extension

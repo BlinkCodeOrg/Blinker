@@ -30,6 +30,7 @@ import { FlowIconsAPI } from "~/flow/interfaces/settings/icons";
 import { FlowNewTabAPI } from "~/flow/interfaces/browser/newTab";
 import { FlowOpenExternalAPI } from "~/flow/interfaces/settings/openExternal";
 import { FlowOnboardingAPI } from "~/flow/interfaces/settings/onboarding";
+import { FlowPasswordsAPI } from "~/flow/interfaces/settings/passwords";
 import type { FlowOmniboxAPI, OmniboxOpenParams } from "~/flow/interfaces/browser/omnibox";
 import { FlowSettingsAPI } from "~/flow/interfaces/settings/settings";
 import { FlowWindowsAPI } from "~/flow/interfaces/app/windows";
@@ -60,25 +61,26 @@ function isLocation(protocol: string, hostname: string) {
 type Permission = "all" | "app" | "browser" | "session" | "settings";
 
 function hasPermission(permission: Permission) {
-  const isFlowProtocol = isProtocol("flow:");
-  const isFlowInternalProtocol = isProtocol("flow-internal:");
+  const isFlowProtocol = isProtocol("blinker:");
+  const isFlowInternalProtocol = isProtocol("blinker-internal:");
 
   const isInternalProtocols = isFlowInternalProtocol || isFlowProtocol;
 
   // Browser UI
-  const isMainUI = isLocation("flow-internal:", "main-ui");
-  const isPopupUI = isLocation("flow-internal:", "popup-ui");
+  const isMainUI = isLocation("blinker-internal:", "main-ui");
+  const isPopupUI = isLocation("blinker-internal:", "popup-ui");
   const isBrowserUI = isMainUI || isPopupUI;
 
   // Windows
-  const isNewTab = isLocation("flow:", "new-tab");
-  const isOmniboxUI = isLocation("flow-internal:", "omnibox");
-  const isOmniboxDebug = isLocation("flow:", "omnibox");
+  const isNewTab = isLocation("blinker:", "new-tab");
+  const isOmniboxUI = isLocation("blinker-internal:", "omnibox");
+  const isOmniboxDebug = isLocation("blinker:", "omnibox");
   const isOmnibox = isOmniboxUI || isNewTab || isOmniboxDebug;
 
   // Extensions
-  const isExtensions = isLocation("flow:", "extensions");
-  const isHistoryPage = isLocation("flow:", "history");
+  const isExtensions = isLocation("blinker:", "extensions");
+  const isHistoryPage = isLocation("blinker:", "history");
+  const isSettingsPage = isLocation("blinker:", "settings");
 
   switch (permission) {
     case "all":
@@ -88,12 +90,178 @@ function hasPermission(permission: Permission) {
     case "browser":
       return isBrowserUI || isOmnibox || isHistoryPage;
     case "session":
-      return isFlowInternalProtocol || isOmnibox || isBrowserUI;
+      return isFlowInternalProtocol || isOmnibox || isBrowserUI || isSettingsPage;
     case "settings":
       return isInternalProtocols;
     default:
       return false;
   }
+}
+
+function isWebPage() {
+  return location.protocol === "http:" || location.protocol === "https:";
+}
+
+function installPasswordAutofillBridge() {
+  if (!isWebPage()) return;
+
+  window.addEventListener("message", async (event) => {
+    if (event.source !== window) return;
+
+    const message = event.data;
+    if (!message || message.source !== "flow-passwords" || typeof message.requestId !== "string") return;
+
+    if (message.type === "get-autofill") {
+      const entries = await ipcRenderer.invoke("passwords:get-autofill", location.href);
+      window.postMessage(
+        {
+          source: "flow-passwords",
+          type: "autofill-result",
+          requestId: message.requestId,
+          entries
+        },
+        location.origin
+      );
+    } else if (message.type === "save-candidate") {
+      await ipcRenderer.invoke("passwords:capture-save-candidate", message.candidate);
+    }
+  });
+
+  contextBridge.executeInMainWorld({
+    func: () => {
+      type FlowCredential = {
+        username: string;
+        password: string;
+      };
+
+      const requestAutofill = () =>
+        new Promise<FlowCredential[]>((resolve) => {
+          const requestId = crypto.randomUUID();
+          const timeout = window.setTimeout(() => {
+            window.removeEventListener("message", handleMessage);
+            resolve([]);
+          }, 800);
+
+          function handleMessage(event: MessageEvent) {
+            const message = event.data;
+            if (
+              event.source !== window ||
+              !message ||
+              message.source !== "flow-passwords" ||
+              message.type !== "autofill-result" ||
+              message.requestId !== requestId
+            ) {
+              return;
+            }
+
+            window.clearTimeout(timeout);
+            window.removeEventListener("message", handleMessage);
+            resolve(Array.isArray(message.entries) ? message.entries : []);
+          }
+
+          window.addEventListener("message", handleMessage);
+          window.postMessage({ source: "flow-passwords", type: "get-autofill", requestId }, location.origin);
+        });
+
+      const textInputTypes = new Set(["", "text", "email", "tel", "url", "search"]);
+
+      function findLoginFields(root: ParentNode = document) {
+        const passwordFields = Array.from(root.querySelectorAll<HTMLInputElement>('input[type="password"]')).filter(
+          (input) => !input.disabled && !input.readOnly
+        );
+
+        return passwordFields.map((passwordField) => {
+          const form = passwordField.form;
+          const scope: ParentNode = form ?? document;
+          const candidates = Array.from(scope.querySelectorAll<HTMLInputElement>("input")).filter((input) => {
+            const type = input.type.toLowerCase();
+            return input !== passwordField && textInputTypes.has(type) && !input.disabled && !input.readOnly;
+          });
+
+          const usernameField =
+            candidates.find((input) => /user|email|login|name|account/i.test(`${input.name} ${input.id} ${input.autocomplete}`)) ??
+            candidates.filter((input) => {
+              const passwordRect = passwordField.getBoundingClientRect();
+              const inputRect = input.getBoundingClientRect();
+              return inputRect.top <= passwordRect.top;
+            }).at(-1) ??
+            null;
+
+          return { form, usernameField, passwordField };
+        });
+      }
+
+      function setNativeValue(input: HTMLInputElement, value: string) {
+        const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set;
+        setter?.call(input, value);
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+        input.dispatchEvent(new Event("change", { bubbles: true }));
+      }
+
+      async function fillNearest(target: EventTarget | null) {
+        if (!(target instanceof HTMLInputElement)) return;
+        const fields = findLoginFields();
+        const match = fields.find(({ usernameField, passwordField }) => target === usernameField || target === passwordField);
+        if (!match || match.passwordField.value) return;
+
+        const [credential] = await requestAutofill();
+        if (!credential) return;
+
+        if (match.usernameField && !match.usernameField.value) {
+          setNativeValue(match.usernameField, credential.username);
+        }
+        if (!match.passwordField.value) {
+          setNativeValue(match.passwordField, credential.password);
+        }
+      }
+
+      function captureCandidate(form: HTMLFormElement | null, target?: EventTarget | null) {
+        const fields = findLoginFields(form ?? document);
+        const match =
+          fields.find(({ passwordField }) => target === passwordField) ??
+          fields.find(({ form: fieldForm }) => fieldForm === form) ??
+          fields[0];
+        if (!match || !match.passwordField.value) return;
+
+        const username = match.usernameField?.value.trim() ?? "";
+        const password = match.passwordField.value;
+        if (!username || !password) return;
+
+        window.postMessage(
+          {
+            source: "flow-passwords",
+            type: "save-candidate",
+            requestId: crypto.randomUUID(),
+            candidate: {
+              url: location.href,
+              title: document.title,
+              username,
+              password
+            }
+          },
+          location.origin
+        );
+      }
+
+      document.addEventListener("focusin", (event) => void fillNearest(event.target), true);
+      document.addEventListener(
+        "submit",
+        (event) => {
+          captureCandidate(event.target instanceof HTMLFormElement ? event.target : null);
+        },
+        true
+      );
+      document.addEventListener(
+        "keydown",
+        (event) => {
+          if (event.key === "Enter") {
+            captureCandidate((event.target as HTMLInputElement | null)?.form ?? null, event.target);
+          }
+        },
+        true
+      );
+    }
+  });
 }
 
 // BROWSER ACTION //
@@ -105,6 +273,7 @@ if (hasPermission("browser")) {
 // API PATCHES //
 tryPatchPasskeys();
 tryPatchPrompts();
+installPasswordAutofillBridge();
 
 // INTERNAL FUNCTIONS //
 function getOSFromPlatform(platform: NodeJS.Platform) {
@@ -618,6 +787,25 @@ const onboardingAPI: FlowOnboardingAPI = {
   }
 };
 
+// PASSWORDS API //
+const passwordsAPI: FlowPasswordsAPI = {
+  list: async (profileId: string) => {
+    return ipcRenderer.invoke("passwords:list", profileId);
+  },
+  save: async (profileId, entry) => {
+    return ipcRenderer.invoke("passwords:save", profileId, entry);
+  },
+  delete: async (profileId, id) => {
+    return ipcRenderer.invoke("passwords:delete", profileId, id);
+  },
+  importFromCsv: async (profileId) => {
+    return ipcRenderer.invoke("passwords:import-csv", profileId);
+  },
+  exportToCsv: async (profileId) => {
+    return ipcRenderer.invoke("passwords:export-csv", profileId);
+  }
+};
+
 // OMNIBOX API //
 const omniboxAPI: FlowOmniboxAPI = {
   show: (bounds: Electron.Rectangle | null, params: OmniboxOpenParams | null) => {
@@ -690,7 +878,7 @@ const settingsAPI: FlowSettingsAPI = {
 // WINDOWS API //
 const windowsAPI: FlowWindowsAPI = {
   openSettingsWindow: () => {
-    return ipcRenderer.send("settings:open");
+    void ipcRenderer.invoke("tabs:new-tab", "blinker://settings/", true);
   },
   closeSettingsWindow: () => {
     return ipcRenderer.send("settings:close");
@@ -733,6 +921,9 @@ const extensionsAPI: FlowExtensionsAPI = {
   },
   setExtensionPinned: async (extensionId: string, pinned: boolean) => {
     return ipcRenderer.invoke("extensions:set-extension-pinned", extensionId, pinned);
+  },
+  importUnpacked: async () => {
+    return ipcRenderer.invoke("extensions:import-unpacked");
   }
 };
 
@@ -831,6 +1022,7 @@ const flowAPI: typeof flow = {
   settings: wrapAPI(settingsAPI, "settings"),
   icons: wrapAPI(iconsAPI, "settings"),
   openExternal: wrapAPI(openExternalAPI, "settings"),
-  onboarding: wrapAPI(onboardingAPI, "settings")
+  onboarding: wrapAPI(onboardingAPI, "settings"),
+  passwords: wrapAPI(passwordsAPI, "settings")
 };
 contextBridge.exposeInMainWorld("flow", flowAPI);

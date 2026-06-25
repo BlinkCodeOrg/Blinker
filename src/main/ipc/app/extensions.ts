@@ -38,7 +38,7 @@ async function generateSharedExtensionData(
     ? await translateManifestString(extensionPath, manifest.description)
     : undefined;
 
-  const iconURL = new URL("flow://extension-icon");
+  const iconURL = new URL("blinker://extension-icon");
   iconURL.searchParams.set("id", extensionId);
   iconURL.searchParams.set("profile", extensionsManager.profileId);
 
@@ -177,6 +177,34 @@ ipcMain.handle(
     return await extensionsManager.setPinned(extensionId, pinned);
   }
 );
+
+ipcMain.handle("extensions:import-unpacked", async (event: IpcMainInvokeEvent): Promise<SharedExtensionData | null> => {
+  const profileId = await getCurrentProfileIdFromWebContents(event.sender);
+  if (!profileId) return null;
+
+  const loadedProfile = loadedProfilesController.get(profileId);
+  if (!loadedProfile) return null;
+
+  const window = browserWindowsController.getWindowFromWebContents(event.sender);
+  const dialogOptions: Electron.OpenDialogOptions = {
+    title: "Импорт расширения",
+    properties: ["openDirectory"]
+  };
+  const result = window
+    ? await dialog.showOpenDialog(window.browserWindow, dialogOptions)
+    : await dialog.showOpenDialog(dialogOptions);
+  if (result.canceled || result.filePaths.length === 0) return null;
+
+  const extensionId = await loadedProfile.extensionsManager.importUnpackedExtension(result.filePaths[0]);
+  if (!extensionId) return null;
+
+  const extensionData = loadedProfile.extensionsManager.getExtensionDataFromCache(extensionId);
+  if (!extensionData) return null;
+
+  const sharedExtension = await generateSharedExtensionData(loadedProfile.extensionsManager, extensionId, extensionData);
+  await fireOnExtensionsUpdated(profileId);
+  return sharedExtension;
+});
 
 export async function fireOnExtensionsUpdated(profileId: string) {
   const extensions = await getExtensionDataFromProfile(profileId);

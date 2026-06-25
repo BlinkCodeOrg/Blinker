@@ -9867,7 +9867,7 @@
                     },
                     Z.pz.getString("modifiedBy")
                   ),
-                  a.createElement(x.nv, null, "iamEvanYT")
+                  a.createElement(x.nv, null, "lovlygod")
                 )
               ),
               at(this, "confirmResetStats", () => {

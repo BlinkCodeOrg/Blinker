@@ -6,7 +6,7 @@ function printHeader() {
     console.log("\n".repeat(75));
   }
 
-  console.log("\x1b[34m%s\x1b[0m", "--- Flow Browser ---");
+  console.log("\x1b[34m%s\x1b[0m", "--- Blinker Browser ---");
 
   if (app.isPackaged) {
     console.log("\x1b[32m%s\x1b[0m", `Production Build (${app.getVersion()})`);
@@ -18,6 +18,11 @@ function printHeader() {
 }
 
 function initializeApp() {
+  if (process.platform === "win32") {
+    app.disableHardwareAcceleration();
+    app.commandLine.appendSwitch("disable-gpu");
+  }
+
   const gotTheLock = app.requestSingleInstanceLock();
   debugPrint("INITIALIZATION", "gotTheLock", gotTheLock);
 

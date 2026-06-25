@@ -17,13 +17,20 @@ if (customAppVersion) {
 
 // Main Configuration //
 const electronBuilderConfig: Configuration = {
-  appId: "dev.iamevan.flow",
-  productName: "Flow",
+  appId: "dev.lovly.blinker",
+  productName: "Blinker",
   ...(customAppVersion && { buildVersion: customAppVersion, extraMetadata: { version: customAppVersion } }),
   directories: {
     buildResources: "build"
   },
   files: [
+    { from: "compiled-app", to: "out", filter: ["**/*"] },
+    { from: "assets", to: "assets", filter: ["**/*"] },
+    "package.json",
+    "LICENSE",
+    "README.md",
+    "favicon.png",
+    "dev.lovly.blinker.*",
     "!**/.vscode/*",
     "!build/**",
     "!src/*",
@@ -34,6 +41,7 @@ const electronBuilderConfig: Configuration = {
     "!{.env,.env.*,.npmrc,bun.lock}",
     "!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}"
   ],
+  disableDefaultIgnoredFiles: true,
   protocols: [
     {
       name: "HyperText Transfer Protocol",
@@ -85,7 +93,7 @@ const electronBuilderConfig: Configuration = {
     }
   ],
   win: {
-    executableName: "flow",
+    executableName: "blinker",
     verifyUpdateCodeSignature: false
   },
   nsis: {
@@ -123,7 +131,8 @@ const electronBuilderConfig: Configuration = {
   npmRebuild: false,
   publish: {
     provider: "github",
-    owner: "multiboxlabs",
+    owner: "lovlygod",
+    repo: "Blinker",
     releaseType: "prerelease"
   },
   electronDist: "node_modules/electron/dist",

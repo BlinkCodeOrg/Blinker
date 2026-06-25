@@ -1,9 +1,9 @@
 import type { StaticDomainInfo } from "./types";
 
 export const STATIC_DOMAINS: StaticDomainInfo[] = [
-  // flow-internal
+  // blinker-internal
   {
-    protocol: "flow-internal",
+    protocol: "blinker-internal",
     hostname: "main-ui",
     actual: {
       type: "route",
@@ -11,7 +11,7 @@ export const STATIC_DOMAINS: StaticDomainInfo[] = [
     }
   },
   {
-    protocol: "flow-internal",
+    protocol: "blinker-internal",
     hostname: "popup-ui",
     actual: {
       type: "route",
@@ -19,7 +19,7 @@ export const STATIC_DOMAINS: StaticDomainInfo[] = [
     }
   },
   {
-    protocol: "flow-internal",
+    protocol: "blinker-internal",
     hostname: "settings",
     actual: {
       type: "route",
@@ -27,7 +27,7 @@ export const STATIC_DOMAINS: StaticDomainInfo[] = [
     }
   },
   {
-    protocol: "flow-internal",
+    protocol: "blinker-internal",
     hostname: "omnibox",
     actual: {
       type: "route",
@@ -35,7 +35,7 @@ export const STATIC_DOMAINS: StaticDomainInfo[] = [
     }
   },
   {
-    protocol: "flow-internal",
+    protocol: "blinker-internal",
     hostname: "onboarding",
     actual: {
       type: "route",
@@ -45,7 +45,7 @@ export const STATIC_DOMAINS: StaticDomainInfo[] = [
 
   // flow
   {
-    protocol: "flow",
+    protocol: "blinker",
     hostname: "new-tab",
     actual: {
       type: "route",
@@ -53,7 +53,7 @@ export const STATIC_DOMAINS: StaticDomainInfo[] = [
     }
   },
   {
-    protocol: "flow",
+    protocol: "blinker",
     hostname: "error",
     actual: {
       type: "route",
@@ -61,7 +61,7 @@ export const STATIC_DOMAINS: StaticDomainInfo[] = [
     }
   },
   {
-    protocol: "flow",
+    protocol: "blinker",
     hostname: "about",
     actual: {
       type: "route",
@@ -69,7 +69,7 @@ export const STATIC_DOMAINS: StaticDomainInfo[] = [
     }
   },
   {
-    protocol: "flow",
+    protocol: "blinker",
     hostname: "games",
     actual: {
       type: "route",
@@ -77,7 +77,7 @@ export const STATIC_DOMAINS: StaticDomainInfo[] = [
     }
   },
   {
-    protocol: "flow",
+    protocol: "blinker",
     hostname: "omnibox",
     actual: {
       type: "route",
@@ -85,7 +85,15 @@ export const STATIC_DOMAINS: StaticDomainInfo[] = [
     }
   },
   {
-    protocol: "flow",
+    protocol: "blinker",
+    hostname: "settings",
+    actual: {
+      type: "route",
+      route: "settings"
+    }
+  },
+  {
+    protocol: "blinker",
     hostname: "extensions",
     actual: {
       type: "route",
@@ -93,7 +101,7 @@ export const STATIC_DOMAINS: StaticDomainInfo[] = [
     }
   },
   {
-    protocol: "flow",
+    protocol: "blinker",
     hostname: "history",
     actual: {
       type: "route",
@@ -101,7 +109,7 @@ export const STATIC_DOMAINS: StaticDomainInfo[] = [
     }
   },
   {
-    protocol: "flow",
+    protocol: "blinker",
     hostname: "bangs",
     actual: {
       type: "route",
@@ -109,7 +117,7 @@ export const STATIC_DOMAINS: StaticDomainInfo[] = [
     }
   },
   {
-    protocol: "flow",
+    protocol: "blinker",
     hostname: "pdf-viewer",
     actual: {
       type: "route",
@@ -117,9 +125,9 @@ export const STATIC_DOMAINS: StaticDomainInfo[] = [
     }
   },
 
-  // flow-external
+  // blinker-external
   {
-    protocol: "flow-external",
+    protocol: "blinker-external",
     // Dino Game - Taken from https://github.com/yell0wsuit/chrome-dino-enhanced
     hostname: "dino.chrome.game",
     actual: {
@@ -128,7 +136,7 @@ export const STATIC_DOMAINS: StaticDomainInfo[] = [
     }
   },
   {
-    protocol: "flow-external",
+    protocol: "blinker-external",
     // Surf Game (v1) - Taken From https://github.com/yell0wsuit/ms-edge-letssurf
     hostname: "v1.surf.edge.game",
     actual: {
@@ -137,7 +145,7 @@ export const STATIC_DOMAINS: StaticDomainInfo[] = [
     }
   },
   {
-    protocol: "flow-external",
+    protocol: "blinker-external",
     // Surf Game (v2) - Taken from https://github.com/yell0wsuit/ms-edge-surf-2
     hostname: "v2.surf.edge.game",
     actual: {

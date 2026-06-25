@@ -107,3 +107,29 @@ export const historyVisits = sqliteTable(
 
 export type HistoryUrlRow = typeof historyUrls.$inferSelect;
 export type HistoryVisitRow = typeof historyVisits.$inferSelect;
+
+// --- Password manager ---
+
+export const passwords = sqliteTable(
+  "passwords",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    profileId: text("profile_id").notNull(),
+    origin: text("origin").notNull(),
+    url: text("url").notNull(),
+    username: text("username").notNull(),
+    encryptedPassword: text("encrypted_password").notNull(),
+    title: text("title").notNull(),
+    note: text("note"),
+    source: text("source").notNull().default("Blinker"),
+    createdAt: integer("created_at").notNull(),
+    updatedAt: integer("updated_at").notNull()
+  },
+  (table) => [
+    index("idx_passwords_profile_id").on(table.profileId),
+    uniqueIndex("idx_passwords_profile_origin_username").on(table.profileId, table.origin, table.username)
+  ]
+);
+
+export type PasswordRow = typeof passwords.$inferSelect;
+export type PasswordInsert = typeof passwords.$inferInsert;

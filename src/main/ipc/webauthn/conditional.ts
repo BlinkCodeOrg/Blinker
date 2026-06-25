@@ -190,7 +190,7 @@ ipcMain.on("webauthn:cancel-conditional-mediation", (_event, operationId: string
   progressConditionalMediation(operationId);
 });
 
-// IPCs with Flow Browser UI //
+// IPCs with Blinker Browser UI //
 ipcMain.handle("passkey:get-conditional-requests", (): ConditionalPasskeyRequest[] => {
   return getSerializedConditionalRequests();
 });

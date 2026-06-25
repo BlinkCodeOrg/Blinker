@@ -1,4 +1,5 @@
 import type { DistributiveOmit } from "./utils";
+import type { PasswordSaveCandidate } from "./passwords";
 
 // Prompt Result Types //
 interface SuccessfulPromptResult<Result> {
@@ -55,8 +56,18 @@ interface BasicAuthPromptState extends BasePromptState<BasicAuthCredentials | nu
   isProxy: boolean;
 }
 
+interface SavePasswordPromptState extends BasePromptState<"save" | "never" | null> {
+  type: "save-password";
+  candidate: PasswordSaveCandidate;
+}
+
 // Combined Prompt States //
-export type PromptState = TextPromptState | ConfirmPromptState | AlertPromptState | BasicAuthPromptState;
+export type PromptState =
+  | TextPromptState
+  | ConfirmPromptState
+  | AlertPromptState
+  | BasicAuthPromptState
+  | SavePasswordPromptState;
 
 // Renderer Types //
 export type ActivePrompt = DistributiveOmit<PromptState, "promise" | "resolver">;

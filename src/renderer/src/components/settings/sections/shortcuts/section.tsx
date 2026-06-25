@@ -15,6 +15,7 @@ import { CategorySection } from "./components/category-section";
 import { ResetDialog } from "./components/reset-dialog";
 import { useDebounce } from "@/hooks/use-debounce";
 import { useKeyboardNormalizer } from "./hooks/use-keyboard-normalizer";
+import { t } from "@/lib/i18n";
 
 export function ShortcutsSettings() {
   const { shortcuts, isLoading, setShortcut, resetShortcut, resetAllShortcuts, formatShortcutForDisplay } =
@@ -56,20 +57,20 @@ export function ShortcutsSettings() {
     async (actionId: string) => {
       try {
         if (!tempRawShortcut) {
-          toast.error("Please record a valid shortcut first.");
+          toast.error(t("shortcuts.validFirst"));
           return;
         }
 
         const success = await setShortcut(actionId, tempRawShortcut);
         if (success) {
-          toast.success("Shortcut updated successfully.");
+          toast.success(t("shortcuts.updated"));
           handleCancelEdit();
         } else {
-          toast.error("Failed to update shortcut.");
+          toast.error(t("shortcuts.updateFailed"));
         }
       } catch (error) {
         console.error("Error saving shortcut:", error);
-        toast.error("An error occurred while saving the shortcut.");
+        toast.error(t("shortcuts.saveError"));
       }
     },
     [tempRawShortcut, setShortcut, handleCancelEdit]
@@ -80,18 +81,18 @@ export function ShortcutsSettings() {
       try {
         const success = await resetShortcut(action.id);
         if (success) {
-          toast.success(`Shortcut for "${action.name}" reset to default.`);
+          toast.success(t("shortcuts.resetOne", { name: action.name }));
           if (editingActionId === action.id) {
             // The original shortcut will be restored after shortcuts are refreshed
             // Just close the editor for now
             handleCancelEdit();
           }
         } else {
-          toast.error(`Could not reset shortcut for "${action.name}".`);
+          toast.error(t("shortcuts.resetOneFailed", { name: action.name }));
         }
       } catch (error) {
         console.error("Error resetting shortcut:", error);
-        toast.error("An error occurred while resetting the shortcut.");
+        toast.error(t("shortcuts.resetError"));
       }
     },
     [editingActionId, resetShortcut, handleCancelEdit]
@@ -100,10 +101,10 @@ export function ShortcutsSettings() {
   const performResetAllKeybinds = useCallback(async () => {
     try {
       await resetAllShortcuts();
-      toast.success("All shortcuts have been reset to their defaults.");
+      toast.success(t("shortcuts.resetAll"));
     } catch (error) {
       console.error("Failed to reset all keybinds:", error);
-      toast.error("Could not reset all shortcuts.");
+      toast.error(t("shortcuts.resetAllFailed"));
     }
   }, [resetAllShortcuts]);
 
@@ -185,9 +186,9 @@ export function ShortcutsSettings() {
       <motion.div initial={{ opacity: 0.8, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
         <h2 className="text-2xl font-semibold text-card-foreground flex items-center gap-2">
           <KeyboardIcon className="h-6 w-6" />
-          Keyboard Shortcuts
+          {t("shortcuts.title")}
         </h2>
-        <p className="text-muted-foreground">Customize Flow keyboard shortcuts to improve your workflow.</p>
+        <p className="text-muted-foreground">{t("shortcuts.subtitle")}</p>
       </motion.div>
 
       <motion.div

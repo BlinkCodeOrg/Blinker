@@ -8,7 +8,7 @@ import type { Session } from "electron";
 export function setupCorsBypassForCustomProtocols(session: Session) {
   const webRequest = createBetterWebRequest(session.webRequest, "bypass-cors");
 
-  const WHITELISTED_PROTOCOLS = ["flow:", "flow-internal:"];
+  const WHITELISTED_PROTOCOLS = ["blinker:", "blinker-internal:"];
 
   webRequest.onHeadersReceived((details, callback) => {
     const currentUrl = details.webContents?.getURL();

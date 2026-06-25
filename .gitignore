@@ -1,6 +1,9 @@
 node_modules
 dist
 out
+compiled-app
+release
+original-reference
 .DS_Store
 .eslintcache
 *.log*

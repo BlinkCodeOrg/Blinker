@@ -4,6 +4,7 @@ import { Edit3Icon, RotateCcwIcon, SaveIcon, XIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ShortcutAction } from "~/types/shortcuts";
 import { motion } from "motion/react";
+import { t } from "@/lib/i18n";
 
 interface ShortcutItemProps {
   shortcut: ShortcutAction;
@@ -50,7 +51,7 @@ export function ShortcutItem({
     >
       <p className="text-sm font-medium text-card-foreground truncate flex-grow" title={shortcut.name}>
         {shortcut.name}
-        {isModified && <span className="ml-2 text-xs text-primary font-normal">(Modified)</span>}
+        {isModified && <span className="ml-2 text-xs text-primary font-normal">({t("shortcuts.modifiedBadge")})</span>}
       </p>
       {isEditing ? (
         <motion.div
@@ -70,12 +71,13 @@ export function ShortcutItem({
           >
             {isRecording ? (
               <span className="text-muted-foreground italic flex items-center">
-                Recording<span className="animate-pulse">...</span>
+                {t("shortcuts.recording")}
+                <span className="animate-pulse">...</span>
               </span>
             ) : shortcutInputValue ? (
               shortcutInputValue
             ) : (
-              <span className="text-muted-foreground italic">Click to record</span>
+              <span className="text-muted-foreground italic">{t("shortcuts.clickToRecord")}</span>
             )}
           </div>
           <div className="flex gap-1">
@@ -84,7 +86,7 @@ export function ShortcutItem({
               size="icon"
               className="h-8 w-8 hover:bg-primary/10 hover:text-primary transition-colors"
               onClick={onSave}
-              title="Save"
+              title={t("action.save")}
               disabled={!shortcutInputValue}
             >
               <SaveIcon className="h-4 w-4" />
@@ -94,7 +96,7 @@ export function ShortcutItem({
               size="icon"
               className="h-8 w-8 hover:bg-destructive/10 hover:text-destructive transition-colors"
               onClick={onCancel}
-              title="Cancel Edit"
+              title={t("shortcuts.cancelEdit")}
             >
               <XIcon className="h-4 w-4" />
             </Button>
@@ -103,7 +105,7 @@ export function ShortcutItem({
               size="icon"
               className="h-8 w-8 hover:bg-blue-500/10 hover:text-blue-500 transition-colors"
               onClick={onReset}
-              title="Reset to Default"
+              title={t("shortcuts.resetToDefault")}
             >
               <RotateCcwIcon className="h-4 w-4" />
             </Button>
@@ -130,7 +132,7 @@ export function ShortcutItem({
               "hover:bg-primary/10 hover:text-primary"
             )}
             onClick={onEdit}
-            title="Edit Shortcut"
+            title={t("shortcuts.editShortcut")}
           >
             <Edit3Icon className="h-4 w-4" />
           </Button>

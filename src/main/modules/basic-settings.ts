@@ -36,7 +36,7 @@ export const BasicSettings: BasicSetting[] = [
   // [GENERAL] Auto Update
   {
     id: "autoUpdate",
-    name: "Auto Update",
+    name: "Автоматические обновления",
     showName: true,
     type: "boolean",
     defaultValue: true
@@ -45,7 +45,7 @@ export const BasicSettings: BasicSetting[] = [
   // [GENERAL] Sync Tabs Across Windows
   {
     id: "syncTabsAcrossWindows",
-    name: "Sync Tabs Across Windows",
+    name: "Синхронизировать вкладки между окнами",
     showName: true,
     type: "boolean",
     defaultValue: false
@@ -54,26 +54,76 @@ export const BasicSettings: BasicSetting[] = [
   // [GENERAL] Content Blocking
   {
     id: "contentBlocker",
-    name: "Content Blocker (Built-In Adblocker)",
+    name: "Блокировка контента (встроенный блокировщик рекламы)",
     showName: true,
     type: "enum",
     defaultValue: "disabled",
     options: [
       {
         id: "disabled",
-        name: "Disabled"
+        name: "Отключено"
       },
       {
         id: "adsOnly",
-        name: "Block Ads"
+        name: "Блокировать рекламу"
       },
       {
         id: "adsAndTrackers",
-        name: "Block Ads & Trackers"
+        name: "Блокировать рекламу и трекеры"
       },
       {
         id: "all",
-        name: "Block All (Cookie Notices, etc...)"
+        name: "Блокировать все (баннеры cookie и т. д.)"
+      }
+    ]
+  },
+
+  // [GENERAL] App Language
+  {
+    id: "appLanguage",
+    name: "Язык интерфейса",
+    showName: true,
+    type: "enum",
+    defaultValue: "system",
+    options: [
+      {
+        id: "system",
+        name: "Как в системе"
+      },
+      {
+        id: "ru",
+        name: "Русский"
+      },
+      {
+        id: "en",
+        name: "English"
+      }
+    ]
+  },
+
+  // [GENERAL] Default Search Engine
+  {
+    id: "defaultSearchEngine",
+    name: "Поисковик по умолчанию",
+    showName: true,
+    type: "enum",
+    defaultValue: "google",
+    options: [
+      {
+        id: "google",
+        name: "Google"
+      },
+      {
+        id: "yandex",
+        name: "Яндекс"
+      },
+      {
+        id: "duckduckgo",
+        name: "DuckDuckGo"
+      },
+      {
+        id: "bing",
+        name: "Bing"
       }
     ]
   },
@@ -81,18 +131,18 @@ export const BasicSettings: BasicSetting[] = [
   // New Tab Mode
   {
     id: "newTabMode",
-    name: "New Tab Mode",
+    name: "Режим новой вкладки",
     showName: false,
     type: "enum",
-    defaultValue: "omnibox",
+    defaultValue: "tab",
     options: [
       {
         id: "omnibox",
-        name: "Command Palette"
+        name: "Командная палитра"
       },
       {
         id: "tab",
-        name: "Page"
+        name: "Страница"
       }
     ]
   },
@@ -100,22 +150,22 @@ export const BasicSettings: BasicSetting[] = [
   // Command Palette Opacity
   {
     id: "commandPaletteOpacity",
-    name: "Command Palette Opacity",
+    name: "Прозрачность командной палитры",
     showName: false,
     type: "enum",
     defaultValue: "tinted",
     options: [
       {
         id: "solid",
-        name: "Solid"
+        name: "Сплошная"
       },
       {
         id: "tinted",
-        name: "Tinted (Default)"
+        name: "Тонированная (по умолчанию)"
       },
       {
         id: "glassy",
-        name: "Glassy"
+        name: "Стеклянная"
       }
     ]
   },
@@ -123,18 +173,18 @@ export const BasicSettings: BasicSetting[] = [
   // Sidebar Side
   {
     id: "sidebarSide",
-    name: "Sidebar Side",
+    name: "Сторона боковой панели",
     showName: true,
     type: "enum",
     defaultValue: "left",
     options: [
       {
         id: "left",
-        name: "Left"
+        name: "Слева"
       },
       {
         id: "right",
-        name: "Right (Experimental)"
+        name: "Справа (экспериментально)"
       }
     ]
   },
@@ -142,30 +192,30 @@ export const BasicSettings: BasicSetting[] = [
   // Archive Tab After
   {
     id: "archiveTabAfter",
-    name: "Archive Tab After",
+    name: "Архивировать вкладку через",
     showName: false,
     type: "enum",
     defaultValue: "12h",
     options: [
       {
         id: "12h",
-        name: "12 Hours"
+        name: "12 часов"
       },
       {
         id: "24h",
-        name: "24 Hours"
+        name: "24 часа"
       },
       {
         id: "7d",
-        name: "7 Days"
+        name: "7 дней"
       },
       {
         id: "30d",
-        name: "30 Days"
+        name: "30 дней"
       },
       {
         id: "never",
-        name: "Never"
+        name: "Никогда"
       }
     ]
   },
@@ -173,58 +223,58 @@ export const BasicSettings: BasicSetting[] = [
   // Sleep Tab After
   {
     id: "sleepTabAfter",
-    name: "Sleep Tab After",
+    name: "Усыплять вкладку через",
     showName: false,
     type: "enum",
     defaultValue: "never",
     options: [
       {
         id: "5m",
-        name: "5 Minutes"
+        name: "5 минут"
       },
       {
         id: "10m",
-        name: "10 Minutes"
+        name: "10 минут"
       },
       {
         id: "30m",
-        name: "30 Minutes"
+        name: "30 минут"
       },
       {
         id: "1h",
-        name: "1 Hour"
+        name: "1 час"
       },
       {
         id: "2h",
-        name: "2 Hours"
+        name: "2 часа"
       },
       {
         id: "4h",
-        name: "4 Hours"
+        name: "4 часа"
       },
       {
         id: "8h",
-        name: "8 Hours"
+        name: "8 часов"
       },
       {
         id: "12h",
-        name: "12 Hours"
+        name: "12 часов"
       },
       {
         id: "24h",
-        name: "24 Hours"
+        name: "24 часа"
       },
       {
         id: "never",
-        name: "Never"
+        name: "Никогда"
       }
     ]
   },
 
-  // [EXPERIMENTAL] Enable Flow PDF Viewer
+  // [EXPERIMENTAL] Enable Blinker PDF Viewer
   {
     id: "enableFlowPdfViewer",
-    name: "Enable Flow PDF Viewer",
+    name: "Включить PDF-просмотрщик Blinker",
     showName: true,
     type: "boolean",
     defaultValue: false
@@ -233,7 +283,7 @@ export const BasicSettings: BasicSetting[] = [
   // [ADVANCED] Enable mv2 extensions
   {
     id: "enableMv2Extensions",
-    name: "Re-enable Manifest V2 extensions [UNSTABLE]",
+    name: "Снова включить расширения Manifest V2 [нестабильно]",
     showName: true,
     type: "boolean",
     defaultValue: false
@@ -243,9 +293,16 @@ export const BasicSettings: BasicSetting[] = [
 export const BasicSettingCards: BasicSettingCard[] = [
   // General Card
   {
-    title: "General Settings",
-    subtitle: "General settings for the application",
-    settings: ["autoUpdate", "syncTabsAcrossWindows", "contentBlocker", "internal_setAsDefaultBrowser"]
+    title: "Общие настройки",
+    subtitle: "Основные настройки приложения",
+    settings: [
+      "autoUpdate",
+      "syncTabsAcrossWindows",
+      "appLanguage",
+      "defaultSearchEngine",
+      "contentBlocker",
+      "internal_setAsDefaultBrowser"
+    ]
   },
 
   // Update Card (Internal)
@@ -257,29 +314,29 @@ export const BasicSettingCards: BasicSettingCard[] = [
 
   // New Tab Mode Card
   {
-    title: "New Tab Mode",
-    subtitle: "Choose how new tabs should open",
+    title: "Новая вкладка",
+    subtitle: "Выберите, как должны открываться новые вкладки",
     settings: ["newTabMode"]
   },
 
   // Command Palette Card
   {
-    title: "Command Palette",
-    subtitle: "Choose how translucent the command palette should be",
+    title: "Командная палитра",
+    subtitle: "Выберите прозрачность командной палитры",
     settings: ["commandPaletteOpacity"]
   },
 
   // Sidebar Settings Card
   {
-    title: "Sidebar Settings",
-    subtitle: "Choose how the sidebar should behave",
+    title: "Боковая панель",
+    subtitle: "Настройте поведение боковой панели",
     settings: ["sidebarSide"]
   },
 
   // Performance Settings Card
   {
-    title: "Performance Settings",
-    subtitle: "Settings to improve performance",
+    title: "Производительность",
+    subtitle: "Настройки для повышения производительности",
     settings: ["archiveTabAfter", "sleepTabAfter"]
   },
 
@@ -292,15 +349,15 @@ export const BasicSettingCards: BasicSettingCard[] = [
 
   // Experimental Settings Card
   {
-    title: "Experimental Settings",
-    subtitle: "Experimental settings for Flow",
+    title: "Экспериментальные настройки",
+    subtitle: "Экспериментальные возможности Blinker",
     settings: ["enableFlowPdfViewer"]
   },
 
   // Advanced Settings Card
   {
-    title: "Advanced Settings",
-    subtitle: "Power users only (Some settings may require a restart)",
+    title: "Расширенные настройки",
+    subtitle: "Для опытных пользователей (некоторые настройки требуют перезапуска)",
     settings: ["enableMv2Extensions"]
   }
 ];

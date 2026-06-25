@@ -109,13 +109,19 @@ export function promptCompleted(promptId: string, result: any, suppress: boolean
         result
       });
       break;
+    case "save-password":
+      activePrompt.resolver({
+        success: true,
+        result
+      });
+      break;
   }
 
   processPromptQueue();
   return true;
 }
 
-// Flow UI Communication //
+// Blinker UI Communication //
 export function getActivePromptsForRenderer(): ActivePrompt[] {
   const activePromptsForRenderer = activePrompts.map((prompt) => {
     const { promise, resolver, ...rest } = prompt;

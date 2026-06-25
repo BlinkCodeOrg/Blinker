@@ -27,6 +27,7 @@ import "@/ipc/window/settings";
 import "@/ipc/app/icons";
 import "@/ipc/app/open-external";
 import "@/ipc/app/onboarding";
+import "@/ipc/app/passwords";
 
 // Special
 import "@/ipc/listeners-manager";

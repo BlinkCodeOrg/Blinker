@@ -4,6 +4,7 @@ import contextMenu from "electron-context-menu";
 import { Tab } from "./tab";
 import { TabsController } from "./index";
 import { saveImageAs } from "./save-image-as";
+import { getSettingValueById } from "@/saving/settings";
 
 // Define types for navigation history
 interface NavigationHistory {
@@ -31,6 +32,26 @@ interface MenuActions {
   [key: string]: MenuItemFunction | InspectFunction;
 }
 
+type SearchEngineId = "google" | "yandex" | "duckduckgo" | "bing";
+
+const searchEngines: Record<SearchEngineId, { name: string; url: string }> = {
+  google: { name: "Google", url: "https://www.google.com/search?q={query}" },
+  yandex: { name: "Яндекс", url: "https://yandex.ru/search/?text={query}" },
+  duckduckgo: { name: "DuckDuckGo", url: "https://duckduckgo.com/?q={query}" },
+  bing: { name: "Bing", url: "https://www.bing.com/search?q={query}" }
+};
+
+function getDefaultSearchEngineForMenu() {
+  const settingValue = getSettingValueById("defaultSearchEngine");
+  const engineId = typeof settingValue === "string" && settingValue in searchEngines ? (settingValue as SearchEngineId) : "google";
+  return searchEngines[engineId];
+}
+
+function createSearchUrl(query: string) {
+  const engine = getDefaultSearchEngineForMenu();
+  return engine.url.replace("{query}", encodeURIComponent(query));
+}
+
 export function createTabContextMenu(
   tabsController: TabsController,
   tab: Tab,
@@ -48,7 +69,7 @@ export function createTabContextMenu(
       const canGoBack = navigationHistory.canGoBack();
       const canGoForward = navigationHistory.canGoForward();
       const lookUpSelection = defaultActions.lookUpSelection({});
-      const searchEngine = "Google";
+      const searchEngine = getDefaultSearchEngineForMenu().name;
 
       // Helper function to create a new tab
       const createNewTab = async (url: string, overrideWindow?: BrowserWindow) => {
@@ -281,9 +302,7 @@ function createSelectionItems(
     {
       label: `Search ${searchEngine} for "${displaySelectionText}"`,
       click: () => {
-        const searchURL = new URL("https://www.google.com/search");
-        searchURL.searchParams.set("q", selectionText);
-        createNewTab(searchURL.toString());
+        createNewTab(createSearchUrl(selectionText));
       }
     }
   ];

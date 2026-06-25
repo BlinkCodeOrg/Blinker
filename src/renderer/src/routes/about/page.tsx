@@ -16,13 +16,13 @@ function Page() {
       >
         <Card className="border-border shadow-lg">
           <CardHeader>
-            <CardTitle className="text-3xl font-bold">Flow URLs</CardTitle>
-            <CardDescription>A list of available Flow browser URLs</CardDescription>
+            <CardTitle className="text-3xl font-bold">Blinker URLs</CardTitle>
+            <CardDescription>A list of available Blinker browser URLs</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               {hostnames.map((hostname) => {
-                const url = `flow://${hostname}`;
+                const url = `blinker://${hostname}`;
                 return (
                   <div key={url} className="p-3 rounded-md bg-muted flex justify-between items-center">
                     <span className="text-foreground font-medium">{url}</span>
@@ -48,7 +48,7 @@ function Page() {
 function App() {
   return (
     <>
-      <title>Flow URLs</title>
+      <title>Blinker URLs</title>
       <Page />
     </>
   );

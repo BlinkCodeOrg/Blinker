@@ -1,12 +1,12 @@
 [Desktop Entry]
-Name=Flow
+Name=Blinker
 Comment=Cleaner browsing, sharper focus
 GenericName=Web Browser
 Exec=run.sh %u
-Icon=com.flow_browser.flow
+Icon=dev.lovly.blinker
 Type=Application
 StartupNotify=true
-StartupWMClass=Flow
+StartupWMClass=Blinker
 Categories=Network;WebBrowser;
 MimeType=text/html;text/xml;application/xhtml+xml;application/pdf;x-scheme-handler/http;x-scheme-handler/https;
 Actions=new-window;new-incognito-window;

@@ -12,23 +12,27 @@ import { ThemeConsumer } from "@/components/main/theme";
 import { useActivePrompts } from "@/components/providers/active-prompts-provider";
 import type { ActivePrompt, BasicAuthCredentials } from "~/types/prompts";
 import { getOriginFromURL } from "~/utility";
+import { t } from "@/lib/i18n";
 
 const suppressablePromptTypes = ["prompt", "confirm", "alert"] as const satisfies ActivePrompt["type"][];
 
 type JsDialogActivePrompt = Extract<ActivePrompt, { type: "prompt" | "confirm" | "alert" }>;
 type BasicAuthActivePrompt = Extract<ActivePrompt, { type: "basic-auth" }>;
+type SavePasswordActivePrompt = Extract<ActivePrompt, { type: "save-password" }>;
 
 interface WebPromptsProps {
   anchorRef: React.RefObject<HTMLDivElement | null>;
 }
 
+function promptOrigin(originUrl?: string) {
+  return originUrl ? getOriginFromURL(originUrl) : t("prompt.unknownWebsite");
+}
+
 function JavaScriptDialogCard({ prompt }: { prompt: JsDialogActivePrompt }) {
   const { type } = prompt;
-
   const cardRef = useRef<HTMLDivElement>(null);
   const selectDefaultOnceRef = useRef(true);
   const inputRef = useRef<HTMLInputElement | null>(null);
-
   const suppressionKey = prompt.suppressionKey;
   const [suppressChecked, setSuppressChecked] = useState(false);
 
@@ -65,23 +69,15 @@ function JavaScriptDialogCard({ prompt }: { prompt: JsDialogActivePrompt }) {
     const card = cardRef.current;
     if (!card) return;
 
-    const document = card.ownerDocument;
-
+    const ownerDocument = card.ownerDocument;
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.ctrlKey || e.metaKey || e.altKey || e.shiftKey) return;
-
-      if (e.key === "Escape") {
-        cancel();
-      }
-      if (e.key === "Enter") {
-        confirm();
-      }
+      if (e.key === "Escape") cancel();
+      if (e.key === "Enter") confirm();
     };
 
-    document.addEventListener("keydown", handleKeyDown);
-    return () => {
-      document.removeEventListener("keydown", handleKeyDown);
-    };
+    ownerDocument.addEventListener("keydown", handleKeyDown);
+    return () => ownerDocument.removeEventListener("keydown", handleKeyDown);
   }, [confirm, cancel]);
 
   return (
@@ -90,7 +86,7 @@ function JavaScriptDialogCard({ prompt }: { prompt: JsDialogActivePrompt }) {
       className={cn("w-full max-w-md select-none gap-5", "border border-white/25", "shadow-2xl shadow-black/40")}
     >
       <CardHeader>
-        <CardTitle>{`${prompt.originUrl ? getOriginFromURL(prompt.originUrl) : "Unknown website"} says`}</CardTitle>
+        <CardTitle>{t("prompt.says", { site: promptOrigin(prompt.originUrl) })}</CardTitle>
       </CardHeader>
       <CardContent>
         <FieldGroup className="gap-5">
@@ -125,9 +121,9 @@ function JavaScriptDialogCard({ prompt }: { prompt: JsDialogActivePrompt }) {
                 id="suppress-dialogs"
                 name="suppress-dialogs"
                 defaultChecked={suppressChecked}
-                onCheckedChange={(checked) => (checked === true ? setSuppressChecked(true) : setSuppressChecked(false))}
+                onCheckedChange={(checked) => setSuppressChecked(checked === true)}
               />
-              <FieldLabel htmlFor="suppress-dialogs">Prevent this page from creating additional dialogs</FieldLabel>
+              <FieldLabel htmlFor="suppress-dialogs">{t("prompt.preventDialogs")}</FieldLabel>
             </Field>
           )}
         </FieldGroup>
@@ -135,12 +131,12 @@ function JavaScriptDialogCard({ prompt }: { prompt: JsDialogActivePrompt }) {
       <CardFooter className="justify-end flex-row gap-2">
         {(type === "prompt" || type === "confirm") && (
           <Button variant="outline" className="flex-1" onClick={cancel}>
-            Cancel
+            {t("action.cancel")}
             <span className="text-xs text-muted-foreground">Esc</span>
           </Button>
         )}
         <Button variant="default" className="flex-1" onClick={confirm}>
-          OK
+          {t("action.ok")}
           <span className="text-xs text-muted">↵</span>
         </Button>
       </CardFooter>
@@ -169,25 +165,17 @@ function BasicAuthCard({ prompt }: { prompt: BasicAuthActivePrompt }) {
     if (!card) return;
 
     const ownerDocument = card.ownerDocument;
-
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.ctrlKey || e.metaKey || e.altKey || e.shiftKey) return;
-
-      if (e.key === "Escape") {
-        cancel();
-      }
-      if (e.key === "Enter") {
-        confirm();
-      }
+      if (e.key === "Escape") cancel();
+      if (e.key === "Enter") confirm();
     };
 
     ownerDocument.addEventListener("keydown", handleKeyDown);
-    return () => {
-      ownerDocument.removeEventListener("keydown", handleKeyDown);
-    };
+    return () => ownerDocument.removeEventListener("keydown", handleKeyDown);
   }, [confirm, cancel]);
 
-  const originLabel = prompt.originUrl ? getOriginFromURL(prompt.originUrl) : "This site";
+  const originLabel = prompt.originUrl ? getOriginFromURL(prompt.originUrl) : t("prompt.siteFallback");
 
   return (
     <Card
@@ -195,32 +183,100 @@ function BasicAuthCard({ prompt }: { prompt: BasicAuthActivePrompt }) {
       className={cn("w-full max-w-md select-none gap-5", "border border-white/25", "shadow-2xl shadow-black/40")}
     >
       <CardHeader>
-        <CardTitle>Sign in</CardTitle>
+        <CardTitle>{t("prompt.signIn")}</CardTitle>
       </CardHeader>
       <CardContent>
         <FieldGroup className="gap-5">
           <Field>
-            <FieldLabel className="text-muted-foreground">
-              {`${originLabel} is requesting a username and password.`}
-            </FieldLabel>
+            <FieldLabel className="text-muted-foreground">{t("prompt.authRequest", { site: originLabel })}</FieldLabel>
           </Field>
           <Field>
-            <FieldLabel htmlFor="basic-auth-user">Username</FieldLabel>
+            <FieldLabel htmlFor="basic-auth-user">{t("prompt.username")}</FieldLabel>
             <Input id="basic-auth-user" autoFocus autoComplete="username" ref={usernameRef} />
           </Field>
           <Field>
-            <FieldLabel htmlFor="basic-auth-pass">Password</FieldLabel>
+            <FieldLabel htmlFor="basic-auth-pass">{t("prompt.password")}</FieldLabel>
             <Input id="basic-auth-pass" type="password" autoComplete="current-password" ref={passwordRef} />
           </Field>
         </FieldGroup>
       </CardContent>
       <CardFooter className="justify-end flex-row gap-2">
         <Button variant="outline" className="flex-1" onClick={cancel}>
-          Cancel
+          {t("action.cancel")}
           <span className="text-xs text-muted-foreground">Esc</span>
         </Button>
         <Button variant="default" className="flex-1" onClick={confirm}>
-          Sign in
+          {t("prompt.signIn")}
+          <span className="text-xs text-muted">↵</span>
+        </Button>
+      </CardFooter>
+    </Card>
+  );
+}
+
+function SavePasswordCard({ prompt }: { prompt: SavePasswordActivePrompt }) {
+  const cardRef = useRef<HTMLDivElement>(null);
+  const originLabel = prompt.originUrl ? getOriginFromURL(prompt.originUrl) : t("prompt.siteFallback");
+
+  const dismiss = useCallback(() => {
+    flow.prompts.confirmPrompt(prompt.id, null, false);
+  }, [prompt.id]);
+
+  const never = useCallback(() => {
+    flow.prompts.confirmPrompt(prompt.id, "never", true);
+  }, [prompt.id]);
+
+  const save = useCallback(() => {
+    flow.prompts.confirmPrompt(prompt.id, "save", false);
+  }, [prompt.id]);
+
+  useEffect(() => {
+    const card = cardRef.current;
+    if (!card) return;
+
+    const ownerDocument = card.ownerDocument;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.ctrlKey || e.metaKey || e.altKey || e.shiftKey) return;
+      if (e.key === "Escape") dismiss();
+      if (e.key === "Enter") save();
+    };
+
+    ownerDocument.addEventListener("keydown", handleKeyDown);
+    return () => ownerDocument.removeEventListener("keydown", handleKeyDown);
+  }, [dismiss, save]);
+
+  return (
+    <Card
+      ref={cardRef}
+      className={cn("w-full max-w-md select-none gap-5", "border border-white/25", "shadow-2xl shadow-black/40")}
+    >
+      <CardHeader>
+        <CardTitle>{t("prompt.savePassword")}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <FieldGroup className="gap-4">
+          <Field>
+            <FieldLabel className="text-muted-foreground">{t("prompt.savePasswordFor", { site: originLabel })}</FieldLabel>
+          </Field>
+          <Field>
+            <FieldLabel>{t("prompt.username")}</FieldLabel>
+            <Input readOnly value={prompt.candidate.username} />
+          </Field>
+          <Field>
+            <FieldLabel>{t("prompt.password")}</FieldLabel>
+            <Input readOnly type="password" value={prompt.candidate.password} />
+          </Field>
+        </FieldGroup>
+      </CardContent>
+      <CardFooter className="justify-end flex-row gap-2">
+        <Button variant="ghost" className="flex-1" onClick={never}>
+          {t("action.never")}
+        </Button>
+        <Button variant="outline" className="flex-1" onClick={dismiss}>
+          {t("action.notNow")}
+        </Button>
+        <Button variant="default" className="flex-1" onClick={save}>
+          {t("action.save")}
           <span className="text-xs text-muted">↵</span>
         </Button>
       </CardFooter>
@@ -241,7 +297,13 @@ const TabWebPrompt = memo(function TabWebPrompt({
     <PortalComponent visible={isVisible} autoFocus layerType="webPrompt" className="fixed" style={portalStyle}>
       <ThemeConsumer>
         <div className={cn("w-full h-full", "bg-black/25 rounded-md", "flex items-center justify-center")}>
-          {prompt.type === "basic-auth" ? <BasicAuthCard prompt={prompt} /> : <JavaScriptDialogCard prompt={prompt} />}
+          {prompt.type === "basic-auth" ? (
+            <BasicAuthCard prompt={prompt} />
+          ) : prompt.type === "save-password" ? (
+            <SavePasswordCard prompt={prompt} />
+          ) : (
+            <JavaScriptDialogCard prompt={prompt} />
+          )}
         </div>
       </ThemeConsumer>
     </PortalComponent>

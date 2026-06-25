@@ -67,21 +67,21 @@ function Page() {
     {
       name: "Chrome Dino",
       description: "The famous Chrome offline dinosaur game",
-      url: "flow-external://dino.chrome.game",
+      url: "blinker-external://dino.chrome.game",
       category: "Classic",
       icon: "🦖"
     },
     {
       name: "Edge Surf (v1)",
       description: "The classic surf game from Microsoft Edge",
-      url: "flow-external://v1.surf.edge.game",
+      url: "blinker-external://v1.surf.edge.game",
       category: "Classic",
       icon: "🏄"
     },
     {
       name: "Edge Surf (v2)",
       description: "The surf game from Microsoft Edge",
-      url: "flow-external://v2.surf.edge.game",
+      url: "blinker-external://v2.surf.edge.game",
       category: "Classic",
       icon: "🌊"
     }
@@ -106,10 +106,10 @@ function Page() {
           />
           <CardHeader className="border-b border-border/40">
             <CardTitle className="text-4xl font-bold bg-gradient-to-r from-primary to-primary-foreground bg-clip-text text-transparent">
-              Flow Games
+              Blinker Games
             </CardTitle>
             <CardDescription className="text-lg">
-              Explore a collection of offline games available in Flow
+              Explore a collection of offline games available in Blinker
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -141,7 +141,7 @@ function Page() {
 function App() {
   return (
     <>
-      <title>Flow Games</title>
+      <title>Blinker Games</title>
       <Page />
     </>
   );

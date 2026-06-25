@@ -2,6 +2,7 @@ import React from "react";
 import { ShortcutAction } from "~/types/shortcuts";
 import { AnimatePresence, motion } from "motion/react";
 import { ShortcutItem } from "../shortcut-item";
+import { t } from "@/lib/i18n";
 
 interface CategorySectionProps {
   categoryName: string;
@@ -46,7 +47,7 @@ export function CategorySection({
         {categoryName}
         {modifiedCount > 0 && (
           <span className="text-xs text-primary font-normal bg-primary/10 px-2 py-0.5 rounded-full">
-            {modifiedCount} modified
+            {modifiedCount} {t("shortcuts.modified")}
           </span>
         )}
       </h3>

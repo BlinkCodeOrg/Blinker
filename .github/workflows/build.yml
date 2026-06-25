@@ -51,8 +51,8 @@ jobs:
       - name: Check out Git repository
         uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
 
-      - name: Clone Flathub packaging (com.flow_browser.flow)
-        run: git clone --depth 1 -b master https://github.com/flathub/com.flow_browser.flow.git flatpak-upstream
+      - name: Clone Flathub packaging (dev.lovly.blinker)
+        run: git clone --depth 1 -b master https://github.com/flathub/dev.lovly.blinker.git flatpak-upstream
 
       - name: Stage app sources for Flatpak build
         run: |
@@ -82,7 +82,7 @@ jobs:
           base = str(pkg["version"]).split("+", 1)[0]
           version = f"{base}+{short}"
 
-          meta_path = root / "com.flow_browser.flow.metainfo.xml"
+          meta_path = root / "dev.lovly.blinker.metainfo.xml"
           text = meta_path.read_text()
           today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
           text, n = re.subn(
@@ -93,7 +93,7 @@ jobs:
           )
           if n != 1:
               raise SystemExit(
-                  "Expected exactly one <release> in com.flow_browser.flow.metainfo.xml; "
+                  "Expected exactly one <release> in dev.lovly.blinker.metainfo.xml; "
                   "update the regex in build.yml if the file changed."
               )
           meta_path.write_text(text)
@@ -118,7 +118,7 @@ jobs:
           import re
           from pathlib import Path
 
-          path = Path("flatpak-upstream/com.flow_browser.flow.yml")
+          path = Path("flatpak-upstream/dev.lovly.blinker.yml")
           text = path.read_text()
           pattern = r"      - type: archive\n(?:(?!      - generated-sources).)+\n          is-main-source: true\n"
           replacement = (
@@ -130,7 +130,7 @@ jobs:
           if n != 1:
               raise SystemExit(
                   "Expected to replace exactly one Flathub main source archive block; "
-                  "update the regex in build.yml if com.flow_browser.flow.yml changed."
+                  "update the regex in build.yml if dev.lovly.blinker.yml changed."
               )
           path.write_text(new_text)
           PY
@@ -150,15 +150,15 @@ jobs:
         working-directory: flatpak-upstream
         run: |
           flatpak-builder --user --install-deps-from=flathub --repo="${{ github.workspace }}/flatpak-repo" \
-            --force-clean build-dir com.flow_browser.flow.yml
+            --force-clean build-dir dev.lovly.blinker.yml
 
       - name: Create Flatpak bundle
         run: |
           mkdir -p dist-flatpak
           flatpak build-bundle --arch=${{ matrix.flatpak_arch }} \
             "${{ github.workspace }}/flatpak-repo" \
-            "dist-flatpak/com.flow_browser.flow.${{ matrix.flatpak_arch }}.flatpak" \
-            com.flow_browser.flow
+            "dist-flatpak/dev.lovly.blinker.${{ matrix.flatpak_arch }}.flatpak" \
+            dev.lovly.blinker
 
       - name: Upload Flatpak bundle
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2

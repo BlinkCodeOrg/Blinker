@@ -15,6 +15,7 @@ import { WebsiteFavicon } from "@/components/main/website-favicon";
 import { ExternalAppPermission } from "~/flow/interfaces/settings/openExternal";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { t } from "@/lib/i18n";
 
 function PermissionItem({
   websiteUrl,
@@ -91,7 +92,7 @@ function PermissionItem({
                       setConfirmDialog({ isOpen: true, protocol });
                     }}
                   >
-                    Revoke
+                    {t("external.revoke")}
                   </Button>
                 </motion.div>
               ))}
@@ -106,16 +107,14 @@ function PermissionItem({
       >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Confirm Revocation</DialogTitle>
+            <DialogTitle>{t("external.confirmRevoke")}</DialogTitle>
             <DialogDescription>
-              Revoke permission for <span className="font-semibold">{websiteUrl}</span> to open{" "}
-              <span className="font-mono text-primary bg-muted px-1 py-0.5 rounded">{confirmDialog.protocol}</span>{" "}
-              links?
+              {t("external.revokeDescription", { site: websiteUrl, protocol: confirmDialog.protocol })}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="mt-4">
             <Button variant="outline" onClick={() => setConfirmDialog({ isOpen: false, protocol: "" })}>
-              Cancel
+              {t("action.cancel")}
             </Button>
             <Button
               variant="destructive"
@@ -124,7 +123,7 @@ function PermissionItem({
                 setConfirmDialog({ isOpen: false, protocol: "" });
               }}
             >
-              Revoke Permission
+              {t("external.revokePermission")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -145,7 +144,7 @@ export function ExternalAppsSettings() {
       setPermissions(fetchedPermissions);
     } catch (error) {
       console.error("Failed to fetch permissions:", error);
-      toast.error("Could not load permissions.");
+      toast.error(t("external.loadFailed"));
       setPermissions([]);
     } finally {
       setIsLoading(false);
@@ -157,14 +156,14 @@ export function ExternalAppsSettings() {
       try {
         const success = await flow.openExternal.unsetAlwaysOpenExternal(url, protocol);
         if (success) {
-          toast.success("Permission revoked!");
+          toast.success(t("external.revoked"));
           revalidatePermissions();
         } else {
-          toast.error("Failed to revoke permission.");
+          toast.error(t("external.revokeFailed"));
         }
       } catch (error) {
         console.error("Failed to revoke permission:", error);
-        toast.error("An error occurred while revoking permission.");
+        toast.error(t("external.revokeError"));
       }
     },
     [revalidatePermissions]
@@ -191,25 +190,21 @@ export function ExternalAppsSettings() {
   return (
     <div className="space-y-6 remove-app-drag">
       <div>
-        <h2 className="text-2xl font-semibold text-card-foreground">External Applications</h2>
-        <p className="text-muted-foreground">
-          Manage websites and the protocols they are allowed to open automatically.
-        </p>
+        <h2 className="text-2xl font-semibold text-card-foreground">{t("external.title")}</h2>
+        <p className="text-muted-foreground">{t("external.subtitle")}</p>
       </div>
 
       <div className="rounded-lg border bg-card text-card-foreground p-6 space-y-6">
         <div className="space-y-1">
-          <h3 className="text-xl font-semibold tracking-tight">Protocol Permissions</h3>
-          <p className="text-sm text-muted-foreground">
-            Websites you have allowed to open external applications via specific protocols.
-          </p>
+          <h3 className="text-xl font-semibold tracking-tight">{t("external.permissions")}</h3>
+          <p className="text-sm text-muted-foreground">{t("external.permissionsDescription")}</p>
         </div>
 
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             type="search"
-            placeholder="Search by website or protocol..."
+            placeholder={t("external.searchPlaceholder")}
             className="pl-9 w-full"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -219,17 +214,17 @@ export function ExternalAppsSettings() {
         {isLoading ? (
           <div className="flex flex-col items-center justify-center text-center py-12">
             <Loader2 className="h-8 w-8 text-primary animate-spin mb-3" />
-            <p className="text-muted-foreground">Loading permissions...</p>
+            <p className="text-muted-foreground">{t("external.loading")}</p>
           </div>
         ) : filteredWebsites.length === 0 ? (
           <div className="flex flex-col items-center justify-center text-center py-12">
             <ShieldAlert className="h-10 w-10 text-muted-foreground mb-3" />
             <p className="font-medium text-card-foreground">
-              {searchQuery ? "No matching permissions found" : "No permissions configured"}
+              {searchQuery ? t("external.noMatches") : t("external.none")}
             </p>
             {!searchQuery && (
               <p className="text-sm text-muted-foreground mt-1">
-                Websites will ask for permission to open external links.
+                {t("external.noneDescription")}
               </p>
             )}
           </div>
@@ -248,8 +243,7 @@ export function ExternalAppsSettings() {
 
         <div className="border-t pt-4 mt-2">
           <p className="text-xs text-muted-foreground">
-            Note: When you revoke a permission, the website will need to ask for permission again the next time it tries
-            to open that protocol.
+            {t("external.note")}
           </p>
         </div>
       </div>
