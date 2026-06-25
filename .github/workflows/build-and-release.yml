@@ -45,13 +45,16 @@ jobs:
         if: matrix.os == 'windows-latest'
         shell: powershell
         run: |
-          choco install visualstudio2022buildtools visualstudio2022-workload-vctools --yes --no-progress --package-parameters "--includeRecommended --passive --norestart"
-
-      - name: Setup MSVC (Windows only)
-        if: matrix.os == 'windows-latest'
-        uses: ilammy/msvc-dev-cmd@v1
-        with:
-          arch: x64
+          choco install visualstudio2022buildtools visualstudio2022-workload-vctools --yes --no-progress --package-parameters "--includeRecommended --add Microsoft.VisualStudio.Component.VC.Tools.x86.x64 --add Microsoft.VisualStudio.Component.Windows11SDK.22621 --passive --norestart"
+          $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+          $vsPath = & $vswhere -version "[17.0,18.0)" -products Microsoft.VisualStudio.Product.BuildTools -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+          if (-not $vsPath) {
+            throw "Visual Studio 2022 Build Tools with C++ workload was not found."
+          }
+          "GYP_MSVS_VERSION=2022" >> $env:GITHUB_ENV
+          "npm_config_msvs_version=2022" >> $env:GITHUB_ENV
+          "VisualStudioVersion=17.0" >> $env:GITHUB_ENV
+          "VSINSTALLDIR=$vsPath\" >> $env:GITHUB_ENV
 
       - name: Use Stock Electron (Ubuntu ARM only)
         if: matrix.os == 'ubuntu-24.04-arm'
@@ -78,9 +81,6 @@ jobs:
         run: bun install --development --frozen-lockfile
         env:
           SHARP_IGNORE_GLOBAL_LIBVIPS: 1
-          GYP_MSVS_VERSION: 2022
-          npm_config_msvs_version: 2022
-          VisualStudioVersion: "17.0"
 
       - name: Install Castlabs EVS
         if: matrix.os == 'macos-latest' || matrix.os == 'macos-15-intel' || matrix.os == 'windows-latest'
