@@ -127,6 +127,7 @@ const electronBuilderConfig: Configuration = {
   linux: {
     target: ["AppImage", "deb"],
     category: "Network;WebBrowser;",
+    maintainer: "lovlygod <whylovlygod@icloud.com>",
     executableArgs: ["--ozone-platform-hint=auto"],
     icon: "icon.png"
   },

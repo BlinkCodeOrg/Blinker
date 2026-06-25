@@ -5,7 +5,9 @@
   "description": "A modern privacy-focused browser with a minimalistic design.",
   "main": "./out/main/index.js",
   "author": {
-    "name": "lovlygod"
+    "name": "lovlygod",
+    "email": "whylovlygod@icloud.com",
+    "url": "https://github.com/lovlygod"
   },
   "repository": {
     "type": "git",
