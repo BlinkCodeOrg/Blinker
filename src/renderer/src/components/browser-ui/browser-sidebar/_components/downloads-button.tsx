@@ -1,13 +1,14 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { type RefObject, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { Archive, Check, DownloadIcon, File, FolderOpen, Loader2, Pause, Play, RotateCcw, SearchX, X } from "lucide-react";
+import { Check, DownloadIcon, File, FolderOpen, Loader2, Pause, Play, RotateCcw, SearchX, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/portal/popover";
 import { PortalComponent } from "@/components/portal/portal";
 import { Progress } from "@/components/ui/progress";
-import { useBoundingRect } from "@/hooks/use-bounding-rect";
 import { cn } from "@/lib/utils";
 import type { DownloadEntry } from "~/types/downloads";
+
+const DOWNLOAD_ANIMATION_DURATION_MS = 1000;
 
 function progressValue(download: DownloadEntry) {
   if (download.state === "completed") return 100;
@@ -40,50 +41,61 @@ function formatSpeed(bytesPerSecond: number) {
   return `${formatBytes(bytesPerSecond)}/s`;
 }
 
-function FlyingDownloadAnimation({
+function ZenDownloadArcAnimation({
   anchorRef,
-  flyKey,
+  animationKey,
+  visible,
   onComplete
 }: {
-  anchorRef: React.RefObject<HTMLDivElement | null>;
-  flyKey: number;
+  anchorRef: RefObject<HTMLDivElement | null>;
+  animationKey: number;
+  visible: boolean;
   onComplete: () => void;
 }) {
-  const anchorRect = useBoundingRect(anchorRef);
-  const targetX = anchorRect ? anchorRect.left + anchorRect.width / 2 - 18 : 24;
-  const targetY = anchorRect ? anchorRect.top + anchorRect.height / 2 - 18 : window.innerHeight - 48;
-  const startX = Math.max(220, Math.round(window.innerWidth * 0.62));
-  const startY = Math.max(70, Math.round(window.innerHeight * 0.2));
-  const midX = Math.round((startX + targetX) / 2);
-  const midY = Math.min(startY, targetY) - 120;
+  const [target, setTarget] = useState({ x: 32, y: window.innerHeight - 44 });
+
+  useEffect(() => {
+    if (!visible) return;
+    const rect = anchorRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    setTarget({
+      x: rect.left + rect.width / 2,
+      y: rect.top + rect.height / 2
+    });
+  }, [anchorRef, animationKey, visible]);
+
+  const startX = target.x + 46;
+  const startY = Math.max(72, target.y - 118);
+  const midX = target.x + 72;
+  const midY = Math.max(48, target.y - 52);
 
   return (
-    <PortalComponent visible={flyKey > 0} layerType="popover" className="fixed inset-0">
+    <PortalComponent visible={visible} layerType="popover" className="pointer-events-none fixed inset-0 z-[10000]">
       <AnimatePresence>
-        {flyKey > 0 && (
+        {visible && (
           <motion.div
-            key={flyKey}
-            className="pointer-events-none fixed left-0 top-0 z-popover"
-            initial={{ x: startX, y: startY, scale: 1, rotate: -8, opacity: 0 }}
+            key={animationKey}
+            className="pointer-events-none fixed left-0 top-0 z-[10000]"
+            initial={{ x: startX, y: startY, scale: 0.72, opacity: 0, rotate: -14 }}
             animate={{
-              x: [startX, midX, targetX],
-              y: [startY, midY, targetY],
-              scale: [1, 0.82, 0.34],
-              rotate: [-8, 8, 0],
-              opacity: [0, 1, 1, 0]
+              x: [startX, midX, target.x],
+              y: [startY, midY, target.y],
+              scale: [0.72, 1.28, 0.42],
+              opacity: [0, 1, 1, 0],
+              rotate: [-14, 10, 0]
             }}
-            exit={{ opacity: 0, scale: 0.2 }}
-            transition={{ duration: 0.86, ease: [0.16, 1, 0.3, 1], times: [0, 0.62, 1] }}
+            exit={{ opacity: 0, scale: 0.36 }}
+            transition={{
+              duration: DOWNLOAD_ANIMATION_DURATION_MS / 1000,
+              ease: [0.37, 0, 0.63, 1],
+              times: [0, 0.58, 1]
+            }}
             onAnimationComplete={onComplete}
           >
-            <div className="relative flex size-9 items-center justify-center rounded-lg border border-white/25 bg-zinc-950/95 text-primary shadow-[0_18px_50px_rgba(0,0,0,0.55)] backdrop-blur-md">
-              <Archive className="size-4" />
-              <motion.span
-                className="absolute -inset-2 rounded-xl border border-primary/30"
-                initial={{ scale: 0.75, opacity: 0.45 }}
-                animate={{ scale: 1.35, opacity: 0 }}
-                transition={{ duration: 0.5, ease: "easeOut", delay: 0.44 }}
-              />
+            <div className="relative flex size-8 items-center justify-center rounded-full bg-white/16 p-0.5 shadow-[0_18px_50px_rgba(0,0,0,0.45)] backdrop-blur-md">
+              <div className="flex size-full items-center justify-center rounded-full bg-zinc-950/95 text-primary">
+                <DownloadIcon className="size-4" />
+              </div>
             </div>
           </motion.div>
         )}
@@ -101,10 +113,10 @@ function DownloadRow({ download }: { download: DownloadEntry }) {
   return (
     <motion.div
       layout
-      initial={{ opacity: 0, y: -12, scale: 0.96 }}
+      initial={{ opacity: 0, y: -8, scale: 0.98 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, y: -8, scale: 0.96 }}
-      transition={{ duration: 0.2, ease: "easeOut" }}
+      exit={{ opacity: 0, y: -6, scale: 0.98 }}
+      transition={{ duration: 0.16, ease: "easeOut" }}
       className={cn(
         "group flex items-center gap-3 rounded-lg px-2.5 py-2.5 transition-colors",
         isGone ? "opacity-45" : "hover:bg-white/8"
@@ -204,8 +216,9 @@ function DownloadRow({ download }: { download: DownloadEntry }) {
 export function DownloadsButton() {
   const [downloads, setDownloads] = useState<DownloadEntry[]>([]);
   const [open, setOpen] = useState(false);
-  const [flyKey, setFlyKey] = useState(0);
-  const [flyVisible, setFlyVisible] = useState(false);
+  const [animationKey, setAnimationKey] = useState(0);
+  const [isAnimating, setIsAnimating] = useState(false);
+  const [isButtonPulsing, setIsButtonPulsing] = useState(false);
   const buttonAnchorRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -214,9 +227,12 @@ export function DownloadsButton() {
       setDownloads(next.slice(0, 5));
     });
     const unsubscribeCreated = flow.downloads.onCreated(() => {
-      setFlyKey((value) => value + 1);
-      setFlyVisible(true);
+      setAnimationKey((value) => value + 1);
+      setIsAnimating(true);
+      setIsButtonPulsing(true);
       setOpen(true);
+
+      window.setTimeout(() => setIsButtonPulsing(false), DOWNLOAD_ANIMATION_DURATION_MS + 220);
     });
     return () => {
       unsubscribeChanged();
@@ -226,6 +242,11 @@ export function DownloadsButton() {
 
   const visibleDownloads = useMemo(() => downloads.slice(0, 5), [downloads]);
   const hasSessionDownloads = visibleDownloads.length > 0;
+  const activeDownloads = visibleDownloads.filter((download) => download.state === "progressing");
+  const activeProgress =
+    activeDownloads.length > 0
+      ? activeDownloads.reduce((total, download) => total + progressValue(download), 0) / activeDownloads.length
+      : 0;
 
   const openDownloadsPage = () => {
     void flow.tabs.newTab("blinker://downloads", true);
@@ -234,29 +255,64 @@ export function DownloadsButton() {
 
   const button = (
     <div ref={buttonAnchorRef} className="relative">
-      <FlyingDownloadAnimation
+      <ZenDownloadArcAnimation
         anchorRef={buttonAnchorRef}
-        flyKey={flyVisible ? flyKey : 0}
-        onComplete={() => setFlyVisible(false)}
+        animationKey={animationKey}
+        visible={isAnimating}
+        onComplete={() => setIsAnimating(false)}
       />
-      <Button
-        size="icon"
-        className="relative size-8 bg-transparent hover:bg-black/10 dark:hover:bg-white/10"
-        onClick={hasSessionDownloads ? undefined : openDownloadsPage}
-        aria-label="Загрузки"
+      <motion.div
+        animate={isButtonPulsing ? { scale: [1, 1.18, 0.96, 1] } : { scale: 1 }}
+        transition={{ duration: 0.58, ease: [0.16, 1, 0.3, 1] }}
+        className="relative"
       >
-        <DownloadIcon strokeWidth={2} className="w-4 h-4 text-black/80 dark:text-white/80" />
         <AnimatePresence>
-          {visibleDownloads.some((download) => download.state === "progressing") && (
+          {(isButtonPulsing || activeDownloads.length > 0) && (
             <motion.span
-              className="absolute right-1 top-1 size-1.5 rounded-full bg-primary"
-              initial={{ scale: 0, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0, opacity: 0 }}
+              className="pointer-events-none absolute inset-0 rounded-lg border border-primary/55 shadow-[0_0_22px_hsl(var(--primary)/0.42)]"
+              initial={{ scale: 0.72, opacity: 0 }}
+              animate={{ scale: [0.72, 1.36], opacity: [0, 0.9, 0] }}
+              exit={{ opacity: 0, scale: 1.15 }}
+              transition={{ duration: 0.9, ease: "easeOut", repeat: activeDownloads.length > 0 ? Infinity : 0 }}
             />
           )}
         </AnimatePresence>
-      </Button>
+        <Button
+          size="icon"
+          className="relative size-8 bg-transparent hover:bg-black/10 dark:hover:bg-white/10"
+          onClick={hasSessionDownloads ? undefined : openDownloadsPage}
+          aria-label="Загрузки"
+        >
+          <DownloadIcon strokeWidth={2} className="h-4 w-4 text-black/80 dark:text-white/80" />
+          {activeDownloads.length > 0 && (
+            <svg className="pointer-events-none absolute inset-0 h-8 w-8 -rotate-90" viewBox="0 0 32 32" aria-hidden>
+              <circle
+                cx="16"
+                cy="16"
+                r="13.5"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                className="text-white/12"
+              />
+              <motion.circle
+                cx="16"
+                cy="16"
+                r="13.5"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                className="text-primary"
+                pathLength={100}
+                initial={false}
+                animate={{ strokeDasharray: "100 100", strokeDashoffset: 100 - activeProgress }}
+                transition={{ duration: 0.18, ease: "easeOut" }}
+              />
+            </svg>
+          )}
+        </Button>
+      </motion.div>
     </div>
   );
 
@@ -269,32 +325,39 @@ export function DownloadsButton() {
         side="top"
         align="end"
         sideOffset={10}
-        className="w-[380px] overflow-hidden border border-white/10 bg-zinc-950/95 p-2 text-white shadow-2xl backdrop-blur-xl"
+        className="z-[10000] w-[380px] overflow-hidden border border-white/10 bg-zinc-950/95 p-2 text-white shadow-2xl backdrop-blur-xl"
         arrow={false}
       >
-        <div className="flex items-center justify-between px-2 py-1.5">
-          <div className="text-sm font-semibold">Загрузки</div>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 px-2 text-xs text-white/65 hover:bg-white/10 hover:text-white"
-            onClick={openDownloadsPage}
-          >
-            История
-          </Button>
-        </div>
-        <div className="max-h-[360px] overflow-hidden rounded-lg bg-white/[0.03]">
-          <AnimatePresence initial={false}>
-            {visibleDownloads.length > 0 ? (
-              visibleDownloads.map((download) => <DownloadRow key={download.id} download={download} />)
-            ) : (
-              <div className="flex flex-col items-center justify-center gap-2 py-8 text-white/50">
-                <SearchX className="size-6 opacity-60" />
-                <span className="text-sm">Нет загрузок</span>
-              </div>
-            )}
-          </AnimatePresence>
-        </div>
+        <motion.div
+          initial={{ opacity: 0, y: 10, scale: 0.96 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: 6, scale: 0.97 }}
+          transition={{ duration: 0.18, ease: "easeOut" }}
+        >
+          <div className="flex items-center justify-between px-2 py-1.5">
+            <div className="text-sm font-semibold">Загрузки</div>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 px-2 text-xs text-white/65 hover:bg-white/10 hover:text-white"
+              onClick={openDownloadsPage}
+            >
+              История
+            </Button>
+          </div>
+          <div className="max-h-[360px] overflow-hidden rounded-lg bg-white/[0.03]">
+            <AnimatePresence initial={false}>
+              {visibleDownloads.length > 0 ? (
+                visibleDownloads.map((download) => <DownloadRow key={download.id} download={download} />)
+              ) : (
+                <div className="flex flex-col items-center justify-center gap-2 py-8 text-white/50">
+                  <SearchX className="size-6 opacity-60" />
+                  <span className="text-sm">Нет загрузок</span>
+                </div>
+              )}
+            </AnimatePresence>
+          </div>
+        </motion.div>
       </PopoverContent>
     </Popover>
   );

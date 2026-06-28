@@ -59,6 +59,12 @@
   </requires>
 
   <releases>
+    <release version="1.13.3" date="2026-06-28">
+      <url type="details">https://github.com/lovlygod/Blinker/releases/tag/v1.13.3</url>
+      <description>
+        <p>Reworked downloads animation with a Zen-style arc, button pulse, and clearer progress feedback.</p>
+      </description>
+    </release>
     <release version="1.13.2" date="2026-06-28">
       <url type="details">https://github.com/lovlygod/Blinker/releases/tag/v1.13.2</url>
       <description>
