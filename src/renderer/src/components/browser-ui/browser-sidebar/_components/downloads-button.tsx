@@ -1,15 +1,17 @@
-import { type RefObject, useEffect, useMemo, useRef, useState } from "react";
+import { type RefObject, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Check, DownloadIcon, File, FolderOpen, Loader2, Pause, Play, RotateCcw, SearchX, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PortalComponent } from "@/components/portal/portal";
 import { Progress } from "@/components/ui/progress";
+import { useBoundingRect } from "@/hooks/use-bounding-rect";
 import { cn } from "@/lib/utils";
 import type { DownloadEntry } from "~/types/downloads";
 
 const DOWNLOAD_ANIMATION_DURATION_MS = 1000;
 const PANEL_WIDTH = 380;
 const PANEL_HEIGHT = 260;
+const PANEL_GAP = 12;
 
 function progressValue(download: DownloadEntry) {
   if (download.state === "completed") return 100;
@@ -220,63 +222,64 @@ export function DownloadsButton() {
   const [animationKey, setAnimationKey] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
   const [isButtonPulsing, setIsButtonPulsing] = useState(false);
-  const [previewDismissed, setPreviewDismissed] = useState(false);
-  const [panelPosition, setPanelPosition] = useState({ left: 48, top: 520 });
   const buttonAnchorRef = useRef<HTMLDivElement>(null);
-  const popoverContentRef = useRef<HTMLDivElement>(null);
+  const latestDownloadsRef = useRef<DownloadEntry[]>([]);
+  const lastSeenDownloadIdRef = useRef<number | null>(null);
+  const buttonRect = useBoundingRect(buttonAnchorRef, { observingWithLoop: open || isAnimating });
 
-  const updatePanelPosition = () => {
-    const rect = buttonAnchorRef.current?.getBoundingClientRect();
-    if (!rect) return;
-    const left = Math.min(Math.max(8, rect.right + 10), window.innerWidth - PANEL_WIDTH - 8);
-    const top = Math.min(Math.max(8, rect.bottom - PANEL_HEIGHT), window.innerHeight - PANEL_HEIGHT - 8);
-    setPanelPosition({ left, top });
-  };
+  const closePreview = useCallback(() => {
+    setOpen(false);
+  }, []);
 
   useEffect(() => {
-    void flow.downloads.getSessionDownloads().then(setDownloads);
-    const unsubscribeChanged = flow.downloads.onChanged((next) => {
-      setDownloads(next.slice(0, 5));
+    void flow.downloads.getSessionDownloads().then((next) => {
+      const visible = next.slice(0, 5);
+      latestDownloadsRef.current = visible;
+      lastSeenDownloadIdRef.current = visible[0]?.id ?? null;
+      setDownloads(visible);
     });
-    const unsubscribeCreated = flow.downloads.onCreated(() => {
+
+    const unsubscribeChanged = flow.downloads.onChanged((next) => {
+      const visible = next.slice(0, 5);
+      latestDownloadsRef.current = visible;
+      setDownloads(visible);
+    });
+
+    const unsubscribeCreated = flow.downloads.onCreated((created) => {
+      const createdId = created?.id ?? latestDownloadsRef.current[0]?.id ?? null;
+      if (createdId && createdId === lastSeenDownloadIdRef.current) return;
+      lastSeenDownloadIdRef.current = createdId;
+
       setAnimationKey((value) => value + 1);
       setIsAnimating(true);
       setIsButtonPulsing(true);
-      if (!previewDismissed) {
-        updatePanelPosition();
-        setOpen(true);
-      }
+      setOpen(true);
 
       window.setTimeout(() => setIsButtonPulsing(false), DOWNLOAD_ANIMATION_DURATION_MS + 220);
     });
+
     return () => {
       unsubscribeChanged();
       unsubscribeCreated();
     };
-  }, [previewDismissed]);
+  }, []);
 
   useEffect(() => {
     if (!open) return;
 
-    const handlePointerDown = (event: PointerEvent) => {
-      const target = event.target;
-      if (!(target instanceof Node)) return;
-      if (buttonAnchorRef.current?.contains(target)) return;
-      if (popoverContentRef.current?.contains(target)) return;
-      setPreviewDismissed(true);
-      setOpen(false);
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        closePreview();
+      }
     };
-    const handleLayoutChange = () => updatePanelPosition();
 
-    window.addEventListener("pointerdown", handlePointerDown, true);
-    window.addEventListener("resize", handleLayoutChange);
-    window.addEventListener("scroll", handleLayoutChange, true);
+    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("blur", closePreview);
     return () => {
-      window.removeEventListener("pointerdown", handlePointerDown, true);
-      window.removeEventListener("resize", handleLayoutChange);
-      window.removeEventListener("scroll", handleLayoutChange, true);
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("blur", closePreview);
     };
-  }, [open]);
+  }, [closePreview, open]);
 
   const visibleDownloads = useMemo(() => downloads.slice(0, 5), [downloads]);
   const hasSessionDownloads = visibleDownloads.length > 0;
@@ -284,9 +287,28 @@ export function DownloadsButton() {
 
   const openDownloadsPage = () => {
     void flow.tabs.newTab("blinker://downloads", true);
-    setPreviewDismissed(true);
-    setOpen(false);
+    closePreview();
   };
+
+  const panelPosition = useMemo(() => {
+    if (!buttonRect) {
+      return {
+        left: PANEL_GAP,
+        top: window.innerHeight - PANEL_HEIGHT - PANEL_GAP
+      };
+    }
+
+    const opensRight = buttonRect.right + PANEL_GAP + PANEL_WIDTH <= window.innerWidth;
+    const left = opensRight
+      ? buttonRect.right + PANEL_GAP
+      : Math.max(PANEL_GAP, buttonRect.left - PANEL_WIDTH - PANEL_GAP);
+    const top = Math.min(
+      Math.max(PANEL_GAP, buttonRect.bottom - PANEL_HEIGHT),
+      Math.max(PANEL_GAP, window.innerHeight - PANEL_HEIGHT - PANEL_GAP)
+    );
+
+    return { left, top };
+  }, [buttonRect]);
 
   const button = (
     <div ref={buttonAnchorRef} className="relative">
@@ -318,8 +340,6 @@ export function DownloadsButton() {
           onClick={
             hasSessionDownloads
               ? () => {
-                  updatePanelPosition();
-                  setPreviewDismissed(false);
                   setOpen((current) => !current);
                 }
               : openDownloadsPage
@@ -337,15 +357,21 @@ export function DownloadsButton() {
   return (
     <>
       {button}
-      <PortalComponent visible={open} layerType="popover" className="pointer-events-none fixed inset-0 z-[10000]">
+      <PortalComponent visible={open} layerType="popover" className="pointer-events-auto fixed inset-0 z-[10000]">
+        <button
+          type="button"
+          aria-label="Закрыть загрузки"
+          className="fixed inset-0 cursor-default bg-transparent"
+          onPointerDown={closePreview}
+        />
         <motion.div
-          ref={popoverContentRef}
           className="pointer-events-auto fixed w-[380px] overflow-hidden rounded-xl border border-white/10 bg-zinc-950/95 p-2 text-white shadow-2xl shadow-black/35 backdrop-blur-xl"
           style={{ left: panelPosition.left, top: panelPosition.top }}
           initial={{ opacity: 0, y: 10, scale: 0.96 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 6, scale: 0.97 }}
           transition={{ duration: 0.18, ease: "easeOut" }}
+          onPointerDown={(event) => event.stopPropagation()}
         >
           <div className="flex items-center justify-between px-2 py-1.5">
             <div className="text-sm font-semibold">Загрузки</div>
