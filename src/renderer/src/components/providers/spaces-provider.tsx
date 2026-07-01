@@ -195,7 +195,10 @@ export const SpacesProvider = ({ windowType, children }: SpacesProviderProps) =>
     return () => unsub();
   }, [revalidate]);
 
-  const isSpaceLight = hex_is_light(currentSpace?.bgStartColor || "#000000");
+  const isSpaceLight = useMemo(
+    () => hex_is_light(currentSpace?.bgStartColor || "#000000"),
+    [currentSpace?.bgStartColor]
+  );
 
   // On current space change, hide omnibox
   const currentSpaceIdRef = useRef("");
@@ -207,19 +210,31 @@ export const SpacesProvider = ({ windowType, children }: SpacesProviderProps) =>
     flow.omnibox.hide();
   }, [currentSpace, isReadOnlyConsumer]);
 
+  const contextValue = useMemo(
+    () => ({
+      spaces: visibleSpaces,
+      currentSpace,
+      isLoading,
+      isCurrentSpaceLight: isSpaceLight,
+      isCurrentSpaceInternal,
+      isProfileEphemeral,
+      revalidate,
+      setCurrentSpace: handleSetCurrentSpace
+    }),
+    [
+      visibleSpaces,
+      currentSpace,
+      isLoading,
+      isSpaceLight,
+      isCurrentSpaceInternal,
+      isProfileEphemeral,
+      revalidate,
+      handleSetCurrentSpace
+    ]
+  );
+
   return (
-    <SpacesContext.Provider
-      value={{
-        spaces: visibleSpaces,
-        currentSpace,
-        isLoading,
-        isCurrentSpaceLight: isSpaceLight,
-        isCurrentSpaceInternal,
-        isProfileEphemeral,
-        revalidate,
-        setCurrentSpace: handleSetCurrentSpace
-      }}
-    >
+    <SpacesContext.Provider value={contextValue}>
       {createPortal(<SpaceBackgroundStylesheet />, document.head)}
       {children}
     </SpacesContext.Provider>

@@ -1,6 +1,7 @@
 export type OmniboxSuggestionSource =
   | "verbatim"
   | "quick-history"
+  | "bookmark"
   | "search-provider"
   | "pedal"
   | "open-tab"

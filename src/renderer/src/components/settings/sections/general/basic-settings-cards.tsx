@@ -1,5 +1,5 @@
 import { useSettings } from "@/components/providers/settings-provider";
-import { BasicSetting, BasicSettingCard } from "~/types/settings";
+import type { BasicSetting, BasicSettingCard } from "~/types/settings";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";

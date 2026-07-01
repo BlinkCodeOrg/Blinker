@@ -1,15 +1,5 @@
-import { useEffect, useState, useMemo } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { SettingsSidebar } from "./settings-sidebar";
-import { GeneralSettings } from "@/components/settings/sections/general/section";
-import { IconSettings } from "@/components/settings/sections/icon/section";
-import { AboutSettings } from "@/components/settings/sections/about/section";
-import { ProfilesSettings } from "@/components/settings/sections/profiles/section";
-import { SpacesSettings } from "@/components/settings/sections/spaces/section";
-import { ExternalAppsSettings } from "@/components/settings/sections/external-apps/section";
-import { ShortcutsSettings } from "@/components/settings/sections/shortcuts/section";
-import { PasswordsSettings } from "@/components/settings/sections/passwords/section";
-import { ImportDataSettings } from "@/components/settings/sections/import-data/section";
-import { PermissionsSettings } from "@/components/settings/sections/permissions/section";
 import { SettingsProvider } from "@/components/providers/settings-provider";
 import { AppUpdatesProvider } from "@/components/providers/app-updates-provider";
 import {
@@ -26,6 +16,47 @@ import {
 } from "lucide-react";
 import { ShortcutsProvider } from "@/components/providers/shortcuts-provider";
 import { LANGUAGE_CHANGED_EVENT, t } from "@/lib/i18n";
+
+const GeneralSettings = lazy(() =>
+  import("@/components/settings/sections/general/section").then((module) => ({ default: module.GeneralSettings }))
+);
+const IconSettings = lazy(() =>
+  import("@/components/settings/sections/icon/section").then((module) => ({ default: module.IconSettings }))
+);
+const AboutSettings = lazy(() =>
+  import("@/components/settings/sections/about/section").then((module) => ({ default: module.AboutSettings }))
+);
+const ProfilesSettings = lazy(() =>
+  import("@/components/settings/sections/profiles/section").then((module) => ({ default: module.ProfilesSettings }))
+);
+const SpacesSettings = lazy(() =>
+  import("@/components/settings/sections/spaces/section").then((module) => ({ default: module.SpacesSettings }))
+);
+const ExternalAppsSettings = lazy(() =>
+  import("@/components/settings/sections/external-apps/section").then((module) => ({
+    default: module.ExternalAppsSettings
+  }))
+);
+const ShortcutsSettings = lazy(() =>
+  import("@/components/settings/sections/shortcuts/section").then((module) => ({ default: module.ShortcutsSettings }))
+);
+const PasswordsSettings = lazy(() =>
+  import("@/components/settings/sections/passwords/section").then((module) => ({ default: module.PasswordsSettings }))
+);
+const ImportDataSettings = lazy(() =>
+  import("@/components/settings/sections/import-data/section").then((module) => ({
+    default: module.ImportDataSettings
+  }))
+);
+const PermissionsSettings = lazy(() =>
+  import("@/components/settings/sections/permissions/section").then((module) => ({
+    default: module.PermissionsSettings
+  }))
+);
+
+function SettingsSectionFallback() {
+  return <div className="h-32 animate-pulse rounded-lg border bg-card/60" />;
+}
 
 export function SettingsLayout() {
   const [activeSection, setActiveSection] = useState(() => window.location.hash.replace("#", "") || "general");
@@ -52,17 +83,17 @@ export function SettingsLayout() {
     { id: "about", label: t("settings.about"), icon: <Info className="h-4 w-4 mr-2" /> }
   ];
 
-  const navigateToSpaces = (profileId: string) => {
+  const navigateToSpaces = useCallback((profileId: string) => {
     setSelectedProfileId(profileId);
     setSelectedSpaceId(null);
     setActiveSection("spaces");
-  };
+  }, []);
 
-  const navigateToSpace = (profileId: string, spaceId: string) => {
+  const navigateToSpace = useCallback((profileId: string, spaceId: string) => {
     setSelectedProfileId(profileId);
     setSelectedSpaceId(spaceId);
     setActiveSection("spaces");
-  };
+  }, []);
 
   const ActiveSectionComponent = useMemo(() => {
     switch (activeSection) {
@@ -89,7 +120,7 @@ export function SettingsLayout() {
       default:
         return <GeneralSettings />;
     }
-  }, [activeSection, selectedProfileId, selectedSpaceId, languageRevision]);
+  }, [activeSection, navigateToSpace, navigateToSpaces, selectedProfileId, selectedSpaceId, languageRevision]);
 
   return (
     <AppUpdatesProvider>
@@ -101,7 +132,9 @@ export function SettingsLayout() {
               <SettingsSidebar activeSection={activeSection} setActiveSection={setActiveSection} sections={sections} />
               <main className="flex-1 flex flex-col overflow-hidden">
                 <div className="flex-1 overflow-auto p-6 md:p-8">
-                  <div className="mx-auto max-w-4xl">{ActiveSectionComponent}</div>
+                  <div className="mx-auto max-w-4xl">
+                    <Suspense fallback={<SettingsSectionFallback />}>{ActiveSectionComponent}</Suspense>
+                  </div>
                 </div>
               </main>
             </div>

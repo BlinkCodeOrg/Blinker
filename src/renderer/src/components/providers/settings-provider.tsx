@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import type { BasicSetting, BasicSettingCard } from "~/types/settings";
 import { setLocalePreference } from "@/lib/i18n";
 
@@ -48,13 +48,15 @@ export const SettingsProvider = ({ children }: SettingsProviderProps) => {
     setSettings(fetchedSettings);
     setCards(fetchedCards);
 
-    const promises = fetchedSettings.map(async (setting) => {
-      const value = await flow.settings.getSetting(setting.id);
-      syncRendererSetting(setting.id, value);
-      setSettingsValues((prev) => ({ ...prev, [setting.id]: value }));
-    });
+    const entries = await Promise.all(
+      fetchedSettings.map(async (setting) => {
+        const value = await flow.settings.getSetting(setting.id);
+        syncRendererSetting(setting.id, value);
+        return [setting.id, value] as const;
+      })
+    );
 
-    await Promise.all(promises);
+    setSettingsValues(Object.fromEntries(entries));
   }, []);
 
   const revalidate = useCallback(async () => {
@@ -88,16 +90,15 @@ export const SettingsProvider = ({ children }: SettingsProviderProps) => {
     return saved;
   }, []);
 
-  return (
-    <SettingsContext.Provider
-      value={{
-        settings,
-        cards,
-        getSetting: getSetting as <T>(settingId: string) => T,
-        setSetting
-      }}
-    >
-      {children}
-    </SettingsContext.Provider>
+  const contextValue = useMemo(
+    () => ({
+      settings,
+      cards,
+      getSetting: getSetting as <T>(settingId: string) => T,
+      setSetting
+    }),
+    [settings, cards, getSetting, setSetting]
   );
+
+  return <SettingsContext.Provider value={contextValue}>{children}</SettingsContext.Provider>;
 };

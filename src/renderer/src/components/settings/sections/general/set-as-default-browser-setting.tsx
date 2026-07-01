@@ -1,24 +1,25 @@
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { GlobeIcon, HeartIcon, Loader2Icon } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 export function SetAsDefaultBrowserSetting() {
   const [isDefault, setIsDefault] = useState<boolean | null>(null);
 
-  useEffect(() => {
-    const refetchDefaultBrowser = async () => {
-      const isDefaultResult = await flow.app.getDefaultBrowser();
-      setIsDefault(isDefaultResult);
-    };
-
-    refetchDefaultBrowser();
-    const interval = setInterval(refetchDefaultBrowser, 2000);
-    return () => clearInterval(interval);
+  const refetchDefaultBrowser = useCallback(async () => {
+    const isDefaultResult = await flow.app.getDefaultBrowser();
+    setIsDefault(isDefaultResult);
   }, []);
 
-  const setDefaultBrowser = () => {
-    flow.app.setDefaultBrowser();
+  useEffect(() => {
+    void refetchDefaultBrowser();
+    window.addEventListener("focus", refetchDefaultBrowser);
+    return () => window.removeEventListener("focus", refetchDefaultBrowser);
+  }, [refetchDefaultBrowser]);
+
+  const setDefaultBrowser = async () => {
+    await flow.app.setDefaultBrowser();
+    await refetchDefaultBrowser();
   };
 
   return (

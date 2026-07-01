@@ -1,7 +1,7 @@
 import { getHistory } from "@/lib/omnibox/data-providers/history";
 import { getUniqueKeyFromUrl, isValidUrl } from "../helpers";
 import { createWebsiteSuggestion } from "../suggestions";
-import type { OmniboxSuggestion } from "../types";
+import type { OmniboxSuggestion, WebsiteSuggestion } from "../types";
 import type { BrowsingHistoryEntry } from "~/types/history";
 import { cacheUrlTitle, getOmniboxCurrentProfileId } from "../states";
 
@@ -32,6 +32,22 @@ type PrimeQuickHistoryCacheOptions = {
 };
 
 const quickHistoryCache = new Map<string, QuickHistoryCacheEntry>();
+
+type RankedQuickHistoryEntry = {
+  suggestion: WebsiteSuggestion;
+  lastVisitTime: number;
+  typedCount: number;
+  visitCount: number;
+  hostnameTokenMatch: boolean;
+  urlLength: number;
+};
+
+type RankedZeroSuggestHistoryEntry = {
+  suggestion: WebsiteSuggestion;
+  lastVisitTime: number;
+  typedCount: number;
+  visitCount: number;
+};
 
 function tokenize(value: string): string[] {
   return Array.from(
@@ -165,6 +181,63 @@ function getQuickHistoryRelevance(entry: NormalizedHistoryEntry, inputLower: str
   );
 }
 
+function compareQuickHistoryEntries(left: RankedQuickHistoryEntry, right: RankedQuickHistoryEntry): number {
+  if (left.hostnameTokenMatch !== right.hostnameTokenMatch) {
+    return Number(right.hostnameTokenMatch) - Number(left.hostnameTokenMatch);
+  }
+  if (left.hostnameTokenMatch && right.hostnameTokenMatch && left.urlLength !== right.urlLength) {
+    return left.urlLength - right.urlLength;
+  }
+  if (right.suggestion.relevance !== left.suggestion.relevance) {
+    return right.suggestion.relevance - left.suggestion.relevance;
+  }
+  if (right.lastVisitTime !== left.lastVisitTime) {
+    return right.lastVisitTime - left.lastVisitTime;
+  }
+  if (right.typedCount !== left.typedCount) {
+    return right.typedCount - left.typedCount;
+  }
+  if (right.visitCount !== left.visitCount) {
+    return right.visitCount - left.visitCount;
+  }
+  return left.suggestion.url.localeCompare(right.suggestion.url);
+}
+
+function compareZeroSuggestHistoryEntries(
+  left: RankedZeroSuggestHistoryEntry,
+  right: RankedZeroSuggestHistoryEntry
+): number {
+  if (right.suggestion.relevance !== left.suggestion.relevance) {
+    return right.suggestion.relevance - left.suggestion.relevance;
+  }
+  if (right.lastVisitTime !== left.lastVisitTime) {
+    return right.lastVisitTime - left.lastVisitTime;
+  }
+  if (right.typedCount !== left.typedCount) {
+    return right.typedCount - left.typedCount;
+  }
+  if (right.visitCount !== left.visitCount) {
+    return right.visitCount - left.visitCount;
+  }
+  return left.suggestion.url.localeCompare(right.suggestion.url);
+}
+
+function pushTopEntry<T>(items: T[], item: T, limit: number, compare: (left: T, right: T) => number) {
+  const insertionIndex = items.findIndex((existing) => compare(item, existing) < 0);
+
+  if (insertionIndex === -1) {
+    if (items.length < limit) {
+      items.push(item);
+    }
+    return;
+  }
+
+  items.splice(insertionIndex, 0, item);
+  if (items.length > limit) {
+    items.length = limit;
+  }
+}
+
 export function primeQuickHistoryCache(
   profileId: string | null | undefined,
   options: PrimeQuickHistoryCacheOptions = {}
@@ -230,50 +303,34 @@ export function getQuickHistorySuggestions(trimmedInput: string): OmniboxSuggest
   const tokens = getQueryTokens(inputLower);
   const inputLooksLikeUrl = isUrlLikeInput(trimmedInput);
 
-  return cacheEntry.entries
-    .map((entry) => {
-      if (inputLooksLikeUrl && !hasUrlPrefixMatch(entry, inputLower)) {
-        return null;
-      }
+  const bestEntries: RankedQuickHistoryEntry[] = [];
 
-      const relevance = getQuickHistoryRelevance(entry, inputLower, tokens);
-      if (relevance === null) {
-        return null;
-      }
+  for (const entry of cacheEntry.entries) {
+    if (inputLooksLikeUrl && !hasUrlPrefixMatch(entry, inputLower)) {
+      continue;
+    }
 
-      return {
+    const relevance = getQuickHistoryRelevance(entry, inputLower, tokens);
+    if (relevance === null) {
+      continue;
+    }
+
+    pushTopEntry(
+      bestEntries,
+      {
         suggestion: createWebsiteSuggestion(entry.url, relevance, entry.title.trim() || null, "quick-history"),
         lastVisitTime: entry.lastVisitTime,
         typedCount: entry.typedCount,
         visitCount: entry.visitCount,
         hostnameTokenMatch: hostnameContainsAllTokens(entry, tokens),
         urlLength: entry.uniqueUrlKey.length
-      };
-    })
-    .filter((value): value is NonNullable<typeof value> => value !== null)
-    .sort((left, right) => {
-      if (left.hostnameTokenMatch !== right.hostnameTokenMatch) {
-        return Number(right.hostnameTokenMatch) - Number(left.hostnameTokenMatch);
-      }
-      if (left.hostnameTokenMatch && right.hostnameTokenMatch && left.urlLength !== right.urlLength) {
-        return left.urlLength - right.urlLength;
-      }
-      if (right.suggestion.relevance !== left.suggestion.relevance) {
-        return right.suggestion.relevance - left.suggestion.relevance;
-      }
-      if (right.lastVisitTime !== left.lastVisitTime) {
-        return right.lastVisitTime - left.lastVisitTime;
-      }
-      if (right.typedCount !== left.typedCount) {
-        return right.typedCount - left.typedCount;
-      }
-      if (right.visitCount !== left.visitCount) {
-        return right.visitCount - left.visitCount;
-      }
-      return left.suggestion.url.localeCompare(right.suggestion.url);
-    })
-    .slice(0, QUICK_HISTORY_LIMIT)
-    .map((entry) => entry.suggestion);
+      },
+      QUICK_HISTORY_LIMIT,
+      compareQuickHistoryEntries
+    );
+  }
+
+  return bestEntries.map((entry) => entry.suggestion);
 }
 
 function getQuickHistoryCacheEntries(): NormalizedHistoryEntry[] {
@@ -323,33 +380,26 @@ export function getZeroSuggestHistorySuggestions(): OmniboxSuggestion[] {
     }
   }
 
-  return Array.from(dedupedEntries.values())
-    .map((entry) => ({
-      suggestion: createWebsiteSuggestion(
-        entry.url,
-        getZeroSuggestHistoryRelevance(entry),
-        entry.title.trim() || null,
-        "zero-suggest-history"
-      ),
-      lastVisitTime: entry.lastVisitTime,
-      typedCount: entry.typedCount,
-      visitCount: entry.visitCount
-    }))
-    .sort((left, right) => {
-      if (right.suggestion.relevance !== left.suggestion.relevance) {
-        return right.suggestion.relevance - left.suggestion.relevance;
-      }
-      if (right.lastVisitTime !== left.lastVisitTime) {
-        return right.lastVisitTime - left.lastVisitTime;
-      }
-      if (right.typedCount !== left.typedCount) {
-        return right.typedCount - left.typedCount;
-      }
-      if (right.visitCount !== left.visitCount) {
-        return right.visitCount - left.visitCount;
-      }
-      return left.suggestion.url.localeCompare(right.suggestion.url);
-    })
-    .slice(0, ZERO_SUGGEST_HISTORY_LIMIT)
-    .map((entry) => entry.suggestion);
+  const bestEntries: RankedZeroSuggestHistoryEntry[] = [];
+
+  for (const entry of dedupedEntries.values()) {
+    pushTopEntry(
+      bestEntries,
+      {
+        suggestion: createWebsiteSuggestion(
+          entry.url,
+          getZeroSuggestHistoryRelevance(entry),
+          entry.title.trim() || null,
+          "zero-suggest-history"
+        ),
+        lastVisitTime: entry.lastVisitTime,
+        typedCount: entry.typedCount,
+        visitCount: entry.visitCount
+      },
+      ZERO_SUGGEST_HISTORY_LIMIT,
+      compareZeroSuggestHistoryEntries
+    );
+  }
+
+  return bestEntries.map((entry) => entry.suggestion);
 }

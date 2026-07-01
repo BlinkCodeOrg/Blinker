@@ -115,6 +115,18 @@ function areSameTabRefs(a: TabData[], b: TabData[]): boolean {
   return true;
 }
 
+function areTabsEqual(a: TabData, b: TabData): boolean {
+  const aKeys = Object.keys(a) as (keyof TabData)[];
+  const bKeys = Object.keys(b) as (keyof TabData)[];
+  if (aKeys.length !== bKeys.length) return false;
+
+  for (const key of aKeys) {
+    if (a[key] !== b[key]) return false;
+  }
+
+  return true;
+}
+
 export const TabsProvider = ({ children }: TabsProviderProps) => {
   const { currentSpace } = useSpaces();
   const [tabsData, setTabsData] = useState<WindowTabsData | null>(null);
@@ -157,6 +169,7 @@ export const TabsProvider = ({ children }: TabsProviderProps) => {
         const newTabs = prev.tabs.map((tab) => {
           const updated = updatesById.get(tab.id);
           if (updated) {
+            if (areTabsEqual(tab, updated)) return tab;
             anyChanged = true;
             return updated;
           }

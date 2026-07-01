@@ -1,7 +1,7 @@
 import { isValidUrl } from "../helpers";
 import type { OmniboxSuggestion } from "../types";
 import { createSearchSuggestion, createWebsiteSuggestion } from "../suggestions";
-import { getBangs } from "../bangs-initializer";
+import { getBangByTrigger } from "../bangs-initializer";
 
 const VERBATIM_URL_RELEVANCE = 502;
 const VERBATIM_SEARCH_RELEVANCE = 501;
@@ -12,8 +12,9 @@ function getBangSearchUrl(query: string): string | null {
   const match = query.match(/!(\S+)/i);
 
   const bangCandidate = match?.[1]?.toLowerCase();
-  const bangs = getBangs();
-  const selectedBang = bangs.find((b) => b.t === bangCandidate);
+  if (!bangCandidate) return null;
+
+  const selectedBang = getBangByTrigger(bangCandidate);
   if (!selectedBang) return null;
 
   // Remove the first bang from the query

@@ -17,33 +17,63 @@ export type BangEntry = {
 
 let bangs: BangEntry[] | undefined;
 let bangsPromise: Promise<BangEntry[]> | undefined;
+let bangsByTrigger: Map<string, BangEntry> | undefined;
 
-async function preloadBangs() {
-  if (bangs) return false;
+function setBangs(entries: BangEntry[]) {
+  bangs = entries;
+  bangsByTrigger = new Map(entries.map((entry) => [entry.t.toLowerCase(), entry]));
+}
+
+async function preloadBangs(): Promise<BangEntry[]> {
+  if (bangs) return bangs;
   const bangsModule = (await import("./bangs")) as unknown as { bangs: BangEntry[] };
-  bangs = bangsModule.bangs;
-  return true;
+  setBangs(bangsModule.bangs);
+  return bangsModule.bangs;
+}
+
+function ensureBangsLoading() {
+  if (bangs) return Promise.resolve(bangs);
+  if (!bangsPromise) {
+    bangsPromise = preloadBangs().finally(() => {
+      bangsPromise = undefined;
+    });
+  }
+  return bangsPromise;
 }
 
 export async function waitForBangsLoad() {
   if (bangs) return bangs;
-  getBangs();
-  if (bangsPromise) {
-    return await bangsPromise;
-  }
-  throw new Error("Bangs not loaded - should be unreachable!!");
+  return await ensureBangsLoading();
 }
 
 export function getBangs() {
   if (bangs) return bangs;
-  if (!bangsPromise) {
-    bangsPromise = preloadBangs().then(() => {
-      bangsPromise = undefined;
-      if (bangs) return bangs;
-      throw new Error("Bangs not loaded after preload - should be unreachable!!");
-    });
-  }
+  void ensureBangsLoading();
   return [];
 }
 
-getBangs();
+export function getBangByTrigger(trigger: string): BangEntry | undefined {
+  if (!bangsByTrigger) {
+    void ensureBangsLoading();
+    return undefined;
+  }
+
+  return bangsByTrigger.get(trigger.toLowerCase());
+}
+
+function preloadBangsWhenIdle() {
+  if (typeof window === "undefined") return;
+
+  const preload = () => {
+    void ensureBangsLoading();
+  };
+
+  if ("requestIdleCallback" in window) {
+    window.requestIdleCallback(preload, { timeout: 4000 });
+    return;
+  }
+
+  globalThis.setTimeout(preload, 2000);
+}
+
+preloadBangsWhenIdle();

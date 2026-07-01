@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { X, RotateCw, Search, Info, List } from "lucide-react";
 import { requestOmniboxSuggestions } from "@/lib/omnibox-new";
-import { primeOpenTabsCache, primeQuickHistoryCache } from "@/lib/omnibox-new/suggestors";
+import { primeBookmarksCache, primeOpenTabsCache, primeQuickHistoryCache } from "@/lib/omnibox-new/suggestors";
 import { setOmniboxCurrentProfileId, setOmniboxCurrentSpaceId } from "@/lib/omnibox-new/states";
 import type { OmniboxSuggestion } from "@/lib/omnibox-new/types";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -87,6 +87,7 @@ function Page() {
     setOmniboxCurrentProfileId(currentSpace?.profileId);
     setOmniboxCurrentSpaceId(currentSpace?.id);
     void primeQuickHistoryCache(currentSpace?.profileId, { force: true });
+    void primeBookmarksCache(currentSpace?.profileId, { force: true });
     void primeOpenTabsCache(currentSpace?.id, { force: true });
   }, [currentSpace?.id, currentSpace?.profileId, requestSuggestions]);
 

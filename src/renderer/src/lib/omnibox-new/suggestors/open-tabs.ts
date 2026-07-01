@@ -23,6 +23,7 @@ type NormalizedOpenTab = TabData & {
 
 type OpenTabsCacheEntry = {
   tabs: TabData[];
+  normalizedTabs: NormalizedOpenTab[];
   focusedTabIds: WindowTabsData["focusedTabIds"];
   loadedAt: number;
   refreshPromise: Promise<void> | null;
@@ -116,9 +117,9 @@ function createOpenTabSuggestion(tab: NormalizedOpenTab, relevance: number, isZe
 function getEligibleOpenTabs(cacheEntry: OpenTabsCacheEntry, currentSpaceId: string): NormalizedOpenTab[] {
   const focusedTabId = cacheEntry.focusedTabIds[currentSpaceId] ?? null;
 
-  return cacheEntry.tabs
-    .filter((tab) => tab.spaceId === currentSpaceId && !tab.ephemeral && tab.id !== focusedTabId)
-    .map(normalizeOpenTab);
+  return cacheEntry.normalizedTabs.filter(
+    (tab) => tab.spaceId === currentSpaceId && !tab.ephemeral && tab.id !== focusedTabId
+  );
 }
 
 export function primeOpenTabsCache(
@@ -141,8 +142,10 @@ export function primeOpenTabsCache(
   const refreshPromise = flow.tabs
     .getData()
     .then((tabsData) => {
+      const normalizedTabs = tabsData.tabs.map(normalizeOpenTab);
       openTabsCache.set(currentSpaceId, {
         tabs: tabsData.tabs,
+        normalizedTabs,
         focusedTabIds: tabsData.focusedTabIds,
         loadedAt: Date.now(),
         refreshPromise: null
@@ -163,6 +166,7 @@ export function primeOpenTabsCache(
 
   openTabsCache.set(currentSpaceId, {
     tabs: existing?.tabs ?? [],
+    normalizedTabs: existing?.normalizedTabs ?? [],
     focusedTabIds: existing?.focusedTabIds ?? {},
     loadedAt: existing?.loadedAt ?? 0,
     refreshPromise

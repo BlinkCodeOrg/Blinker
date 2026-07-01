@@ -4,6 +4,7 @@ import { getZeroSuggestSuggestions } from "./zero-suggest";
 import {
   getOpenTabSuggestions,
   getPedalSuggestions,
+  getBookmarkSuggestions,
   getQuickHistorySuggestions,
   getVerbatimSuggestions
 } from "./suggestors";
@@ -24,9 +25,16 @@ export function getOmniboxSuggestions(input: string, flush: OmniboxFlush, signal
   // Initial suggestions (verbatim, quick history, open tabs, and pedal)
   const verbatimSuggestions = getVerbatimSuggestions(trimmedInput);
   const quickHistorySuggestions = getQuickHistorySuggestions(trimmedInput);
+  const bookmarkSuggestions = getBookmarkSuggestions(trimmedInput);
   const openTabSuggestions = getOpenTabSuggestions(trimmedInput);
   const pedalSuggestions = getPedalSuggestions(trimmedInput);
-  flush([...verbatimSuggestions, ...quickHistorySuggestions, ...openTabSuggestions, ...pedalSuggestions]);
+  flush([
+    ...verbatimSuggestions,
+    ...bookmarkSuggestions,
+    ...quickHistorySuggestions,
+    ...openTabSuggestions,
+    ...pedalSuggestions
+  ]);
 
   // Asynchronous suggestions (search)
   flushSearchSuggestions(trimmedInput, flush, signal);
