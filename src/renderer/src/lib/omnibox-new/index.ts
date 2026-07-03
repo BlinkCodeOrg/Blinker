@@ -38,6 +38,14 @@ export function mergeOmniboxSuggestions(
   }
 
   for (const suggestion of incoming) {
+    if (suggestion.type === "search" && suggestion.source === "verbatim") {
+      for (const [identity, existing] of merged) {
+        if (existing.type === "search" && existing.source === "verbatim" && existing.query === suggestion.query) {
+          merged.delete(identity);
+        }
+      }
+    }
+
     const identity = getSuggestionIdentity(suggestion);
     const existing = merged.get(identity);
     if (existing && existing.relevance > suggestion.relevance) {

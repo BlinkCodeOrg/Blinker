@@ -3,6 +3,9 @@ dist
 out
 compiled-app
 release
+dist-fixed
+native/bin
+native/omnibox-ranker/target
 original-reference
 .DS_Store
 .eslintcache

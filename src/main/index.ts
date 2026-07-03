@@ -1,4 +1,5 @@
 import { debugPrint } from "@/modules/output";
+import { markPerformance } from "@/modules/performance";
 import { app } from "electron";
 
 function printHeader() {
@@ -18,6 +19,8 @@ function printHeader() {
 }
 
 function initializeApp() {
+  markPerformance("initialize.start", "startup");
+
   if (process.platform === "win32") {
     app.disableHardwareAcceleration();
     app.commandLine.appendSwitch("disable-gpu");
@@ -33,6 +36,8 @@ function initializeApp() {
 
   // Import everything
   import("@/browser");
+
+  markPerformance("browser.import.requested", "startup");
 
   return true;
 }

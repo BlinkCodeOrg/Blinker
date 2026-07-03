@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import type { BasicSetting, BasicSettingCard } from "~/types/settings";
 import { setLocalePreference } from "@/lib/i18n";
+import { measureAsync } from "@/lib/performance";
 
 interface SettingsContextValue {
   settings: BasicSetting[];
@@ -44,16 +45,24 @@ export const SettingsProvider = ({ children }: SettingsProviderProps) => {
   const fetchSettings = useCallback(async () => {
     if (!flow) return;
 
-    const { settings: fetchedSettings, cards: fetchedCards } = await flow.settings.getBasicSettings();
+    const { settings: fetchedSettings, cards: fetchedCards } = await measureAsync(
+      "renderer.settings.getBasicSettings",
+      () => flow.settings.getBasicSettings()
+    );
     setSettings(fetchedSettings);
     setCards(fetchedCards);
 
-    const entries = await Promise.all(
-      fetchedSettings.map(async (setting) => {
-        const value = await flow.settings.getSetting(setting.id);
-        syncRendererSetting(setting.id, value);
-        return [setting.id, value] as const;
-      })
+    const entries = await measureAsync(
+      "renderer.settings.loadValues",
+      () =>
+        Promise.all(
+          fetchedSettings.map(async (setting) => {
+            const value = await flow.settings.getSetting(setting.id);
+            syncRendererSetting(setting.id, value);
+            return [setting.id, value] as const;
+          })
+        ),
+      { count: fetchedSettings.length }
     );
 
     setSettingsValues(Object.fromEntries(entries));

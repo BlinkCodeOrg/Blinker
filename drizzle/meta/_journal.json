@@ -57,6 +57,13 @@
       "when": 1782777600000,
       "tag": "0007_bookmarks_permissions",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1783036800000,
+      "tag": "0008_perf_indexes",
+      "breakpoints": true
     }
   ]
 }

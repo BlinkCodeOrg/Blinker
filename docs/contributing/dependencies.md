@@ -17,7 +17,7 @@ These dependencies are bundled into the `node_modules` of the app. These should 
 ### Uncategorized Dependencies
 
 - @ghostery/adblocker-electron - Built-in adblocker for Flow.
-- @phosphor-icons/core - Material Icons for the app.
+- @phosphor-icons/core - Space icon metadata and SVG assets for the app.
 - electron-chrome-extensions - Patches the chrome extensions API to ensure they work.
 - electron-chrome-web-store - Patches APIs the Chrome Web Store needs to work & make it think this is Chrome.
 - electron-context-menu - Context menu for the app.
@@ -69,7 +69,6 @@ These dependencies are either used in the build process, or they are only used i
 - @atlaskit/pragmatic-drag-and-drop-react-drop-indicator - Helper for drag and drop tabs.
 - @iamevan/react-resizable-panels - Resizable panel layouts for the frontend.
 - lucide-react - Icons for the app.
-- @phosphor-icons/react - Icons for the app.
 - @pdfslick/react - Powers the Experimental PDF Viewer from PDFSlick.
 - @headlessui/react - Helper for the Experimental PDF Viewer from PDFSlick.
 - d3-drag - Helper for the Experimental PDF Viewer from PDFSlick.

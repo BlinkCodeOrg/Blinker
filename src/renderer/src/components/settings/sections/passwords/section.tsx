@@ -28,6 +28,8 @@ const emptyDraft: PasswordEntryInput = {
   note: ""
 };
 
+const PASSWORD_VISIBLE_BATCH = 120;
+
 function AddPasswordDialog({
   open,
   onOpenChange,
@@ -143,6 +145,7 @@ export function PasswordsSettings() {
   const [profileId, setProfileId] = useState<string | null>(null);
   const [entries, setEntries] = useState<PasswordEntry[]>([]);
   const [query, setQuery] = useState("");
+  const [visibleCount, setVisibleCount] = useState(PASSWORD_VISIBLE_BATCH);
   const [visiblePasswords, setVisiblePasswords] = useState<Set<number>>(new Set());
   const [copiedPasswordId, setCopiedPasswordId] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -198,6 +201,11 @@ export function PasswordsSettings() {
       )
     );
   }, [entries, query]);
+  const visibleEntries = useMemo(() => filteredEntries.slice(0, visibleCount), [filteredEntries, visibleCount]);
+
+  useEffect(() => {
+    setVisibleCount(PASSWORD_VISIBLE_BATCH);
+  }, [query, entries.length]);
 
   const handleSave = async (entry: PasswordEntryInput) => {
     if (!profileId) return;
@@ -345,7 +353,7 @@ export function PasswordsSettings() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredEntries.map((entry) => {
+                {visibleEntries.map((entry) => {
                   const isVisible = visiblePasswords.has(entry.id);
                   return (
                     <TableRow key={entry.id}>
@@ -411,6 +419,17 @@ export function PasswordsSettings() {
               </TableBody>
             </Table>
           )}
+          {filteredEntries.length > visibleEntries.length ? (
+            <div className="flex justify-center pt-4">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setVisibleCount((current) => current + PASSWORD_VISIBLE_BATCH)}
+              >
+                Load more
+              </Button>
+            </div>
+          ) : null}
         </CardContent>
       </Card>
 

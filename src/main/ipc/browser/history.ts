@@ -13,6 +13,7 @@ import {
 } from "@/saving/history/browsing-history";
 import type { HistoryVisitsPageCursor } from "~/types/history";
 import { ipcMain } from "electron";
+import { measurePerformance } from "@/modules/performance";
 
 async function profileIdFromSender(sender: Electron.WebContents): Promise<string | null> {
   const window = browserWindowsController.getWindowFromWebContents(sender);
@@ -26,13 +27,20 @@ async function profileIdFromSender(sender: Electron.WebContents): Promise<string
 ipcMain.handle("history:list", async (event) => {
   const profileId = await profileIdFromSender(event.sender);
   if (!profileId) return [];
-  return listBrowsingHistoryForProfile(profileId);
+  return measurePerformance("ipc.history.list", "ipc", async () => listBrowsingHistoryForProfile(profileId));
 });
 
 ipcMain.handle("history:list-visits", async (event, search?: string) => {
   const profileId = await profileIdFromSender(event.sender);
   if (!profileId) return [];
-  return listBrowsingVisitsForProfile(profileId, search);
+  return measurePerformance(
+    "ipc.history.listVisits",
+    "ipc",
+    async () => listBrowsingVisitsForProfile(profileId, search),
+    {
+      search: Boolean(search)
+    }
+  );
 });
 
 ipcMain.handle(
@@ -40,7 +48,12 @@ ipcMain.handle(
   async (event, args: { search?: string; limit: number; cursor?: HistoryVisitsPageCursor }) => {
     const profileId = await profileIdFromSender(event.sender);
     if (!profileId) return { visits: [], nextCursor: null };
-    return listBrowsingVisitsPageForProfile(profileId, args);
+    return measurePerformance(
+      "ipc.history.listVisitsPage",
+      "ipc",
+      async () => listBrowsingVisitsPageForProfile(profileId, args),
+      { limit: args.limit, search: Boolean(args.search), cursor: Boolean(args.cursor) }
+    );
   }
 );
 

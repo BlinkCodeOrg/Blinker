@@ -6,6 +6,7 @@ import { tabsController } from "@/controllers/tabs-controller";
 import { browserWindowsController } from "@/controllers/windows-controller/interfaces/browser";
 import { settings } from "@/controllers/windows-controller/interfaces/settings";
 import { ipcMain } from "electron";
+import { measurePerformanceSync } from "@/modules/performance";
 
 ipcMain.on("settings:open", async (event) => {
   const window =
@@ -27,18 +28,25 @@ ipcMain.on("settings:close", () => {
 });
 
 ipcMain.handle("settings:get-setting", (_event, settingId: string) => {
-  return getSettingValueById(settingId);
+  return measurePerformanceSync("ipc.settings.getSetting", "ipc", () => getSettingValueById(settingId), { settingId });
 });
 
 ipcMain.handle("settings:set-setting", (_event, settingId: string, value: unknown) => {
-  return setSettingValueById(settingId, value);
+  return measurePerformanceSync("ipc.settings.setSetting", "ipc", () => setSettingValueById(settingId, value), {
+    settingId
+  });
 });
 
 ipcMain.handle("settings:get-basic-settings", () => {
-  return {
-    settings: BasicSettings,
-    cards: BasicSettingCards
-  };
+  return measurePerformanceSync(
+    "ipc.settings.getBasicSettings",
+    "ipc",
+    () => ({
+      settings: BasicSettings,
+      cards: BasicSettingCards
+    }),
+    { settings: BasicSettings.length, cards: BasicSettingCards.length }
+  );
 });
 
 export function fireOnSettingsChanged() {

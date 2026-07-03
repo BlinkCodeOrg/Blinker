@@ -25,6 +25,7 @@ import {
 } from "@/saving/downloads";
 import type { DownloadsPageCursor } from "~/types/downloads";
 import { ipcMain } from "electron";
+import { measurePerformance } from "@/modules/performance";
 
 async function profileIdFromSender(sender: Electron.WebContents): Promise<string | null> {
   const window =
@@ -44,7 +45,12 @@ function getDownloadForSender(profileId: string | null, id: number) {
 ipcMain.handle("downloads:list-recent", async (event, limit?: number) => {
   const profileId = await profileIdFromSender(event.sender);
   if (!profileId) return [];
-  return listRecentDownloadsForProfile(profileId, limit).map(enrichDownload);
+  return measurePerformance(
+    "ipc.downloads.listRecent",
+    "ipc",
+    async () => listRecentDownloadsForProfile(profileId, limit).map(enrichDownload),
+    { limit: limit ?? null }
+  );
 });
 
 ipcMain.handle(
@@ -52,13 +58,20 @@ ipcMain.handle(
   async (event, args: { search?: string; limit: number; cursor?: DownloadsPageCursor }) => {
     const profileId = await profileIdFromSender(event.sender);
     if (!profileId) return { downloads: [], nextCursor: null };
-    const page = listDownloadsPageForProfile(profileId, args);
-    return { ...page, downloads: page.downloads.map(enrichDownload) };
+    return measurePerformance(
+      "ipc.downloads.listPage",
+      "ipc",
+      async () => {
+        const page = listDownloadsPageForProfile(profileId, args);
+        return { ...page, downloads: page.downloads.map(enrichDownload) };
+      },
+      { limit: args.limit, search: Boolean(args.search), cursor: Boolean(args.cursor) }
+    );
   }
 );
 
 ipcMain.handle("downloads:get-session", () => {
-  return getSessionDownloads();
+  return measurePerformance("ipc.downloads.getSession", "ipc", async () => getSessionDownloads());
 });
 
 ipcMain.handle("downloads:open-file", async (event, id: number) => {

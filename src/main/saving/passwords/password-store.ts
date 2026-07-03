@@ -276,9 +276,24 @@ export function importPasswordsFromCsvText(
 ): PasswordImportResult {
   const rows = parseCsv(text);
   const source = detectSource(rows);
+  const db = getDb();
+  const now = Date.now();
+  const existingKeys = new Set(
+    db
+      .select({
+        origin: passwords.origin,
+        username: passwords.username
+      })
+      .from(passwords)
+      .where(eq(passwords.profileId, profileId))
+      .all()
+      .map((row) => `${row.origin}\u0000${row.username}`)
+  );
+  const seenKeys = new Set<string>();
   let imported = 0;
   let skipped = 0;
   let updated = 0;
+  const entries: (typeof passwords.$inferInsert)[] = [];
 
   for (const row of rows) {
     const input = rowToPasswordInput(row, source);
@@ -288,18 +303,47 @@ export function importPasswordsFromCsvText(
     }
 
     const origin = originFromUrl(input.url);
-    const existing = getDb()
-      .select({ id: passwords.id })
-      .from(passwords)
-      .where(
-        and(eq(passwords.profileId, profileId), eq(passwords.origin, origin), eq(passwords.username, input.username))
-      )
-      .limit(1)
-      .get();
+    const username = input.username.trim();
+    const key = `${origin}\u0000${username}`;
+    const title = input.title?.trim() || titleFromUrl(input.url);
 
-    savePasswordForProfile(profileId, input);
-    if (existing) updated++;
+    entries.push({
+      profileId,
+      origin,
+      url: input.url.trim(),
+      username,
+      encryptedPassword: encryptPassword(input.password),
+      title,
+      note: input.note?.trim() || null,
+      source,
+      createdAt: now,
+      updatedAt: now
+    });
+
+    if (existingKeys.has(key) || seenKeys.has(key)) updated++;
     else imported++;
+    seenKeys.add(key);
+  }
+
+  if (entries.length > 0) {
+    db.transaction((tx) => {
+      for (const entry of entries) {
+        tx.insert(passwords)
+          .values(entry)
+          .onConflictDoUpdate({
+            target: [passwords.profileId, passwords.origin, passwords.username],
+            set: {
+              url: entry.url,
+              encryptedPassword: entry.encryptedPassword,
+              title: entry.title,
+              note: entry.note,
+              source: entry.source,
+              updatedAt: entry.updatedAt
+            }
+          })
+          .run();
+      }
+    });
   }
 
   return { imported, skipped, updated, source, fileName };

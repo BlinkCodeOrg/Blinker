@@ -144,6 +144,10 @@ const electronBuilderConfig: Configuration = {
     {
       from: "drizzle",
       to: "drizzle"
+    },
+    {
+      from: "native/bin",
+      to: "native"
     }
   ],
   win: {

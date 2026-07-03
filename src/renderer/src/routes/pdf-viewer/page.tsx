@@ -1,7 +1,7 @@
+import { lazy, Suspense } from "react";
 import { useQueryState } from "nuqs";
-import { PDFViewerApp } from "./pdf-viewer";
 
-import "@pdfslick/react/dist/pdf_viewer.css";
+const PDFViewerApp = lazy(() => import("./pdf-viewer/lazy"));
 
 function Page() {
   const [url] = useQueryState("url");
@@ -13,7 +13,9 @@ function Page() {
   return (
     <>
       <title>{url}</title>
-      <PDFViewerApp pdfFilePath={cacheURL ?? url} />
+      <Suspense fallback={<div className="absolute inset-0 bg-slate-200/70 dark:bg-slate-800" />}>
+        <PDFViewerApp pdfFilePath={cacheURL ?? url} />
+      </Suspense>
     </>
   );
 }

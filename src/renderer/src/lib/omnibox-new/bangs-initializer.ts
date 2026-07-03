@@ -19,6 +19,8 @@ let bangs: BangEntry[] | undefined;
 let bangsPromise: Promise<BangEntry[]> | undefined;
 let bangsByTrigger: Map<string, BangEntry> | undefined;
 
+const bangsDataUrl = new URL("./bangs.json", import.meta.url).href;
+
 function setBangs(entries: BangEntry[]) {
   bangs = entries;
   bangsByTrigger = new Map(entries.map((entry) => [entry.t.toLowerCase(), entry]));
@@ -26,9 +28,14 @@ function setBangs(entries: BangEntry[]) {
 
 async function preloadBangs(): Promise<BangEntry[]> {
   if (bangs) return bangs;
-  const bangsModule = (await import("./bangs")) as unknown as { bangs: BangEntry[] };
-  setBangs(bangsModule.bangs);
-  return bangsModule.bangs;
+  const response = await fetch(bangsDataUrl);
+  if (!response.ok) {
+    throw new Error(`Failed to load bangs: ${response.status} ${response.statusText}`);
+  }
+
+  const entries = (await response.json()) as BangEntry[];
+  setBangs(entries);
+  return entries;
 }
 
 function ensureBangsLoading() {
@@ -47,33 +54,22 @@ export async function waitForBangsLoad() {
 }
 
 export function getBangs() {
-  if (bangs) return bangs;
-  void ensureBangsLoading();
-  return [];
+  return bangs ?? [];
 }
 
 export function getBangByTrigger(trigger: string): BangEntry | undefined {
   if (!bangsByTrigger) {
-    void ensureBangsLoading();
     return undefined;
   }
 
   return bangsByTrigger.get(trigger.toLowerCase());
 }
 
-function preloadBangsWhenIdle() {
-  if (typeof window === "undefined") return;
-
-  const preload = () => {
-    void ensureBangsLoading();
-  };
-
-  if ("requestIdleCallback" in window) {
-    window.requestIdleCallback(preload, { timeout: 4000 });
-    return;
+export async function waitForBangByTrigger(trigger: string): Promise<BangEntry | undefined> {
+  const loadedBangs = await ensureBangsLoading();
+  if (!bangsByTrigger) {
+    setBangs(loadedBangs);
   }
 
-  globalThis.setTimeout(preload, 2000);
+  return bangsByTrigger?.get(trigger.toLowerCase());
 }
-
-preloadBangsWhenIdle();

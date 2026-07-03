@@ -20,6 +20,15 @@ export type OmniboxOpenParams = {
   openIn?: OmniboxOpenIn;
 };
 
+export type OmniboxPlaceSuggestionSource = "history" | "bookmark";
+
+export type OmniboxPlaceSuggestion = {
+  url: string;
+  title: string | null;
+  relevance: number;
+  source: OmniboxPlaceSuggestionSource;
+};
+
 // API //
 export interface FlowOmniboxAPI {
   /**
@@ -36,6 +45,11 @@ export interface FlowOmniboxAPI {
    * Listens for omnibox open-state changes.
    */
   onStateChanged: IPCListener<[OmniboxOpenState]>;
+
+  /**
+   * Searches larger history/bookmark datasets outside of the renderer.
+   */
+  searchPlaces: (input: string, limit?: number) => Promise<OmniboxPlaceSuggestion[]>;
 
   /**
    * Hides the omnibox

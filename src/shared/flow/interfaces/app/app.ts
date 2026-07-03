@@ -1,3 +1,5 @@
+import type { PerformanceEvent, PerformanceSnapshot } from "~/types/performance";
+
 // API //
 export interface FlowAppAPI {
   /**
@@ -32,4 +34,19 @@ export interface FlowAppAPI {
    * Gets the default browser
    */
   getDefaultBrowser: () => Promise<boolean>;
+
+  /**
+   * Returns in-memory performance marks and measurements for debugging.
+   */
+  getPerformanceSnapshot: () => Promise<PerformanceSnapshot>;
+
+  /**
+   * Records a renderer-side performance measurement into the main profiler.
+   */
+  recordPerformanceEvent: (event: Omit<PerformanceEvent, "id" | "endedAtMs"> & { endedAtMs?: number }) => void;
+
+  /**
+   * Clears the in-memory performance buffer.
+   */
+  clearPerformanceSnapshot: () => Promise<void>;
 }

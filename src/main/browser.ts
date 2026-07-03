@@ -18,45 +18,62 @@ import { cleanupStaleEphemeralProfiles } from "@/controllers/profiles-controller
 import { initTabSync } from "@/controllers/tabs-controller/tab-sync";
 import { pinnedTabsController } from "@/controllers/pinned-tabs-controller";
 import { setupBasicAuthHandler } from "@/app/basic-auth";
+import { markPerformance, measurePerformance, measurePerformanceSync } from "@/modules/performance";
 
 async function bootstrapBrowser() {
-  await cleanupStaleEphemeralProfiles().catch((error) => {
-    console.error("Failed to cleanup stale ephemeral profiles:", error);
+  markPerformance("bootstrap.start", "startup");
+
+  await measurePerformance("profiles.cleanupStaleEphemeral", "startup", () =>
+    cleanupStaleEphemeralProfiles().catch((error) => {
+      console.error("Failed to cleanup stale ephemeral profiles:", error);
+    })
+  );
+
+  measurePerformanceSync("tabs.persistence.start", "startup", () => {
+    tabPersistenceManager.start();
   });
 
-  // Start tab persistence flush interval (writes dirty tabs to disk every ~2s)
-  tabPersistenceManager.start();
+  measurePerformanceSync("pinnedTabs.loadAll", "startup", () => {
+    try {
+      pinnedTabsController.loadAll();
+    } catch (error) {
+      console.error("Failed to load pinned tabs:", error);
+    }
+  });
 
-  // Load pinned tabs from database into memory (synchronous — better-sqlite3)
-  try {
-    pinnedTabsController.loadAll();
-  } catch (error) {
-    console.error("Failed to load pinned tabs:", error);
-  }
+  measurePerformanceSync("cursorEdgeMonitor.init", "startup", () => {
+    initCursorEdgeMonitor();
+  });
 
-  // Start cursor edge monitor (detects pointer near window edges for floating sidebar)
-  initCursorEdgeMonitor();
+  measurePerformanceSync("tabSync.init", "startup", () => {
+    initTabSync();
+  });
 
-  // Initialize tab sync (handles moving active tabs between windows when sync enabled)
-  initTabSync();
+  measurePerformanceSync("initialUrl.process", "startup", () => {
+    processInitialUrl();
+  });
 
-  // Handle initial URL (runs asynchronously)
-  processInitialUrl();
+  measurePerformanceSync("secondInstance.setup", "startup", () => {
+    setupSecondInstanceHandling();
+  });
 
-  // Setup second instance handler
-  setupSecondInstanceHandling();
+  measurePerformanceSync("platformIntegration.setup", "startup", () => {
+    setupPlatformIntegration();
+  });
 
-  // Setup platform specific features
-  setupPlatformIntegration();
+  measurePerformanceSync("initialWindow.schedule", "startup", () => {
+    runOnboardingOrInitialWindow();
+  });
 
-  // Open onboarding / create initial window
-  runOnboardingOrInitialWindow();
+  measurePerformanceSync("appLifecycle.setup", "startup", () => {
+    setupAppLifecycle();
+  });
 
-  // App lifecycle events
-  setupAppLifecycle();
+  measurePerformanceSync("basicAuth.setup", "startup", () => {
+    setupBasicAuthHandler();
+  });
 
-  // Handle app.on("login") events (basic auth)
-  setupBasicAuthHandler();
+  markPerformance("bootstrap.end", "startup");
 }
 
 void bootstrapBrowser();

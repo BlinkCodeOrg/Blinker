@@ -5,9 +5,12 @@ import {
   getOpenTabSuggestions,
   getPedalSuggestions,
   getBookmarkSuggestions,
+  flushBangVerbatimSuggestion,
+  flushPlaceSuggestions,
   getQuickHistorySuggestions,
   getVerbatimSuggestions
 } from "./suggestors";
+import { measureSync } from "@/lib/performance";
 
 /**
  * Produce omnibox rows for the current input. Call `flush` whenever the list changes
@@ -23,19 +26,27 @@ export function getOmniboxSuggestions(input: string, flush: OmniboxFlush, signal
   }
 
   // Initial suggestions (verbatim, quick history, open tabs, and pedal)
-  const verbatimSuggestions = getVerbatimSuggestions(trimmedInput);
-  const quickHistorySuggestions = getQuickHistorySuggestions(trimmedInput);
-  const bookmarkSuggestions = getBookmarkSuggestions(trimmedInput);
-  const openTabSuggestions = getOpenTabSuggestions(trimmedInput);
-  const pedalSuggestions = getPedalSuggestions(trimmedInput);
-  flush([
-    ...verbatimSuggestions,
-    ...bookmarkSuggestions,
-    ...quickHistorySuggestions,
-    ...openTabSuggestions,
-    ...pedalSuggestions
-  ]);
+  measureSync(
+    "renderer.omnibox.syncSuggestions",
+    () => {
+      const verbatimSuggestions = getVerbatimSuggestions(trimmedInput);
+      const quickHistorySuggestions = getQuickHistorySuggestions(trimmedInput);
+      const bookmarkSuggestions = getBookmarkSuggestions(trimmedInput);
+      const openTabSuggestions = getOpenTabSuggestions(trimmedInput);
+      const pedalSuggestions = getPedalSuggestions(trimmedInput);
+      flush([
+        ...verbatimSuggestions,
+        ...bookmarkSuggestions,
+        ...quickHistorySuggestions,
+        ...openTabSuggestions,
+        ...pedalSuggestions
+      ]);
+    },
+    { inputLength: trimmedInput.length }
+  );
 
-  // Asynchronous suggestions (search)
+  // Asynchronous suggestions (main-process places + search)
+  flushBangVerbatimSuggestion(trimmedInput, flush, signal);
+  void flushPlaceSuggestions(trimmedInput, flush, signal);
   flushSearchSuggestions(trimmedInput, flush, signal);
 }

@@ -168,19 +168,42 @@ function decodeHtmlEntities(value: string): string {
 
 export function importBookmarksFromHtml(profileId: string, html: string): number {
   const anchorPattern = /<A\s+[^>]*HREF=(?:"([^"]+)"|'([^']+)'|([^\s>]+))[^>]*>(.*?)<\/A>/gis;
-  let imported = 0;
+  const now = Date.now();
+  const entries = new Map<string, typeof bookmarks.$inferInsert>();
   let match: RegExpExecArray | null;
 
   while ((match = anchorPattern.exec(html))) {
-    const url = decodeHtmlEntities(match[1] || match[2] || match[3] || "");
+    const url = normalizeUrl(decodeHtmlEntities(match[1] || match[2] || match[3] || ""));
     const title = decodeHtmlEntities(match[4].replace(/<[^>]+>/g, "").trim());
     if (!url) continue;
-    saveBookmarkForProfile(profileId, {
+    entries.set(url, {
+      profileId,
       url,
-      title: title || titleFromUrl(url)
+      title: title || titleFromUrl(url),
+      folder: "Bookmarks bar",
+      faviconUrl: null,
+      createdAt: now,
+      updatedAt: now
     });
-    imported++;
   }
 
-  return imported;
+  if (entries.size > 0) {
+    getDb().transaction((tx) => {
+      for (const entry of entries.values()) {
+        tx.insert(bookmarks)
+          .values(entry)
+          .onConflictDoUpdate({
+            target: [bookmarks.profileId, bookmarks.url],
+            set: {
+              title: entry.title,
+              folder: entry.folder,
+              updatedAt: entry.updatedAt
+            }
+          })
+          .run();
+      }
+    });
+  }
+
+  return entries.size;
 }

@@ -7,6 +7,7 @@ import { shouldArchiveTab } from "@/saving/tabs";
 import { app, screen } from "electron";
 import { GlanceTabGroup } from "@/controllers/tabs-controller/tab-groups/glance";
 import type { BrowserWindowCreationOptions, BrowserWindowType } from "@/controllers/windows-controller/types/browser";
+import { markPerformance, measurePerformance } from "@/modules/performance";
 
 function intersects(a: Electron.Rectangle, b: Electron.Rectangle): boolean {
   return a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y;
@@ -44,16 +45,26 @@ function getRestorableWindowOptions(windowState: {
  * and restores them into browser windows.
  */
 export async function restoreSession(): Promise<boolean> {
-  await app.whenReady();
-  await onSettingsCached();
+  markPerformance("session.restore.start", "startup");
+  await measurePerformance("session.restore.appReady", "startup", () => app.whenReady());
+  await measurePerformance("session.restore.settingsCached", "startup", () => onSettingsCached());
 
-  const tabs = await loadAndFilterTabs();
+  const tabs = await measurePerformance("session.restore.loadTabs", "startup", () => loadAndFilterTabs());
+  markPerformance("session.restore.tabsLoaded", "startup", { tabs: tabs.length });
   if (tabs.length > 0) {
-    await createTabsFromPersistedData(tabs);
+    await measurePerformance(
+      "session.restore.createPersistedTabs",
+      "startup",
+      () => createTabsFromPersistedData(tabs),
+      {
+        tabs: tabs.length
+      }
+    );
   } else {
-    await browserWindowsController.create();
+    await measurePerformance("session.restore.createEmptyWindow", "startup", () => browserWindowsController.create());
   }
 
+  markPerformance("session.restore.end", "startup", { tabs: tabs.length });
   return true;
 }
 
@@ -93,8 +104,12 @@ async function createTabsFromPersistedData(tabDatas: PersistedTabData[]): Promis
   }
 
   // Load persisted tab groups and window states
-  const persistedGroups = await tabPersistenceManager.loadAllTabGroups();
-  const windowStates = await tabPersistenceManager.loadAllWindowStates();
+  const persistedGroups = await measurePerformance("session.restore.loadTabGroups", "startup", () =>
+    tabPersistenceManager.loadAllTabGroups()
+  );
+  const windowStates = await measurePerformance("session.restore.loadWindowStates", "startup", () =>
+    tabPersistenceManager.loadAllWindowStates()
+  );
   const uniqueIdToTabId = new Map<string, number>();
 
   // Create a window for each window group
@@ -104,26 +119,39 @@ async function createTabsFromPersistedData(tabDatas: PersistedTabData[]): Promis
 
     const windowType: BrowserWindowType = windowState?.isPopup ? "popup" : "normal";
     const windowOptions: BrowserWindowCreationOptions = windowState ? getRestorableWindowOptions(windowState) : {};
-    const window = await browserWindowsController.create(windowType, windowOptions);
+    const window = await measurePerformance(
+      "session.restore.createWindow",
+      "startup",
+      () => browserWindowsController.create(windowType, windowOptions),
+      { tabs: tabs.length, popup: windowType === "popup" }
+    );
 
     for (const tabData of tabs) {
-      const tab = await tabsController.createTab(window.id, tabData.profileId, tabData.spaceId, undefined, {
-        asleep: true,
-        createdAt: tabData.createdAt,
-        lastActiveAt: tabData.lastActiveAt,
-        position: tabData.position,
-        navHistory: tabData.navHistory,
-        navHistoryIndex: tabData.navHistoryIndex,
-        uniqueId: tabData.uniqueId,
-        title: tabData.title,
-        faviconURL: tabData.faviconURL || undefined
-      });
+      const tab = await measurePerformance(
+        "session.restore.createTab",
+        "startup",
+        () =>
+          tabsController.createTab(window.id, tabData.profileId, tabData.spaceId, undefined, {
+            asleep: true,
+            createdAt: tabData.createdAt,
+            lastActiveAt: tabData.lastActiveAt,
+            position: tabData.position,
+            navHistory: tabData.navHistory,
+            navHistoryIndex: tabData.navHistoryIndex,
+            uniqueId: tabData.uniqueId,
+            title: tabData.title,
+            faviconURL: tabData.faviconURL || undefined
+          }),
+        { navEntries: tabData.navHistory?.length ?? 0 }
+      );
 
       uniqueIdToTabId.set(tabData.uniqueId, tab.id);
     }
   }
 
-  await restoreTabGroups(persistedGroups, uniqueIdToTabId);
+  await measurePerformance("session.restore.tabGroups", "startup", () =>
+    restoreTabGroups(persistedGroups, uniqueIdToTabId)
+  );
 }
 
 /**

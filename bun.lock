@@ -34,7 +34,6 @@
         "@headlessui/react": "^2.2.10",
         "@iamevan/react-resizable-panels": "^3.0.7",
         "@pdfslick/react": "^3.0.0",
-        "@phosphor-icons/react": "^2.1.7",
         "@rolldown/plugin-babel": "^0.2.3",
         "@tailwindcss/typography": "^0.5.16",
         "@tailwindcss/vite": "^4.2.2",
@@ -451,8 +450,6 @@
     "@pdfslick/react": ["@pdfslick/react@3.1.0", "", { "dependencies": { "@pdfslick/core": "^3.1.0", "react-use": "^17.6.0", "use-sync-external-store": "^1.6.0" }, "peerDependencies": { "react": ">=17", "react-dom": ">=17" } }, "sha512-vb5uwQVxF1tw6RSknL3aFOJwTDHdM7dSRONwIAKV9v9cpGfvV0/ic3u2I61+5uvXyiYUJKS2S0kTiL9vcktUJg=="],
 
     "@phosphor-icons/core": ["@phosphor-icons/core@2.1.1", "", {}, "sha512-v4ARvrip4qBCImOE5rmPUylOEK4iiED9ZyKjcvzuezqMaiRASCHKcRIuvvxL/twvLpkfnEODCOJp5dM4eZilxQ=="],
-
-    "@phosphor-icons/react": ["@phosphor-icons/react@2.1.10", "", { "peerDependencies": { "react": ">= 16.8", "react-dom": ">= 16.8" } }, "sha512-vt8Tvq8GLjheAZZYa+YG/pW7HDbov8El/MANW8pOAz4eGxrwhnbfrQZq0Cp4q8zBEu8NIhHdnr+r8thnfRSNYA=="],
 
     "@pkgjs/parseargs": ["@pkgjs/parseargs@0.11.0", "", {}, "sha512-+1VkjdD0QBLPodGrJUeqarH8VAIvQODIbwh9XpP5Syisf7YoQgsJKPNFoqqLQlu+VQ/tVSshMR6loPMn8U+dPg=="],
 

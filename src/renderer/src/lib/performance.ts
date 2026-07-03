@@ -10,16 +10,45 @@ function arePerfLogsEnabled(): boolean {
 
 const ENABLE_PERF_LOGS = arePerfLogsEnabled();
 
-export function measureSync<T>(label: string, callback: () => T): T {
-  if (!ENABLE_PERF_LOGS) return callback();
+type PerformanceDetails = Record<string, string | number | boolean | null>;
 
+function recordRendererMeasure(label: string, duration: number, startedAtMs: number, details?: PerformanceDetails) {
+  if (duration >= 8 && ENABLE_PERF_LOGS) {
+    console.debug(`[perf] ${label}: ${duration.toFixed(1)}ms`);
+  }
+
+  try {
+    flow?.app?.recordPerformanceEvent({
+      kind: "measure",
+      source: "renderer",
+      name: label,
+      durationMs: duration,
+      startedAtMs,
+      details
+    });
+  } catch {
+    // Performance collection is best-effort and must never affect page behavior.
+  }
+}
+
+export function measureSync<T>(label: string, callback: () => T, details?: PerformanceDetails): T {
   const start = performance.now();
   try {
     return callback();
   } finally {
-    const duration = performance.now() - start;
-    if (duration >= 8) {
-      console.debug(`[perf] ${label}: ${duration.toFixed(1)}ms`);
-    }
+    recordRendererMeasure(label, performance.now() - start, start, details);
+  }
+}
+
+export async function measureAsync<T>(
+  label: string,
+  callback: () => Promise<T>,
+  details?: PerformanceDetails
+): Promise<T> {
+  const start = performance.now();
+  try {
+    return await callback();
+  } finally {
+    recordRendererMeasure(label, performance.now() - start, start, details);
   }
 }

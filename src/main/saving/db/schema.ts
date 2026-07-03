@@ -86,7 +86,11 @@ export const historyUrls = sqliteTable(
     typedCount: integer("typed_count").notNull().default(0),
     lastVisitTime: integer("last_visit_time").notNull()
   },
-  (table) => [uniqueIndex("idx_history_urls_profile_url").on(table.profileId, table.url)]
+  (table) => [
+    uniqueIndex("idx_history_urls_profile_url").on(table.profileId, table.url),
+    index("idx_history_urls_profile_last_visit").on(table.profileId, table.lastVisitTime),
+    index("idx_history_urls_profile_typed_last").on(table.profileId, table.typedCount, table.lastVisitTime)
+  ]
 );
 
 export const historyVisits = sqliteTable(
@@ -127,6 +131,8 @@ export const passwords = sqliteTable(
   },
   (table) => [
     index("idx_passwords_profile_id").on(table.profileId),
+    index("idx_passwords_profile_origin").on(table.profileId, table.origin),
+    index("idx_passwords_profile_updated").on(table.profileId, table.updatedAt),
     uniqueIndex("idx_passwords_profile_origin_username").on(table.profileId, table.origin, table.username)
   ]
 );
@@ -150,6 +156,7 @@ export const bookmarks = sqliteTable(
   },
   (table) => [
     index("idx_bookmarks_profile_id").on(table.profileId),
+    index("idx_bookmarks_profile_updated").on(table.profileId, table.updatedAt),
     uniqueIndex("idx_bookmarks_profile_url").on(table.profileId, table.url)
   ]
 );
@@ -201,6 +208,7 @@ export const downloads = sqliteTable(
   },
   (table) => [
     index("idx_downloads_profile_id_started_at").on(table.profileId, table.startedAt),
+    index("idx_downloads_profile_state_updated").on(table.profileId, table.state, table.updatedAt),
     index("idx_downloads_state").on(table.state)
   ]
 );

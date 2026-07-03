@@ -1,23 +1,21 @@
 import { isValidUrl } from "../helpers";
+import { type OmniboxFlush } from "../helpers";
 import type { OmniboxSuggestion } from "../types";
 import { createSearchSuggestion, createWebsiteSuggestion } from "../suggestions";
-import { getBangByTrigger } from "../bangs-initializer";
+import { getBangByTrigger, type BangEntry, waitForBangByTrigger } from "../bangs-initializer";
 
 const VERBATIM_URL_RELEVANCE = 502;
 const VERBATIM_SEARCH_RELEVANCE = 501;
 
+function getBangTrigger(query: string): string | null {
+  const match = query.match(/!(\S+)/i);
+  const bangCandidate = match?.[1]?.toLowerCase();
+  return bangCandidate ?? null;
+}
+
 // Bangs implementation mostly taken from unduck
 // https://github.com/T3-Content/unduck/blob/c1b821de0ffa286cfd964817d1918c5e90545db4/src/main.ts#L50
-function getBangSearchUrl(query: string): string | null {
-  const match = query.match(/!(\S+)/i);
-
-  const bangCandidate = match?.[1]?.toLowerCase();
-  if (!bangCandidate) return null;
-
-  const selectedBang = getBangByTrigger(bangCandidate);
-  if (!selectedBang) return null;
-
-  // Remove the first bang from the query
+function buildBangSearchUrl(query: string, selectedBang: BangEntry): string | null {
   const cleanQuery = query.replace(/!\S+\s*/i, "").trim();
 
   // If the query is just `!gh`, use `github.com` instead of `github.com/search?q=`
@@ -35,6 +33,16 @@ function getBangSearchUrl(query: string): string | null {
   return searchUrl;
 }
 
+function getBangSearchUrl(query: string): string | null {
+  const bangCandidate = getBangTrigger(query);
+  if (!bangCandidate) return null;
+
+  const selectedBang = getBangByTrigger(bangCandidate);
+  if (!selectedBang) return null;
+
+  return buildBangSearchUrl(query, selectedBang);
+}
+
 export function getVerbatimSuggestions(trimmedInput: string): OmniboxSuggestion[] {
   const verbatimSuggestions: OmniboxSuggestion[] = [];
 
@@ -50,4 +58,32 @@ export function getVerbatimSuggestions(trimmedInput: string): OmniboxSuggestion[
   verbatimSuggestions.push(createSearchSuggestion(trimmedInput, VERBATIM_SEARCH_RELEVANCE, bangSearchUrl, "verbatim"));
 
   return verbatimSuggestions;
+}
+
+export function flushBangVerbatimSuggestion(trimmedInput: string, flush: OmniboxFlush, signal: AbortSignal): void {
+  const bangCandidate = getBangTrigger(trimmedInput);
+  if (!bangCandidate || getBangSearchUrl(trimmedInput) || signal.aborted) {
+    return;
+  }
+
+  void waitForBangByTrigger(bangCandidate)
+    .then((selectedBang) => {
+      if (!selectedBang || signal.aborted) {
+        return;
+      }
+
+      const bangSearchUrl = buildBangSearchUrl(trimmedInput, selectedBang);
+      if (!bangSearchUrl) {
+        return;
+      }
+
+      flush([createSearchSuggestion(trimmedInput, VERBATIM_SEARCH_RELEVANCE, bangSearchUrl, "verbatim")]);
+    })
+    .catch((error: unknown) => {
+      if (error instanceof Error && error.name === "AbortError") {
+        return;
+      }
+
+      console.error("flushBangVerbatimSuggestion: failed to load bangs", error);
+    });
 }

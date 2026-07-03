@@ -10,6 +10,8 @@ import { t } from "@/lib/i18n";
 import { simplifyUrl } from "@/lib/url";
 import type { BookmarkEntry } from "~/types/bookmarks";
 
+const BOOKMARK_VISIBLE_BATCH = 180;
+
 function bookmarksQueryKey() {
   return ["bookmarks"] as const;
 }
@@ -18,7 +20,12 @@ function groupBookmarks(bookmarks: BookmarkEntry[]) {
   const map = new Map<string, BookmarkEntry[]>();
   for (const bookmark of bookmarks) {
     const folder = bookmark.folder || t("bookmarks.folderBar");
-    map.set(folder, [...(map.get(folder) ?? []), bookmark]);
+    const list = map.get(folder);
+    if (list) {
+      list.push(bookmark);
+    } else {
+      map.set(folder, [bookmark]);
+    }
   }
   return [...map.entries()].map(([folder, items]) => ({
     folder,
@@ -28,6 +35,7 @@ function groupBookmarks(bookmarks: BookmarkEntry[]) {
 
 function BookmarksPage() {
   const [search, setSearch] = useState("");
+  const [visibleCount, setVisibleCount] = useState(BOOKMARK_VISIBLE_BATCH);
   const queryClient = useQueryClient();
 
   const { data, isError, isPending, refetch } = useQuery({
@@ -47,7 +55,13 @@ function BookmarksPage() {
       `${bookmark.title} ${bookmark.url} ${bookmark.folder}`.toLowerCase().includes(q)
     );
   }, [bookmarks, search]);
-  const grouped = useMemo(() => groupBookmarks(filtered), [filtered]);
+  const visibleBookmarks = useMemo(() => filtered.slice(0, visibleCount), [filtered, visibleCount]);
+  const grouped = useMemo(() => groupBookmarks(visibleBookmarks), [visibleBookmarks]);
+  const hasMore = visibleBookmarks.length < filtered.length;
+
+  useEffect(() => {
+    setVisibleCount(BOOKMARK_VISIBLE_BATCH);
+  }, [search, bookmarks.length]);
 
   const invalidate = () => void queryClient.invalidateQueries({ queryKey: bookmarksQueryKey() });
 
@@ -123,59 +137,72 @@ function BookmarksPage() {
             </p>
           </div>
         ) : (
-          grouped.map((group) => (
-            <Card key={group.folder} className="gap-0 overflow-hidden py-0 shadow-sm">
-              <div className="border-b border-border/60 bg-muted/95 px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                {group.folder}
+          <>
+            {grouped.map((group) => (
+              <Card key={group.folder} className="gap-0 overflow-hidden py-0 shadow-sm">
+                <div className="border-b border-border/60 bg-muted/95 px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  {group.folder}
+                </div>
+                <CardContent className="p-1">
+                  <ul>
+                    {group.items.map((bookmark) => (
+                      <li
+                        key={bookmark.id}
+                        className="group flex cursor-default items-center gap-2 rounded-md px-2 py-1.5 transition-colors hover:bg-muted/50"
+                      >
+                        <button
+                          className="flex min-w-0 flex-1 items-center gap-3 rounded text-left text-inherit"
+                          onClick={() => void flow.tabs.newTab(bookmark.url, true)}
+                        >
+                          <WebsiteFavicon
+                            url={bookmark.url}
+                            className="size-5 shrink-0 rounded-sm bg-muted object-cover"
+                          />
+                          <div className="min-w-0 flex-1">
+                            <span className="block truncate text-sm leading-snug text-foreground">
+                              {bookmark.title || simplifyUrl(bookmark.url)}
+                            </span>
+                            <span className="block truncate text-[11px] leading-snug text-muted-foreground">
+                              {simplifyUrl(bookmark.url)}
+                            </span>
+                          </div>
+                        </button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="size-7 opacity-0 transition-opacity group-hover:opacity-70 hover:opacity-100"
+                          onClick={() => void flow.tabs.newTab(bookmark.url, true)}
+                          aria-label={t("bookmarks.open")}
+                        >
+                          <ExternalLink className="size-3.5" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="size-7 opacity-0 transition-opacity group-hover:opacity-70 hover:opacity-100"
+                          onClick={() => void remove(bookmark.id)}
+                          aria-label={t("bookmarks.delete")}
+                        >
+                          <Trash2 className="size-3.5" />
+                        </Button>
+                      </li>
+                    ))}
+                  </ul>
+                </CardContent>
+              </Card>
+            ))}
+            {hasMore ? (
+              <div className="flex justify-center py-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setVisibleCount((current) => current + BOOKMARK_VISIBLE_BATCH)}
+                >
+                  Load more
+                </Button>
               </div>
-              <CardContent className="p-1">
-                <ul>
-                  {group.items.map((bookmark) => (
-                    <li
-                      key={bookmark.id}
-                      className="group flex cursor-default items-center gap-2 rounded-md px-2 py-1.5 transition-colors hover:bg-muted/50"
-                    >
-                      <button
-                        className="flex min-w-0 flex-1 items-center gap-3 rounded text-left text-inherit"
-                        onClick={() => void flow.tabs.newTab(bookmark.url, true)}
-                      >
-                        <WebsiteFavicon
-                          url={bookmark.url}
-                          className="size-5 shrink-0 rounded-sm bg-muted object-cover"
-                        />
-                        <div className="min-w-0 flex-1">
-                          <span className="block truncate text-sm leading-snug text-foreground">
-                            {bookmark.title || simplifyUrl(bookmark.url)}
-                          </span>
-                          <span className="block truncate text-[11px] leading-snug text-muted-foreground">
-                            {simplifyUrl(bookmark.url)}
-                          </span>
-                        </div>
-                      </button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="size-7 opacity-0 transition-opacity group-hover:opacity-70 hover:opacity-100"
-                        onClick={() => void flow.tabs.newTab(bookmark.url, true)}
-                        aria-label={t("bookmarks.open")}
-                      >
-                        <ExternalLink className="size-3.5" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="size-7 opacity-0 transition-opacity group-hover:opacity-70 hover:opacity-100"
-                        onClick={() => void remove(bookmark.id)}
-                        aria-label={t("bookmarks.delete")}
-                      >
-                        <Trash2 className="size-3.5" />
-                      </Button>
-                    </li>
-                  ))}
-                </ul>
-              </CardContent>
-            </Card>
-          ))
+            ) : null}
+          </>
         )}
       </motion.div>
     </div>

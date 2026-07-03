@@ -996,6 +996,15 @@ const appAPI: FlowAppAPI = {
   getDefaultBrowser: async () => {
     return ipcRenderer.invoke("app:get-default-browser");
   },
+  getPerformanceSnapshot: async () => {
+    return ipcRenderer.invoke("app:get-performance-snapshot");
+  },
+  recordPerformanceEvent: (event) => {
+    return ipcRenderer.send("app:record-performance-event", event);
+  },
+  clearPerformanceSnapshot: async () => {
+    return ipcRenderer.invoke("app:clear-performance-snapshot");
+  },
 
   // Special Exception: This is allowed for all pages everywhere.
   getPlatform: () => {
@@ -1116,6 +1125,9 @@ const omniboxAPI: FlowOmniboxAPI = {
   },
   onStateChanged: (callback) => {
     return listenOnIPCChannel("omnibox:on-state-changed", callback);
+  },
+  searchPlaces: async (input, limit) => {
+    return ipcRenderer.invoke("omnibox:search-places", input, limit);
   },
   hide: () => {
     return ipcRenderer.send("omnibox:hide");
