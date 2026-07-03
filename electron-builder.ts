@@ -191,7 +191,7 @@ const electronBuilderConfig: Configuration = {
   npmRebuild: false,
   publish: {
     provider: "github",
-    owner: "lovlygod",
+    owner: "BlinkCodeOrg",
     repo: "Blinker",
     releaseType: "release"
   },

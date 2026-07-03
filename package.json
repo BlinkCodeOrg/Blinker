@@ -11,11 +11,11 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/lovlygod/Blinker.git"
+    "url": "git+https://github.com/BlinkCodeOrg/Blinker.git"
   },
-  "homepage": "https://github.com/lovlygod/Blinker#readme",
+  "homepage": "https://github.com/BlinkCodeOrg/Blinker#readme",
   "bugs": {
-    "url": "https://github.com/lovlygod/Blinker/issues"
+    "url": "https://github.com/BlinkCodeOrg/Blinker/issues"
   },
   "scripts": {
     "format": "prettier --write .",

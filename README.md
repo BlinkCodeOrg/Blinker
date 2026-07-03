@@ -7,8 +7,8 @@ A modern, tabbed web browser with Chrome extension support—built on Electron.
 </p>
 
 [![GPLv3 License](https://img.shields.io/badge/License-GPL%20v3-yellow.svg)](https://opensource.org/licenses/)
-[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/lovlygod/Blinker)
-![CodeRabbit Pull Request Reviews](https://img.shields.io/coderabbit/prs/github/lovlygod/Blinker?utm_source=oss&utm_medium=github&utm_campaign=lovlygod%2FBlinker&labelColor=171717&color=FF570A&link=https%3A%2F%2Fcoderabbit.ai&label=CodeRabbit+Reviews)
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/BlinkCodeOrg/Blinker)
+![CodeRabbit Pull Request Reviews](https://img.shields.io/coderabbit/prs/github/BlinkCodeOrg/Blinker?utm_source=oss&utm_medium=github&utm_campaign=BlinkCodeOrg%2FBlinker&labelColor=171717&color=FF570A&link=https%3A%2F%2Fcoderabbit.ai&label=CodeRabbit+Reviews)
 
 ## Overview
 
@@ -16,7 +16,7 @@ Blinker Browser is a lightweight, feature-rich web browser that combines the pow
 
 ## Install
 
-Choose the file you need and [download from GitHub Releases](https://github.com/lovlygod/Blinker/releases).
+Choose the file you need and [download from GitHub Releases](https://github.com/BlinkCodeOrg/Blinker/releases).
 
 ## Screenshots
 
@@ -54,7 +54,7 @@ Choose the file you need and [download from GitHub Releases](https://github.com/
 
 ## Feedback / Feature Requests / Bugs
 
-https://github.com/lovlygod/Blinker/issues
+https://github.com/BlinkCodeOrg/Blinker/issues
 
 ## Contributing
 
@@ -72,4 +72,4 @@ Design inspired by [Arc Browser](https://arc.net) and [Zen Browser](https://zen-
 
 ## Star History
 
-[![Star History Chart](https://api.star-history.com/svg?repos=lovlygod/Blinker&type=Date)](https://www.star-history.com/#lovlygod/Blinker&Date)
+[![Star History Chart](https://api.star-history.com/svg?repos=BlinkCodeOrg/Blinker&type=Date)](https://www.star-history.com/#BlinkCodeOrg/Blinker&Date)
