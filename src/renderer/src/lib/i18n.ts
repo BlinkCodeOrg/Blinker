@@ -49,6 +49,7 @@ const ru = {
   "setting.contentBlocker": "Блокировка контента",
   "setting.newTabMode": "Режим новой вкладки",
   "setting.commandPaletteOpacity": "Прозрачность командной палитры",
+  "setting.browserInterfaceMode": "Интерфейс браузера",
   "setting.sidebarSide": "Сторона боковой панели",
   "setting.archiveTabAfter": "Архивировать вкладку через",
   "setting.sleepTabAfter": "Усыплять вкладку через",
@@ -71,6 +72,8 @@ const ru = {
   "setting.option.solid": "Сплошная",
   "setting.option.tinted": "Тонированная",
   "setting.option.glassy": "Стеклянная",
+  "setting.option.sidebar": "Боковая панель",
+  "setting.option.topbar": "Верхняя панель",
   "setting.option.left": "Слева",
   "setting.option.right": "Справа",
   "setting.option.5m": "5 минут",
@@ -92,8 +95,8 @@ const ru = {
   "card.newTab.subtitle": "Выберите, как должны открываться новые вкладки",
   "card.commandPalette.title": "Командная палитра",
   "card.commandPalette.subtitle": "Выберите прозрачность командной палитры",
-  "card.sidebar.title": "Боковая панель",
-  "card.sidebar.subtitle": "Настройте поведение боковой панели",
+  "card.sidebar.title": "Интерфейс браузера",
+  "card.sidebar.subtitle": "Выберите боковую или верхнюю панель браузера",
   "card.performance.title": "Производительность",
   "card.performance.subtitle": "Настройки для повышения производительности",
   "card.experimental.title": "Экспериментальные настройки",
@@ -363,6 +366,8 @@ const ru = {
   "external.revokeFailed": "Не удалось отозвать разрешение.",
   "external.revokeError": "Во время отзыва разрешения произошла ошибка.",
 
+  "topbar.newTab": "Новая вкладка",
+  "topbar.untitled": "Новая вкладка",
   "search.verbatim": "Искать «{query}»"
 } as const;
 
@@ -409,6 +414,7 @@ const en: Record<keyof typeof ru, string> = {
   "setting.contentBlocker": "Content blocking",
   "setting.newTabMode": "New tab mode",
   "setting.commandPaletteOpacity": "Command palette opacity",
+  "setting.browserInterfaceMode": "Browser interface",
   "setting.sidebarSide": "Sidebar side",
   "setting.archiveTabAfter": "Archive tab after",
   "setting.sleepTabAfter": "Sleep tab after",
@@ -430,6 +436,8 @@ const en: Record<keyof typeof ru, string> = {
   "setting.option.solid": "Solid",
   "setting.option.tinted": "Tinted",
   "setting.option.glassy": "Glassy",
+  "setting.option.sidebar": "Sidebar",
+  "setting.option.topbar": "Topbar",
   "setting.option.left": "Left",
   "setting.option.right": "Right",
   "setting.option.5m": "5 minutes",
@@ -450,8 +458,8 @@ const en: Record<keyof typeof ru, string> = {
   "card.newTab.subtitle": "Choose how new tabs should open",
   "card.commandPalette.title": "Command palette",
   "card.commandPalette.subtitle": "Choose the command palette opacity",
-  "card.sidebar.title": "Sidebar",
-  "card.sidebar.subtitle": "Configure sidebar behavior",
+  "card.sidebar.title": "Browser interface",
+  "card.sidebar.subtitle": "Choose between sidebar and topbar layouts",
   "card.performance.title": "Performance",
   "card.performance.subtitle": "Settings that help Blinker stay fast",
   "card.experimental.title": "Experimental settings",
@@ -715,6 +723,8 @@ const en: Record<keyof typeof ru, string> = {
   "external.revoked": "Permission revoked.",
   "external.revokeFailed": "Failed to revoke permission.",
   "external.revokeError": "An error occurred while revoking permission.",
+  "topbar.newTab": "New tab",
+  "topbar.untitled": "New tab",
   "search.verbatim": 'Search for "{query}"'
 };
 

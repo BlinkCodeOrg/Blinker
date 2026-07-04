@@ -76,6 +76,7 @@ export function flushSidebarSize() {
 // Context //
 export type AttachedDirection = "left" | "right";
 export type BrowserSidebarMode = `attached-${AttachedDirection}` | `floating-${AttachedDirection}` | "hidden";
+export type BrowserInterfaceMode = "sidebar" | "topbar";
 interface BrowserSidebarContextValue {
   /** False for popup windows (compact toolbar only; no full sidebar). */
   hasSidebar: boolean;
@@ -139,6 +140,9 @@ interface BrowserSidebarProviderProps {
 export function BrowserSidebarProvider({ children, hasSidebar = true }: BrowserSidebarProviderProps) {
   const { getSetting } = useSettings();
 
+  const browserInterfaceMode = getSetting<BrowserInterfaceMode>("browserInterfaceMode") ?? "sidebar";
+  const sidebarEnabled = hasSidebar && browserInterfaceMode === "sidebar";
+
   const attachedDirectionSetting = getSetting<AttachedDirection>("sidebarSide");
   const attachedDirection = attachedDirectionSetting ?? "left";
 
@@ -176,11 +180,11 @@ export function BrowserSidebarProvider({ children, hasSidebar = true }: BrowserS
   const [isVisible, setVisible] = useState(false);
   const hasFirstRenderedRef = useRef(false);
   useLayoutEffect(() => {
-    if (hasSidebar && !hasFirstRenderedRef.current && attachedDirectionSetting) {
+    if (sidebarEnabled && !hasFirstRenderedRef.current && attachedDirectionSetting) {
       hasFirstRenderedRef.current = true;
       setVisible(true);
     }
-  }, [hasSidebar, attachedDirectionSetting]);
+  }, [sidebarEnabled, attachedDirectionSetting]);
 
   // Floating Sidebar //
   const isLockedRef = useRef(false);
@@ -231,6 +235,11 @@ export function BrowserSidebarProvider({ children, hasSidebar = true }: BrowserS
 
   const handleSetVisible = useCallback(
     (newVisible: boolean) => {
+      if (!sidebarEnabled) {
+        setVisible(false);
+        return;
+      }
+
       if (newVisible !== isVisibleRef.current) {
         // Start animation in the same synchronous call as setVisible.
         // React 18 batches both setState calls into a single render.
@@ -239,7 +248,7 @@ export function BrowserSidebarProvider({ children, hasSidebar = true }: BrowserS
       }
       setVisible(newVisible);
     },
-    [startAnimation, stopAnimation]
+    [sidebarEnabled, startAnimation, stopAnimation]
   );
 
   // Cancel any running sidebar animation when the floating sidebar is active.
@@ -277,18 +286,19 @@ export function BrowserSidebarProvider({ children, hasSidebar = true }: BrowserS
   // Listeners //
   useEffect(() => {
     const removeListener = flow.interface.onToggleSidebar(() => {
+      if (!sidebarEnabled) return;
       handleSetVisible(!isVisibleRef.current);
     });
     return () => {
       removeListener();
     };
-  }, [isVisibleRef, handleSetVisible]);
+  }, [isVisibleRef, handleSetVisible, sidebarEnabled]);
 
   const [forceFloating, setForceFloating] = useState(false);
   const [slotMachineEnabled, setSlotMachineEnabled] = useState(false);
 
   let mode: BrowserSidebarMode = "hidden";
-  if (hasSidebar) {
+  if (sidebarEnabled) {
     if (forceFloating) {
       mode = isFloating ? `floating-${attachedDirection}` : "hidden";
     } else if (isVisible) {

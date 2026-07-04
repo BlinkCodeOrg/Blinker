@@ -93,6 +93,17 @@ export const BasicSettings: BasicSetting[] = [
     defaultValue: ""
   },
   {
+    id: "browserInterfaceMode",
+    name: "Browser interface",
+    showName: true,
+    type: "enum",
+    defaultValue: "sidebar",
+    options: [
+      { id: "sidebar", name: "Sidebar" },
+      { id: "topbar", name: "Topbar" }
+    ]
+  },
+  {
     id: "newTabMode",
     name: "New tab mode",
     showName: false,
@@ -205,9 +216,9 @@ export const BasicSettingCards: BasicSettingCard[] = [
     settings: ["commandPaletteOpacity"]
   },
   {
-    title: "Sidebar",
-    subtitle: "Configure sidebar behavior",
-    settings: ["sidebarSide"]
+    title: "Browser interface",
+    subtitle: "Choose between sidebar and topbar layouts",
+    settings: ["browserInterfaceMode", "sidebarSide"]
   },
   {
     title: "Performance",

@@ -10,7 +10,7 @@ import {
 import { BrowserSidebar } from "@/components/browser-ui/browser-sidebar/component";
 import { AnimatePresence, motion } from "motion/react";
 import { memo, useEffect, useLayoutEffect, useRef, useState } from "react";
-import { SettingsProvider } from "@/components/providers/settings-provider";
+import { SettingsProvider, useSetting } from "@/components/providers/settings-provider";
 import { ResizableHandle, ResizablePanel } from "@/components/ui/resizable";
 import { ResizablePanelGroupWithProvider } from "@/components/ui/resizable-extras";
 import { UpdateEffect } from "@/components/browser-ui/update-effect";
@@ -25,6 +25,7 @@ import {
 import { TabDisabler } from "@/components/logic/tab-disabler";
 import { BrowserActionProvider } from "@/components/providers/browser-action-provider";
 import { ExtensionsProviderWithSpaces } from "@/components/providers/extensions-provider";
+import { BrowserTopbar } from "@/components/browser-ui/browser-topbar";
 import MinimalToastProvider from "@/components/providers/minimal-toast-provider";
 import { ActionsProvider } from "@/components/providers/actions-provider";
 import { PinnedTabsProvider } from "@/components/providers/pinned-tabs-provider";
@@ -233,9 +234,12 @@ function InternalBrowserUI({ isReady, type }: { isReady: boolean; type: BrowserU
   // components above to prevent the entire layout from rerendering.
   const { mode: sidebarMode, attachedDirection } = useBrowserSidebar();
   const { topbarVisible, topbarHeight } = useAdaptiveTopbar();
+  const [browserInterfaceMode] = useSetting<"sidebar" | "topbar">("browserInterfaceMode");
   const browserContentAnchorRef = useRef<HTMLDivElement>(null);
 
-  const hasSidebar = type === "main";
+  const hasMainWindowSidebar = type === "main";
+  const isTopbarMode = hasMainWindowSidebar && browserInterfaceMode === "topbar";
+  const hasSidebarLayout = hasMainWindowSidebar && !isTopbarMode;
 
   return (
     <FullscreenGuard>
@@ -260,7 +264,7 @@ function InternalBrowserUI({ isReady, type }: { isReady: boolean; type: BrowserU
                 )}
                 style={{ "--topbar-height": `${topbarHeight}px` } as React.CSSProperties}
               >
-                {hasSidebar && (
+                {hasSidebarLayout && (
                   <PresenceSidebar
                     sidebarMode={sidebarMode}
                     targetSidebarModes={["attached-left", "floating-left"]}
@@ -274,7 +278,7 @@ function InternalBrowserUI({ isReady, type }: { isReady: boolean; type: BrowserU
                   className={cn("min-w-0 flex-1 h-full py-2.5 overflow-visible!", topbarVisible && "pt-0")}
                 >
                   <div className="w-full min-w-0 h-full flex items-center justify-center remove-app-drag">
-                    {sidebarMode !== "attached-left" ? (
+                    {isTopbarMode ? null : sidebarMode !== "attached-left" ? (
                       <div className="w-2.5 shrink-0" />
                     ) : (
                       <SidebarResizeHandle key="left-sidebar-resize-handle" />
@@ -282,7 +286,8 @@ function InternalBrowserUI({ isReady, type }: { isReady: boolean; type: BrowserU
 
                     <div className="relative flex-1 min-w-0 h-full flex flex-col">
                       <LoadingIndicator />
-                      {!hasSidebar && <PopupToolbar />}
+                      {isTopbarMode && <BrowserTopbar />}
+                      {!hasMainWindowSidebar && <PopupToolbar />}
                       <div className="relative flex-1 min-h-0 flex">
                         <div ref={browserContentAnchorRef} className="absolute inset-0 pointer-events-none" />
                         <WebPrompts anchorRef={browserContentAnchorRef} />
@@ -293,14 +298,14 @@ function InternalBrowserUI({ isReady, type }: { isReady: boolean; type: BrowserU
                       </div>
                     </div>
 
-                    {sidebarMode !== "attached-right" ? (
+                    {isTopbarMode ? null : sidebarMode !== "attached-right" ? (
                       <div className="w-2.5 shrink-0" />
                     ) : (
                       <SidebarResizeHandle key="right-sidebar-resize-handle" />
                     )}
                   </div>
                 </ResizablePanel>
-                {hasSidebar && (
+                {hasSidebarLayout && (
                   <PresenceSidebar
                     sidebarMode={sidebarMode}
                     targetSidebarModes={["attached-right", "floating-right"]}

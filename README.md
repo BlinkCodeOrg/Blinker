@@ -31,6 +31,7 @@ Choose the file you need and [download from GitHub Releases](https://github.com/
 - **Profiles**: Multiple profiles support, allowing you to use different settings and extensions for each profile.
 - **Spaces**: Multiple spaces support, allowing you to organize your tabs into different spaces.
 - **Sidebar**: A sidebar that allows you to quickly access your bookmarks, history, and settings.
+- **Topbar Option**: Switch between the classic sidebar layout and a topbar browsing interface.
 - **Command Palette**: A command palette that allows you to search the web or quickly open a new tab, bookmark, or history.
 - **Good Security**: Asks before opening external applications.
 - **Simple Onboarding**: A simple onboarding process that allows you to quickly get started.
@@ -45,7 +46,6 @@ Choose the file you need and [download from GitHub Releases](https://github.com/
 ## Upcoming Features
 
 - **Reorder Tabs**: Allow you to reorder tabs.
-- **Topbar**: Allow you to customise between a topbar or sidebar.
 - **Downloads**: Allow you to download files from the web.
 - **Favourites**: Allow you to add websites to your favourites.
 - **Pinned Tabs**: Allow you to pin tabs in spaces.
