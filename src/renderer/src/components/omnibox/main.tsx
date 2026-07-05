@@ -81,6 +81,8 @@ export function OmniboxMain() {
   const suggestionRequestIdRef = useRef(0);
   const abortSuggestionsRef = useRef<(() => void) | null>(null);
   const [commandPaletteOpacity] = useSetting<"solid" | "tinted" | "glassy">("commandPaletteOpacity");
+  const [defaultSearchEngine] = useSetting<string>("defaultSearchEngine");
+  const [customSearchEngines] = useSetting<string>("customSearchEngines");
   const pendingSelectionModeRef = useRef<Exclude<InputSelectionMode, "preserve"> | null>(null);
 
   const ensureInputFocused = useCallback((selection: InputSelectionMode = "preserve") => {
@@ -128,7 +130,7 @@ export function OmniboxMain() {
 
   useEffect(() => {
     requestSuggestions(inputValue);
-  }, [inputValue, requestSuggestions]);
+  }, [customSearchEngines, defaultSearchEngine, inputValue, requestSuggestions]);
 
   // This effect is ran when the omnibox is opened.
   useEffect(() => {

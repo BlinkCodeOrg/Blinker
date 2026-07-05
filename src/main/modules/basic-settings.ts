@@ -86,6 +86,13 @@ export const BasicSettings: BasicSetting[] = [
     ]
   },
   {
+    id: "customSearchEngines",
+    name: "Custom search engines",
+    showName: false,
+    type: "string",
+    defaultValue: "[]"
+  },
+  {
     id: "downloadDirectory",
     name: "Download folder",
     showName: true,
@@ -195,6 +202,7 @@ export const BasicSettingCards: BasicSettingCard[] = [
       "syncTabsAcrossWindows",
       "appLanguage",
       "defaultSearchEngine",
+      "customSearchEngines",
       "downloadDirectory",
       "contentBlocker",
       "internal_setAsDefaultBrowser"

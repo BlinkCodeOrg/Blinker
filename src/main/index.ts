@@ -21,12 +21,18 @@ function printHeader() {
 function initializeApp() {
   markPerformance("initialize.start", "startup");
 
+  const singleInstanceLock = app.requestSingleInstanceLock();
+  if (!singleInstanceLock) {
+    app.quit();
+    return false;
+  }
+
   if (process.platform === "win32") {
     app.disableHardwareAcceleration();
     app.commandLine.appendSwitch("disable-gpu");
   }
 
-  debugPrint("INITIALIZATION", "multiple app instances enabled");
+  debugPrint("INITIALIZATION", "single instance lock acquired");
 
   // Disable FedCM (Google One Tap, which doesn't work as the native prompt never shows in Electron)
   app.commandLine.appendSwitch("--disable-features", "FedCm");

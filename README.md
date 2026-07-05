@@ -32,6 +32,12 @@ Choose the file you need and [download from GitHub Releases](https://github.com/
 - **Spaces**: Multiple spaces support, allowing you to organize your tabs into different spaces.
 - **Sidebar**: A sidebar that allows you to quickly access your bookmarks, history, and settings.
 - **Topbar Option**: Switch between the classic sidebar layout and a topbar browsing interface.
+- **Reorder Tabs**: Reorder tabs to keep your workspace organized.
+- **Downloads**: Download files from the web with a dedicated downloads UI.
+- **Favourites**: Add websites to your favourites for quick access.
+- **Pinned Tabs**: Pin tabs in spaces so important sites stay close.
+- **Preview Tabs**: Preview tabs before switching to them.
+- **Custom Search Engines**: Add custom search engines and use them from the omnibox.
 - **Command Palette**: A command palette that allows you to search the web or quickly open a new tab, bookmark, or history.
 - **Good Security**: Asks before opening external applications.
 - **Simple Onboarding**: A simple onboarding process that allows you to quickly get started.
@@ -42,15 +48,6 @@ Choose the file you need and [download from GitHub Releases](https://github.com/
 - **Native Adblocker**: A native adblocker that blocks ads and trackers.
 - **Sleep Tabs**: Allow you to put tabs to sleep to save resources.
 - **Widevine Support**: Allow you to watch DRM protected content.
-
-## Upcoming Features
-
-- **Reorder Tabs**: Allow you to reorder tabs.
-- **Downloads**: Allow you to download files from the web.
-- **Favourites**: Allow you to add websites to your favourites.
-- **Pinned Tabs**: Allow you to pin tabs in spaces.
-- **Custom Search Engines**: Allow you to add custom search engines.
-- **Preview Tabs**: Allow you to preview tabs before switching to them.
 
 ## Feedback / Feature Requests / Bugs
 

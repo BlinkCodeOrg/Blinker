@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import type { BasicSetting, BasicSettingCard } from "~/types/settings";
 import { setLocalePreference } from "@/lib/i18n";
 import { measureAsync } from "@/lib/performance";
+import { setRendererSearchEngineSettings } from "@/lib/search-engine-runtime";
 
 interface SettingsContextValue {
   settings: BasicSetting[];
@@ -65,7 +66,12 @@ export const SettingsProvider = ({ children }: SettingsProviderProps) => {
       { count: fetchedSettings.length }
     );
 
-    setSettingsValues(Object.fromEntries(entries));
+    const nextSettingsValues = Object.fromEntries(entries);
+    setSettingsValues(nextSettingsValues);
+    setRendererSearchEngineSettings({
+      defaultSearchEngine: nextSettingsValues.defaultSearchEngine,
+      customSearchEngines: nextSettingsValues.customSearchEngines
+    });
   }, []);
 
   const revalidate = useCallback(async () => {
@@ -94,7 +100,16 @@ export const SettingsProvider = ({ children }: SettingsProviderProps) => {
     const saved = await flow.settings.setSetting(settingId, value);
     if (saved) {
       syncRendererSetting(settingId, value);
-      setSettingsValues((prev) => ({ ...prev, [settingId]: value }));
+      setSettingsValues((prev) => {
+        const next = { ...prev, [settingId]: value };
+        if (settingId === "defaultSearchEngine" || settingId === "customSearchEngines") {
+          setRendererSearchEngineSettings({
+            defaultSearchEngine: next.defaultSearchEngine,
+            customSearchEngines: next.customSearchEngines
+          });
+        }
+        return next;
+      });
     }
     return saved;
   }, []);

@@ -368,6 +368,29 @@ const ru = {
 
   "topbar.newTab": "Новая вкладка",
   "topbar.untitled": "Новая вкладка",
+  "setting.customSearchEngines":
+    "\u041f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044c\u0441\u043a\u0438\u0435 \u043f\u043e\u0438\u0441\u043a\u043e\u0432\u0438\u043a\u0438",
+  "searchEngines.customTitle":
+    "\u041f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044c\u0441\u043a\u0438\u0435 \u043f\u043e\u0438\u0441\u043a\u043e\u0432\u0438\u043a\u0438",
+  "searchEngines.customDescription":
+    "\u0414\u043e\u0431\u0430\u0432\u044c\u0442\u0435 \u043f\u043e\u0438\u0441\u043a\u043e\u0432\u0438\u043a \u043f\u043e URL-\u0448\u0430\u0431\u043b\u043e\u043d\u0443 \u0438 \u0432\u044b\u0431\u0435\u0440\u0438\u0442\u0435 \u0435\u0433\u043e \u043f\u043e\u0438\u0441\u043a\u043e\u043c \u043f\u043e \u0443\u043c\u043e\u043b\u0447\u0430\u043d\u0438\u044e.",
+  "searchEngines.namePlaceholder": "\u041d\u0430\u0437\u0432\u0430\u043d\u0438\u0435",
+  "searchEngines.urlPlaceholder": "https://example.com/search?q={query}",
+  "searchEngines.add": "\u0414\u043e\u0431\u0430\u0432\u0438\u0442\u044c",
+  "searchEngines.empty":
+    "\u041f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044c\u0441\u043a\u0438\u0445 \u043f\u043e\u0438\u0441\u043a\u043e\u0432\u0438\u043a\u043e\u0432 \u043f\u043e\u043a\u0430 \u043d\u0435\u0442.",
+  "searchEngines.delete":
+    "\u0423\u0434\u0430\u043b\u0438\u0442\u044c \u043f\u043e\u0438\u0441\u043a\u043e\u0432\u0438\u043a",
+  "searchEngines.invalid":
+    "\u0412\u0432\u0435\u0434\u0438\u0442\u0435 \u043d\u0430\u0437\u0432\u0430\u043d\u0438\u0435 \u0438 \u043a\u043e\u0440\u0440\u0435\u043a\u0442\u043d\u044b\u0439 HTTPS/HTTP URL \u0441 {query} \u0438\u043b\u0438 %s.",
+  "searchEngines.nameRequired":
+    "\u0412\u0432\u0435\u0434\u0438\u0442\u0435 \u043d\u0430\u0437\u0432\u0430\u043d\u0438\u0435 \u043f\u043e\u0438\u0441\u043a\u043e\u0432\u0438\u043a\u0430.",
+  "searchEngines.urlInvalid":
+    "\u0412\u0432\u0435\u0434\u0438\u0442\u0435 \u043a\u043e\u0440\u0440\u0435\u043a\u0442\u043d\u044b\u0439 HTTPS/HTTP URL \u0441 {query} \u0438\u043b\u0438 %s.",
+  "searchEngines.duplicate":
+    "\u041f\u043e\u0438\u0441\u043a\u043e\u0432\u0438\u043a \u0441 \u0442\u0430\u043a\u0438\u043c \u043d\u0430\u0437\u0432\u0430\u043d\u0438\u0435\u043c \u0443\u0436\u0435 \u0435\u0441\u0442\u044c.",
+  "searchEngines.placeholderHint":
+    "\u0418\u0441\u043f\u043e\u043b\u044c\u0437\u0443\u0439\u0442\u0435 {query} \u0438\u043b\u0438 %s \u0442\u0430\u043c, \u0433\u0434\u0435 \u0434\u043e\u043b\u0436\u0435\u043d \u043f\u043e\u0434\u0441\u0442\u0430\u0432\u043b\u044f\u0442\u044c\u0441\u044f \u043f\u043e\u0438\u0441\u043a\u043e\u0432\u044b\u0439 \u0437\u0430\u043f\u0440\u043e\u0441.",
   "search.verbatim": "Искать «{query}»"
 } as const;
 
@@ -725,6 +748,19 @@ const en: Record<keyof typeof ru, string> = {
   "external.revokeError": "An error occurred while revoking permission.",
   "topbar.newTab": "New tab",
   "topbar.untitled": "New tab",
+  "setting.customSearchEngines": "Custom search engines",
+  "searchEngines.customTitle": "Custom search engines",
+  "searchEngines.customDescription": "Add a search engine with a URL template and use it as your default search.",
+  "searchEngines.namePlaceholder": "Name",
+  "searchEngines.urlPlaceholder": "https://example.com/search?q={query}",
+  "searchEngines.add": "Add",
+  "searchEngines.empty": "No custom search engines yet.",
+  "searchEngines.delete": "Delete search engine",
+  "searchEngines.invalid": "Enter a name and a valid HTTP/HTTPS URL with {query} or %s.",
+  "searchEngines.nameRequired": "Enter a search engine name.",
+  "searchEngines.urlInvalid": "Enter a valid HTTP/HTTPS URL with {query} or %s.",
+  "searchEngines.duplicate": "A search engine with this name already exists.",
+  "searchEngines.placeholderHint": "Use {query} or %s where the search query should be inserted.",
   "search.verbatim": 'Search for "{query}"'
 };
 

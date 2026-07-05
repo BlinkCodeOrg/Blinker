@@ -5,6 +5,7 @@ import { Tab } from "./tab";
 import { TabsController } from "./index";
 import { saveImageAs } from "./save-image-as";
 import { getSettingValueById } from "@/saving/settings";
+import { buildSearchUrlForEngine, getSearchEngineById } from "~/search-engines";
 
 // Define types for navigation history
 interface NavigationHistory {
@@ -32,25 +33,16 @@ interface MenuActions {
   [key: string]: MenuItemFunction | InspectFunction;
 }
 
-type SearchEngineId = "google" | "yandex" | "duckduckgo" | "bing";
-
-const searchEngines: Record<SearchEngineId, { name: string; url: string }> = {
-  google: { name: "Google", url: "https://www.google.com/search?q={query}" },
-  yandex: { name: "Яндекс", url: "https://yandex.ru/search/?text={query}" },
-  duckduckgo: { name: "DuckDuckGo", url: "https://duckduckgo.com/?q={query}" },
-  bing: { name: "Bing", url: "https://www.bing.com/search?q={query}" }
-};
-
 function getDefaultSearchEngineForMenu() {
-  const settingValue = getSettingValueById("defaultSearchEngine");
-  const engineId =
-    typeof settingValue === "string" && settingValue in searchEngines ? (settingValue as SearchEngineId) : "google";
-  return searchEngines[engineId];
+  return getSearchEngineById(getSettingValueById("defaultSearchEngine"), getSettingValueById("customSearchEngines"));
 }
 
 function createSearchUrl(query: string) {
-  const engine = getDefaultSearchEngineForMenu();
-  return engine.url.replace("{query}", encodeURIComponent(query));
+  return buildSearchUrlForEngine(
+    getSettingValueById("defaultSearchEngine"),
+    getSettingValueById("customSearchEngines"),
+    query
+  );
 }
 
 export function createTabContextMenu(

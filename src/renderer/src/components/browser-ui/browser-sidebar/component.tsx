@@ -1,6 +1,7 @@
 import { cn } from "@/lib/utils";
+import { FileUp } from "lucide-react";
 import { usePresence } from "motion/react";
-import { type CSSProperties, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { type CSSProperties, type DragEvent, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useMount } from "react-use";
 import { type AttachedDirection, useBrowserSidebar, MIN_SIDEBAR_WIDTH, MAX_SIDEBAR_WIDTH } from "./provider";
 import { type SidebarVariant } from "@/components/browser-ui/types";
@@ -16,6 +17,107 @@ const SIDEBAR_ANIMATION_STYLE: CSSProperties = {
   transitionDuration: `${SIDEBAR_ANIMATION_DURATION_MS}ms`,
   transitionTimingFunction: SIDEBAR_ANIMATION_CSS_EASING
 };
+
+const WEB_DROP_URL_PROTOCOLS = new Set(["http:", "https:", "file:", "blinker:", "chrome:", "extension:"]);
+
+function isLocalPath(value: string): boolean {
+  return /^[a-zA-Z]:[\\/]/.test(value) || /^\\\\/.test(value);
+}
+
+function encodePathSegment(segment: string, index: number): string {
+  if (index === 0 && /^[a-zA-Z]:$/.test(segment)) {
+    return segment;
+  }
+  return encodeURIComponent(segment);
+}
+
+function localPathToFileUrl(filePath: string): string {
+  const normalizedPath = filePath.trim().replace(/\\/g, "/");
+
+  if (normalizedPath.startsWith("//")) {
+    const [, , host, ...parts] = normalizedPath.split("/");
+    return `file://${host}/${parts.map((part) => encodeURIComponent(part)).join("/")}`;
+  }
+
+  return `file:///${normalizedPath.split("/").map(encodePathSegment).join("/")}`;
+}
+
+function normalizeDroppedUrl(value: string): string | null {
+  const trimmedValue = value.trim();
+  if (!trimmedValue) return null;
+
+  if (isLocalPath(trimmedValue)) {
+    return localPathToFileUrl(trimmedValue);
+  }
+
+  try {
+    const url = new URL(trimmedValue);
+    return WEB_DROP_URL_PROTOCOLS.has(url.protocol) ? url.toString() : null;
+  } catch {
+    return null;
+  }
+}
+
+function extractUrlsFromUriList(value: string): string[] {
+  return value
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line && !line.startsWith("#"))
+    .map(normalizeDroppedUrl)
+    .filter((url): url is string => Boolean(url));
+}
+
+function extractUrlsFromHtml(value: string): string[] {
+  const urls: string[] = [];
+  const pattern = /\b(?:href|src)=["']([^"']+)["']/gi;
+  let match: RegExpExecArray | null;
+
+  while ((match = pattern.exec(value))) {
+    const url = normalizeDroppedUrl(match[1]);
+    if (url) urls.push(url);
+  }
+
+  return urls;
+}
+
+function getFilePath(file: File): string | null {
+  const path = (file as File & { path?: string }).path;
+  return typeof path === "string" && path ? path : null;
+}
+
+function getDroppedUrls(dataTransfer: DataTransfer): string[] {
+  const urls = new Set<string>();
+
+  for (const file of Array.from(dataTransfer.files)) {
+    const path = getFilePath(file);
+    if (path) urls.add(localPathToFileUrl(path));
+  }
+
+  for (const url of extractUrlsFromUriList(dataTransfer.getData("text/uri-list"))) {
+    urls.add(url);
+  }
+
+  const plainText = dataTransfer.getData("text/plain");
+  for (const token of plainText.split(/\s+/)) {
+    const url = normalizeDroppedUrl(token);
+    if (url) urls.add(url);
+  }
+
+  for (const url of extractUrlsFromHtml(dataTransfer.getData("text/html"))) {
+    urls.add(url);
+  }
+
+  return Array.from(urls);
+}
+
+function hasOpenableDrop(dataTransfer: DataTransfer): boolean {
+  return (
+    dataTransfer.files.length > 0 ||
+    dataTransfer.types.includes("text/uri-list") ||
+    dataTransfer.types.includes("text/plain") ||
+    dataTransfer.types.includes("text/html")
+  );
+}
 
 export function BrowserSidebar({
   direction,
@@ -35,6 +137,54 @@ export function BrowserSidebar({
   const { topbarHeight } = useAdaptiveTopbar();
 
   const panelRef = useRef<ImperativeResizablePanelWrapperHandle>(null);
+  const dragDepthRef = useRef(0);
+  const [isExternalDragOver, setExternalDragOver] = useState(false);
+
+  const openDroppedItems = useCallback((event: DragEvent<HTMLDivElement>) => {
+    const urls = getDroppedUrls(event.dataTransfer);
+    if (urls.length === 0) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+
+    urls.forEach((url, index) => {
+      void flow.tabs.newTab(url, index === 0);
+    });
+  }, []);
+
+  const handleDragEnter = useCallback((event: DragEvent<HTMLDivElement>) => {
+    if (!hasOpenableDrop(event.dataTransfer)) return;
+
+    event.preventDefault();
+    dragDepthRef.current += 1;
+    setExternalDragOver(true);
+  }, []);
+
+  const handleDragOver = useCallback((event: DragEvent<HTMLDivElement>) => {
+    if (!hasOpenableDrop(event.dataTransfer)) return;
+
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "copy";
+    setExternalDragOver(true);
+  }, []);
+
+  const handleDragLeave = useCallback((event: DragEvent<HTMLDivElement>) => {
+    if (!hasOpenableDrop(event.dataTransfer)) return;
+
+    dragDepthRef.current = Math.max(0, dragDepthRef.current - 1);
+    if (dragDepthRef.current === 0) {
+      setExternalDragOver(false);
+    }
+  }, []);
+
+  const handleDrop = useCallback(
+    (event: DragEvent<HTMLDivElement>) => {
+      dragDepthRef.current = 0;
+      setExternalDragOver(false);
+      openDroppedItems(event);
+    },
+    [openDroppedItems]
+  );
 
   // AnimatePresence Controller (from motion/react) //
   // Declared early because isPresent is used in the animation readiness gate.
@@ -175,8 +325,12 @@ export function BrowserSidebar({
   const content = (
     <div
       data-space-background-scope={isFloating ? "" : undefined}
+      onDragEnter={handleDragEnter}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
       className={cn(
-        "w-full h-full max-h-screen remove-app-drag",
+        "relative w-full h-full max-h-screen remove-app-drag",
         "transition-transform",
         "flex flex-col",
         isFloating && "rounded-lg border border-sidebar-border/50 sidebar-floating-bg backdrop-blur-md"
@@ -195,6 +349,12 @@ export function BrowserSidebar({
       >
         <SidebarInner direction={direction} variant={variant} />
       </div>
+      {isExternalDragOver && (
+        <div className="pointer-events-none absolute inset-2 z-elevated flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-white/30 bg-black/45 text-center text-white shadow-2xl backdrop-blur-sm">
+          <FileUp className="size-7" />
+          <div className="px-3 text-xs font-medium leading-snug">Drop to open in a new tab</div>
+        </div>
+      )}
     </div>
   );
 

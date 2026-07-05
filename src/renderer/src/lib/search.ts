@@ -1,5 +1,7 @@
+import { createRendererSearchUrl } from "@/lib/search-engine-runtime";
+
 export function createSearchUrl(query: string) {
-  return `https://www.google.com/search?q=${encodeURIComponent(query)}`;
+  return createRendererSearchUrl(query);
 }
 
 type SearchSuggestions = string[];

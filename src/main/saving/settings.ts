@@ -3,6 +3,7 @@ import { fireOnSettingsChanged } from "@/ipc/window/settings";
 import { BasicSettings } from "@/modules/basic-settings";
 import { TypedEventEmitter } from "@/modules/typed-event-emitter";
 import { BasicSetting, SettingType } from "~/types/settings";
+import { getAllSearchEngines } from "~/search-engines";
 
 export const SettingsDataStore = getDatastore("settings");
 
@@ -22,6 +23,13 @@ function validateSettingValue<T extends SettingType>(setting: T, value: unknown)
     return typeof value === "boolean";
   }
   if (setting.type === "enum") {
+    if ("id" in setting && setting.id === "defaultSearchEngine") {
+      return (
+        typeof value === "string" &&
+        getAllSearchEngines(basicSettingsCurrentValues.customSearchEngines).some((engine) => engine.id === value)
+      );
+    }
+
     return setting.options.some((option) => option.id === value);
   }
   if (setting.type === "string") {

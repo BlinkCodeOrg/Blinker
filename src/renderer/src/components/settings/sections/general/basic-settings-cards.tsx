@@ -10,11 +10,19 @@ import { SetAsDefaultBrowserSetting } from "@/components/settings/sections/gener
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { t } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
-import { FolderOpen, RotateCcw } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import {
+  getAllSearchEngines,
+  getCustomSearchEngineSettingId,
+  isValidSearchUrlTemplate,
+  parseCustomSearchEngines,
+  serializeCustomSearchEngines
+} from "~/search-engines";
+import { FolderOpen, Plus, RotateCcw, Search, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 
 const cardTranslationKeys: Record<string, { title: string; subtitle: string }> = {
-  "autoUpdate,syncTabsAcrossWindows,appLanguage,defaultSearchEngine,downloadDirectory,contentBlocker,internal_setAsDefaultBrowser":
+  "autoUpdate,syncTabsAcrossWindows,appLanguage,defaultSearchEngine,customSearchEngines,downloadDirectory,contentBlocker,internal_setAsDefaultBrowser":
     {
       title: "card.general.title",
       subtitle: "card.general.subtitle"
@@ -96,6 +104,176 @@ function DownloadDirectoryInput() {
   );
 }
 
+function createCustomSearchEngineId(name: string, existingIds: Set<string>) {
+  const slug = name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 48);
+  const randomId = typeof crypto.randomUUID === "function" ? crypto.randomUUID().slice(0, 8) : Date.now().toString(36);
+  const baseId = slug || `engine-${randomId}`;
+  let id = baseId;
+  let counter = 2;
+
+  while (existingIds.has(id)) {
+    id = `${baseId}-${counter}`;
+    counter += 1;
+  }
+
+  return id;
+}
+
+function DefaultSearchEngineInput() {
+  const { getSetting, setSetting } = useSettings();
+  const customSearchEnginesRaw = getSetting<string>("customSearchEngines") ?? "[]";
+  const selectedEngine = getSetting<string>("defaultSearchEngine") ?? "google";
+  const searchEngines = getAllSearchEngines(customSearchEnginesRaw);
+  const value = searchEngines.some((engine) => engine.id === selectedEngine) ? selectedEngine : "google";
+
+  return (
+    <div className="w-auto">
+      <Select value={value} onValueChange={(nextValue) => void setSetting("defaultSearchEngine", nextValue)}>
+        <SelectTrigger className="w-full min-w-[180px]">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent className="remove-app-drag z-popover">
+          {searchEngines.map((engine) => (
+            <SelectItem key={engine.id} value={engine.id}>
+              {engine.isCustom ? engine.name : getOptionLabel(engine.id, engine.name)}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  );
+}
+
+function CustomSearchEnginesManager() {
+  const { getSetting, setSetting } = useSettings();
+  const customSearchEnginesRaw = getSetting<string>("customSearchEngines") ?? "[]";
+  const defaultSearchEngine = getSetting<string>("defaultSearchEngine") ?? "google";
+  const customSearchEngines = parseCustomSearchEngines(customSearchEnginesRaw);
+  const [name, setName] = useState("");
+  const [searchUrl, setSearchUrl] = useState("");
+  const [error, setError] = useState<string | null>(null);
+
+  const addEngine = async () => {
+    const nextName = name.trim();
+    const nextSearchUrl = searchUrl.trim();
+    const existingIds = new Set(customSearchEngines.map((engine) => engine.id));
+    const existingNames = new Set(customSearchEngines.map((engine) => engine.name.toLowerCase()));
+
+    if (!nextName) {
+      setError(t("searchEngines.nameRequired"));
+      return;
+    }
+
+    if (!isValidSearchUrlTemplate(nextSearchUrl)) {
+      setError(t("searchEngines.urlInvalid"));
+      return;
+    }
+
+    if (existingNames.has(nextName.toLowerCase())) {
+      setError(t("searchEngines.duplicate"));
+      return;
+    }
+
+    const nextEngines = [
+      ...customSearchEngines,
+      {
+        id: createCustomSearchEngineId(nextName, existingIds),
+        name: nextName,
+        searchUrl: nextSearchUrl
+      }
+    ];
+
+    const saved = await setSetting("customSearchEngines", serializeCustomSearchEngines(nextEngines));
+    if (saved) {
+      setName("");
+      setSearchUrl("");
+      setError(null);
+    }
+  };
+
+  const deleteEngine = async (engineId: string) => {
+    const nextEngines = customSearchEngines.filter((engine) => engine.id !== engineId);
+    const saved = await setSetting("customSearchEngines", serializeCustomSearchEngines(nextEngines));
+    if (saved && defaultSearchEngine === getCustomSearchEngineSettingId(engineId)) {
+      await setSetting("defaultSearchEngine", "google");
+    }
+  };
+
+  return (
+    <div className="w-full rounded-md border border-border/60 bg-muted/20 p-4">
+      <div className="mb-3 flex items-start gap-3">
+        <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
+          <Search className="size-4" />
+        </div>
+        <div className="min-w-0">
+          <h4 className="text-sm font-medium text-card-foreground">{t("searchEngines.customTitle")}</h4>
+          <p className="mt-1 text-xs text-muted-foreground">{t("searchEngines.customDescription")}</p>
+        </div>
+      </div>
+
+      <div className="grid gap-2 md:grid-cols-[minmax(120px,0.8fr)_minmax(220px,1.5fr)_auto]">
+        <Input
+          value={name}
+          onChange={(event) => {
+            setName(event.target.value);
+            setError(null);
+          }}
+          placeholder={t("searchEngines.namePlaceholder")}
+        />
+        <Input
+          value={searchUrl}
+          onChange={(event) => {
+            setSearchUrl(event.target.value);
+            setError(null);
+          }}
+          placeholder={t("searchEngines.urlPlaceholder")}
+          className="md:col-span-2"
+        />
+      </div>
+      <div className="mt-2 flex items-center justify-between gap-3">
+        <p className="min-w-0 text-xs text-muted-foreground">{t("searchEngines.placeholderHint")}</p>
+        <Button onClick={() => void addEngine()} className="gap-2">
+          <Plus className="size-4" />
+          {t("searchEngines.add")}
+        </Button>
+      </div>
+      {error && <p className="mt-2 text-xs text-destructive">{error}</p>}
+
+      <div className="mt-4 space-y-2">
+        {customSearchEngines.length === 0 ? (
+          <div className="rounded-md border border-dashed border-border/60 px-3 py-4 text-center text-xs text-muted-foreground">
+            {t("searchEngines.empty")}
+          </div>
+        ) : (
+          customSearchEngines.map((engine) => (
+            <div
+              key={engine.id}
+              className="flex items-center justify-between gap-3 rounded-md border border-border/60 bg-background/50 px-3 py-2"
+            >
+              <div className="min-w-0">
+                <div className="truncate text-sm font-medium text-card-foreground">{engine.name}</div>
+                <div className="truncate text-xs text-muted-foreground">{engine.searchUrl}</div>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => void deleteEngine(engine.id)}
+                aria-label={t("searchEngines.delete")}
+              >
+                <Trash2 className="size-4" />
+              </Button>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
+
 export function SettingsInput({ setting }: { setting: BasicSetting }) {
   const { getSetting, setSetting } = useSettings();
 
@@ -105,6 +283,10 @@ export function SettingsInput({ setting }: { setting: BasicSetting }) {
 
   if (setting.id === "downloadDirectory") {
     return <DownloadDirectoryInput />;
+  }
+
+  if (setting.id === "defaultSearchEngine") {
+    return <DefaultSearchEngineInput />;
   }
 
   if (setting.type === "enum") {
@@ -158,6 +340,10 @@ export function BasicSettingsCard({ card, transparent }: { card: BasicSettingCar
 
             const setting = settings.find((s) => s.id === settingId);
             if (!setting) return null;
+
+            if (setting.id === "customSearchEngines") {
+              return <CustomSearchEnginesManager key={setting.id} />;
+            }
 
             const settingDescription = (setting as BasicSetting & { description?: string }).description || null;
 
