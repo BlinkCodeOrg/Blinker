@@ -7,7 +7,8 @@ import { shouldArchiveTab } from "@/saving/tabs";
 import { app, screen } from "electron";
 import { GlanceTabGroup } from "@/controllers/tabs-controller/tab-groups/glance";
 import type { BrowserWindowCreationOptions, BrowserWindowType } from "@/controllers/windows-controller/types/browser";
-import { markPerformance, measurePerformance } from "@/modules/performance";
+import { markPerformance, measurePerformance, measurePerformanceSync } from "@/modules/performance";
+import { setWindowSpace } from "@/ipc/session/spaces";
 
 function intersects(a: Electron.Rectangle, b: Electron.Rectangle): boolean {
   return a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y;
@@ -111,6 +112,7 @@ async function createTabsFromPersistedData(tabDatas: PersistedTabData[]): Promis
     tabPersistenceManager.loadAllWindowStates()
   );
   const uniqueIdToTabId = new Map<string, number>();
+  const restoredTabsByWindow = new Map<number, number[]>();
 
   // Create a window for each window group
   for (const [windowGroupId, tabs] of windowGroups) {
@@ -146,12 +148,49 @@ async function createTabsFromPersistedData(tabDatas: PersistedTabData[]): Promis
       );
 
       uniqueIdToTabId.set(tabData.uniqueId, tab.id);
+      const restoredTabs = restoredTabsByWindow.get(window.id) ?? [];
+      restoredTabs.push(tab.id);
+      restoredTabsByWindow.set(window.id, restoredTabs);
     }
   }
 
   await measurePerformance("session.restore.tabGroups", "startup", () =>
     restoreTabGroups(persistedGroups, uniqueIdToTabId)
   );
+  measurePerformanceSync("session.restore.activateInitialTabs", "startup", () =>
+    activateInitialTabs(restoredTabsByWindow)
+  );
+}
+
+function activateInitialTabs(restoredTabsByWindow: Map<number, number[]>): void {
+  for (const [windowId, tabIds] of restoredTabsByWindow) {
+    let newestTab = undefined as ReturnType<typeof tabsController.getTabById> | undefined;
+    for (const tabId of tabIds) {
+      const tab = tabsController.getTabById(tabId);
+      if (!tab || tab.isDestroyed) continue;
+      if (!newestTab || tab.lastActiveAt > newestTab.lastActiveAt) {
+        newestTab = tab;
+      }
+    }
+
+    if (!newestTab) {
+      markPerformance("session.restore.noInitialTab", "startup", { windowId });
+      continue;
+    }
+
+    const containingGroup = tabsController
+      .getTabGroupsInWindow(windowId)
+      .find((group) => group.spaceId === newestTab.spaceId && group.hasTab(newestTab.id));
+
+    setWindowSpace(newestTab.getWindow(), newestTab.spaceId);
+    tabsController.activateTab(containingGroup ?? newestTab);
+    tabsController.focusActiveTab(windowId, newestTab.spaceId);
+    markPerformance("session.restore.initialTabActivated", "startup", {
+      windowId,
+      tabId: newestTab.id,
+      grouped: Boolean(containingGroup)
+    });
+  }
 }
 
 /**

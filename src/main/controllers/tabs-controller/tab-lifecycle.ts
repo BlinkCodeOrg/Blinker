@@ -90,7 +90,16 @@ export class TabLifecycleManager {
 
     // Restore navigation history from pre-sleep state
     if (this.preSleepState) {
-      this.tab.restoreNavigationHistory(this.preSleepState.navHistory, this.preSleepState.navHistoryIndex);
+      const { navHistory, navHistoryIndex } = this.preSleepState;
+      const activeUrl = navHistory[navHistoryIndex]?.url;
+
+      this.tab.restoreNavigationHistory(navHistory, navHistoryIndex);
+
+      const restoredUrl = this.tab.webContents?.getURL() ?? "";
+      if (activeUrl && (restoredUrl === "" || restoredUrl === "about:blank")) {
+        this.tab.loadURL(activeUrl);
+      }
+
       this.preSleepState = null;
     }
 

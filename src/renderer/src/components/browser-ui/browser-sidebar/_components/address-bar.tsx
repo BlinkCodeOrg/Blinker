@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
 import { SearchIcon } from "lucide-react";
-import { memo, useCallback, useRef, type MouseEvent } from "react";
+import { memo, useCallback, useRef, type PointerEvent } from "react";
 import { useAddressUrl, useFocusedTabId } from "@/components/providers/tabs-provider";
 import { simplifyUrl } from "@/lib/url";
 import { PinnedBrowserActions } from "./pinned-browser-actions";
@@ -18,8 +18,34 @@ export const AddressBar = memo(function AddressBar() {
   const simplifiedUrl = simplifyUrl(addressUrl);
   const isPlaceholder = !simplifiedUrl;
 
-  const handleClick = useCallback(
-    (event: MouseEvent<HTMLDivElement>) => {
+  const handleOpenOmnibox = useCallback(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    const rect = el.getBoundingClientRect();
+
+    // If it is in a popup window, do not show the omnibox
+    const isPopupWindow = !hasSidebar;
+    if (isPopupWindow) {
+      return;
+    }
+
+    flow.omnibox.show(
+      {
+        x: rect.x,
+        y: rect.y,
+        width: rect.width * 1.8,
+        height: rect.height * 8
+      },
+      {
+        currentInput: addressUrl,
+        openIn: focusedTabId ? "current" : "new_tab"
+      }
+    );
+  }, [addressUrl, focusedTabId, hasSidebar]);
+
+  const handlePointerDown = useCallback(
+    (event: PointerEvent<HTMLDivElement>) => {
       const el = containerRef.current;
       if (!el) return;
 
@@ -28,34 +54,21 @@ export const AddressBar = memo(function AddressBar() {
         return;
       }
 
-      const rect = el.getBoundingClientRect();
-
-      // If it is in a popup window, do not show the omnibox
-      const isPopupWindow = !hasSidebar;
-      if (isPopupWindow) {
+      const target = event.target;
+      if (target instanceof HTMLElement && target.closest("button, [role='button'], a")) {
         return;
       }
 
-      flow.omnibox.show(
-        {
-          x: rect.x,
-          y: rect.y,
-          width: rect.width * 1.8,
-          height: rect.height * 8
-        },
-        {
-          currentInput: addressUrl,
-          openIn: focusedTabId ? "current" : "new_tab"
-        }
-      );
+      event.preventDefault();
+      handleOpenOmnibox();
     },
-    [addressUrl, focusedTabId, hasSidebar]
+    [handleOpenOmnibox]
   );
 
   return (
     <div
       ref={containerRef}
-      onClick={handleClick}
+      onPointerDown={handlePointerDown}
       className={cn(
         "w-full min-w-0 h-9 rounded-xl select-none",
         "bg-black/10 dark:bg-white/15",
