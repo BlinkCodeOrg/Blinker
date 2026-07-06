@@ -146,14 +146,19 @@ export class TabLayoutManager {
       this.lastBorderRadius = borderRadius;
     }
 
-    // Determine tab group mode and calculate bounds
+    // Determine tab group mode and calculate bounds. HTML/video fullscreen
+    // must always own the full content area, even if the tab belongs to a
+    // glance/split group.
     const tabGroup = tabsController.getTabGroupByTabId(tab.id);
     const lastTabGroupMode = this.lastTabGroupMode;
     let newBounds: Rectangle | null = null;
     let newTabGroupMode: TabGroupMode | null = null;
     let layerType: LayerType = "tab";
 
-    if (!tabGroup) {
+    if (tab.fullScreen) {
+      newTabGroupMode = "normal";
+      newBounds = pageBounds;
+    } else if (!tabGroup) {
       newTabGroupMode = "normal";
       newBounds = pageBounds;
     } else if (tabGroup.mode === "glance") {
@@ -175,11 +180,14 @@ export class TabLayoutManager {
       this.lastTabGroupMode = newTabGroupMode;
     }
 
-    // Apply calculated bounds with spring animation
+    // Apply calculated bounds. Fullscreen should never spring-animate from the
+    // normal page rectangle; the native view needs to snap to the OS content
+    // bounds before Chromium presents the fullscreen video frame.
     if (newBounds) {
       const useImmediateUpdate =
-        newTabGroupMode === lastTabGroupMode &&
-        isRectangleEqual(boundsController.bounds, boundsController.targetBounds);
+        tab.fullScreen ||
+        (newTabGroupMode === lastTabGroupMode &&
+          isRectangleEqual(boundsController.bounds, boundsController.targetBounds));
 
       if (useImmediateUpdate) {
         boundsController.setBoundsImmediate(newBounds);

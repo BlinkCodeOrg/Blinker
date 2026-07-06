@@ -220,6 +220,15 @@ function FullscreenGuard({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     setForceFloating(isFullscreen);
   }, [isFullscreen, setForceFloating]);
+
+  if (isFullscreen) {
+    return (
+      <div className="w-screen h-screen overflow-hidden bg-black remove-app-drag">
+        <BrowserContent />
+      </div>
+    );
+  }
+
   return <>{children}</>;
 }
 
