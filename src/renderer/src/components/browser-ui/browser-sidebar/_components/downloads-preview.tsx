@@ -72,7 +72,7 @@ function DownloadPreviewRow({
       <button
         className="grid min-w-0 grid-cols-[40px_minmax(0,1fr)] items-center gap-3 text-left"
         onPointerDown={onInternalInteraction}
-        onClick={() => runAction(() => flow.downloads.openFile(download.id))}
+        onClick={() => runAction(() => blinker.downloads.openFile(download.id))}
         disabled={isGone || download.state !== "completed"}
       >
         <div
@@ -112,7 +112,7 @@ function DownloadPreviewRow({
             size="icon"
             className="size-7 text-white/55 hover:bg-white/10 hover:text-white"
             onPointerDown={onInternalInteraction}
-            onClick={() => runAction(() => flow.downloads.pause(download.id))}
+            onClick={() => runAction(() => blinker.downloads.pause(download.id))}
             aria-label="Пауза"
           >
             <Pause className="size-3.5" />
@@ -124,7 +124,7 @@ function DownloadPreviewRow({
             size="icon"
             className="size-7 text-white/55 hover:bg-white/10 hover:text-white"
             onPointerDown={onInternalInteraction}
-            onClick={() => runAction(() => flow.downloads.resume(download.id))}
+            onClick={() => runAction(() => blinker.downloads.resume(download.id))}
             aria-label="Продолжить"
           >
             <Play className="size-3.5" />
@@ -136,7 +136,7 @@ function DownloadPreviewRow({
             size="icon"
             className="size-7 text-white/55 hover:bg-white/10 hover:text-white"
             onPointerDown={onInternalInteraction}
-            onClick={() => runAction(() => flow.downloads.cancel(download.id))}
+            onClick={() => runAction(() => blinker.downloads.cancel(download.id))}
             aria-label="Отменить"
           >
             <X className="size-3.5" />
@@ -148,7 +148,7 @@ function DownloadPreviewRow({
             size="icon"
             className="size-7 text-white/55 hover:bg-white/10 hover:text-white"
             onPointerDown={onInternalInteraction}
-            onClick={() => runAction(() => flow.downloads.retry(download.id))}
+            onClick={() => runAction(() => blinker.downloads.retry(download.id))}
             aria-label="Скачать снова"
           >
             <RotateCcw className="size-3.5" />
@@ -159,7 +159,7 @@ function DownloadPreviewRow({
           size="icon"
           className="size-7 text-white/55 hover:bg-white/10 hover:text-white disabled:opacity-35"
           onPointerDown={onInternalInteraction}
-          onClick={() => runAction(() => flow.downloads.showInFolder(download.id))}
+          onClick={() => runAction(() => blinker.downloads.showInFolder(download.id))}
           disabled={!download.exists}
           aria-label="Показать в папке"
         >

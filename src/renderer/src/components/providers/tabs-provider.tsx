@@ -133,9 +133,9 @@ export const TabsProvider = ({ children }: TabsProviderProps) => {
   const tabGroupCacheRef = useRef<Map<string, TabGroupCacheEntry>>(EMPTY_TAB_GROUP_CACHE);
 
   const fetchTabs = useCallback(async () => {
-    if (!flow) return;
+    if (!blinker) return;
     try {
-      const data = await flow.tabs.getData();
+      const data = await blinker.tabs.getData();
       setTabsData(data);
     } catch (error) {
       console.error("Failed to fetch tabs data:", error);
@@ -147,16 +147,16 @@ export const TabsProvider = ({ children }: TabsProviderProps) => {
   }, [fetchTabs]);
 
   useEffect(() => {
-    if (!flow) return;
+    if (!blinker) return;
 
     // Full data refresh (structural changes: tab created/removed, active tab changed)
-    const unsubFull = flow.tabs.onDataUpdated((data) => {
+    const unsubFull = blinker.tabs.onDataUpdated((data) => {
       setTabsData(data);
     });
 
     // Lightweight content update (title, url, isLoading, etc.)
     // Merges changed tabs into existing state without replacing the full object.
-    const unsubContent = flow.tabs.onTabsContentUpdated((updatedTabs) => {
+    const unsubContent = blinker.tabs.onTabsContentUpdated((updatedTabs) => {
       setTabsData((prev) => {
         if (!prev) return prev;
         if (updatedTabs.length === 0) return prev;

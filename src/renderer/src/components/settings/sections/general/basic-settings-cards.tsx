@@ -43,7 +43,7 @@ const cardTranslationKeys: Record<string, { title: string; subtitle: string }> =
     title: "card.performance.title",
     subtitle: "card.performance.subtitle"
   },
-  enableFlowPdfViewer: {
+  enableBlinkerPdfViewer: {
     title: "card.experimental.title",
     subtitle: "card.experimental.subtitle"
   },
@@ -74,7 +74,7 @@ function DownloadDirectoryInput() {
   const [directory, setDirectory] = useState("");
 
   const refresh = async () => {
-    setDirectory(await flow.downloads.getDownloadDirectory());
+    setDirectory(await blinker.downloads.getDownloadDirectory());
   };
 
   useEffect(() => {
@@ -82,12 +82,12 @@ function DownloadDirectoryInput() {
   }, []);
 
   const choose = async () => {
-    const selected = await flow.downloads.chooseDownloadDirectory();
+    const selected = await blinker.downloads.chooseDownloadDirectory();
     if (selected) setDirectory(selected);
   };
 
   const reset = async () => {
-    setDirectory(await flow.downloads.resetDownloadDirectory());
+    setDirectory(await blinker.downloads.resetDownloadDirectory());
   };
 
   return (

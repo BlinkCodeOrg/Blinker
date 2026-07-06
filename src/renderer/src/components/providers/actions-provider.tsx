@@ -8,13 +8,13 @@ type IncomingActionPayload = string;
 interface ActionsContextValue {
   /**
    * Triggers a request to copy the given link/text to the clipboard.
-   * Assumes an underlying API like flow.actions.triggerCopy(link).
+   * Assumes an underlying API like blinker.actions.triggerCopy(link).
    */
   copyLink: () => Promise<void>; // Adjusted to reflect user's change (no linkToCopy param)
 
   /**
    * Handles an incoming action. This function is also registered as the listener
-   * for flow.actions.onIncomingAction.
+   * for blinker.actions.onIncomingAction.
    */
   handleIncomingAction: (action: IncomingActionPayload) => void;
 }
@@ -62,7 +62,7 @@ export const ActionsProvider = ({ children }: ActionsProviderProps) => {
 
   // Listener for the onCopyLink event from the main process
   useEffect(() => {
-    const unsubscribe = flow.actions.onCopyLink(() => {
+    const unsubscribe = blinker.actions.onCopyLink(() => {
       return copyLinkCallbackRef.current();
     });
     return () => {
@@ -72,7 +72,7 @@ export const ActionsProvider = ({ children }: ActionsProviderProps) => {
 
   // Listener for the onIncomingAction event from the main process
   useEffect(() => {
-    const unsubscribe = flow.actions.onIncomingAction((action) => {
+    const unsubscribe = blinker.actions.onIncomingAction((action) => {
       return handleIncomingActionCallbackRef.current(action);
     });
     return () => {

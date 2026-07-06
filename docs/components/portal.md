@@ -79,7 +79,7 @@ The component uses a custom hook (`useCopyStyles`) to ensure that all styles fro
 
 #### Positioning and Sizing
 
-- Uses Blinker Browser's interface to position the window (`flow.interface.setComponentWindowBounds`)
+- Uses Blinker Browser's interface to position the window (`blinker.interface.setComponentWindowBounds`)
 - Converts CSS size values to pixels with the `useCssSizeToPixels` hook
 
 ### Backend Implementation

@@ -1,8 +1,8 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { motion } from "motion/react";
-import type { Profile } from "~/flow/interfaces/sessions/profiles";
-import type { Space } from "~/flow/interfaces/sessions/spaces";
+import type { Profile } from "~/blinker/interfaces/sessions/profiles";
+import type { Space } from "~/blinker/interfaces/sessions/spaces";
 import { Trash2, ArrowLeft, Settings, Globe, Save, Loader2, Plus, Box } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -124,7 +124,7 @@ function SpacesTab({ profile, spaces, onRefreshSpaces, navigateToSpace }: Spaces
 
     setIsCreating(true);
     try {
-      await flow.spaces.createSpace(profile.id, newSpaceName);
+      await blinker.spaces.createSpace(profile.id, newSpaceName);
       setNewSpaceName("");
       setCreateDialogOpen(false);
       onRefreshSpaces();
@@ -281,7 +281,7 @@ function ProfileEditor({
   useEffect(() => {
     const checkProfileCount = async () => {
       try {
-        const allProfiles = await flow.profiles.getProfiles();
+        const allProfiles = await blinker.profiles.getProfiles();
         const userProfiles = allProfiles.filter((profile) => !profile.internal);
         setIsLastProfile(userProfiles.length <= 1);
       } catch (error) {
@@ -297,7 +297,7 @@ function ProfileEditor({
     const fetchSpaces = async () => {
       setLoadingSpaces(true);
       try {
-        const profileSpaces = await flow.spaces.getSpacesFromProfile(profile.id);
+        const profileSpaces = await blinker.spaces.getSpacesFromProfile(profile.id);
         setSpaces(profileSpaces);
       } catch (error) {
         console.error("Failed to fetch spaces:", error);
@@ -312,7 +312,7 @@ function ProfileEditor({
   const refreshSpaces = async () => {
     setLoadingSpaces(true);
     try {
-      const profileSpaces = await flow.spaces.getSpacesFromProfile(profile.id);
+      const profileSpaces = await blinker.spaces.getSpacesFromProfile(profile.id);
       setSpaces(profileSpaces);
     } catch (error) {
       console.error("Failed to refresh spaces:", error);
@@ -333,7 +333,7 @@ function ProfileEditor({
 
       if (Object.keys(updatedFields).length > 0) {
         console.log("Updating profile:", profile.id, updatedFields);
-        await flow.profiles.updateProfile(profile.id, updatedFields);
+        await blinker.profiles.updateProfile(profile.id, updatedFields);
         onProfilesUpdate(); // Refetch profiles after successful update
       }
       onClose();
@@ -348,7 +348,7 @@ function ProfileEditor({
   const handleDeleteConfirm = async () => {
     setIsDeleting(true);
     try {
-      await flow.profiles.deleteProfile(profile.id);
+      await blinker.profiles.deleteProfile(profile.id);
       onDelete();
       onClose();
     } catch (error) {
@@ -571,7 +571,7 @@ export function ProfilesSettings({ navigateToSpaces, navigateToSpace }: Profiles
   const fetchProfiles = async () => {
     setIsLoading(true);
     try {
-      const fetchedProfiles = await flow.profiles.getProfiles();
+      const fetchedProfiles = await blinker.profiles.getProfiles();
       setProfiles(fetchedProfiles.filter((profile) => !profile.internal));
     } catch (error) {
       console.error("Failed to fetch profiles:", error);
@@ -598,7 +598,7 @@ export function ProfilesSettings({ navigateToSpaces, navigateToSpace }: Profiles
 
     setIsCreating(true);
     try {
-      const result = await flow.profiles.createProfile(newProfileName);
+      const result = await blinker.profiles.createProfile(newProfileName);
       console.log("Profile creation result:", result);
 
       // Clear the form and close the dialog

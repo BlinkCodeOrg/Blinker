@@ -7,7 +7,7 @@ export function SetAsDefaultBrowserSetting() {
   const [isDefault, setIsDefault] = useState<boolean | null>(null);
 
   const refetchDefaultBrowser = useCallback(async () => {
-    const isDefaultResult = await flow.app.getDefaultBrowser();
+    const isDefaultResult = await blinker.app.getDefaultBrowser();
     setIsDefault(isDefaultResult);
   }, []);
 
@@ -18,7 +18,7 @@ export function SetAsDefaultBrowserSetting() {
   }, [refetchDefaultBrowser]);
 
   const setDefaultBrowser = async () => {
-    await flow.app.setDefaultBrowser();
+    await blinker.app.setDefaultBrowser();
     await refetchDefaultBrowser();
   };
 

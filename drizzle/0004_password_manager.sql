@@ -7,7 +7,7 @@ CREATE TABLE `passwords` (
 	`encrypted_password` text NOT NULL,
 	`title` text NOT NULL,
 	`note` text,
-	`source` text DEFAULT 'Flow' NOT NULL,
+	`source` text DEFAULT 'Blinker' NOT NULL,
 	`created_at` integer NOT NULL,
 	`updated_at` integer NOT NULL
 );

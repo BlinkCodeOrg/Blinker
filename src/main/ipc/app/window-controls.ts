@@ -6,7 +6,7 @@
 import { BrowserWindow, ipcMain } from "electron";
 import { windowsController } from "@/controllers/windows-controller";
 import { sendMessageToListenersWithWebContents } from "@/ipc/listeners-manager";
-import type { WindowState } from "~/flow/types";
+import type { WindowState } from "~/blinker/types";
 
 function getWindowState(win: BrowserWindow): WindowState {
   return {

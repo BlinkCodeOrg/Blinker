@@ -24,14 +24,14 @@ function TopbarTab({ tab, isFocused, isSpaceLight }: { tab: TabData; isFocused: 
   }, [tab.faviconURL]);
 
   const switchToTab = useCallback(() => {
-    void flow.tabs.switchToTab(tab.id);
+    void blinker.tabs.switchToTab(tab.id);
   }, [tab.id]);
 
   const closeTab = useCallback(
     (event: React.MouseEvent) => {
       event.preventDefault();
       event.stopPropagation();
-      void flow.tabs.closeTab(tab.id);
+      void blinker.tabs.closeTab(tab.id);
     },
     [tab.id]
   );
@@ -41,7 +41,7 @@ function TopbarTab({ tab, isFocused, isSpaceLight }: { tab: TabData; isFocused: 
       if (event.button === 0) switchToTab();
       if (event.button === 1) {
         event.preventDefault();
-        void flow.tabs.closeTab(tab.id);
+        void blinker.tabs.closeTab(tab.id);
       }
     },
     [switchToTab, tab.id]
@@ -50,7 +50,7 @@ function TopbarTab({ tab, isFocused, isSpaceLight }: { tab: TabData; isFocused: 
   const handleContextMenu = useCallback(
     (event: React.MouseEvent) => {
       event.preventDefault();
-      flow.tabs.showContextMenu(tab.id);
+      blinker.tabs.showContextMenu(tab.id);
     },
     [tab.id]
   );
@@ -125,7 +125,7 @@ function TopbarTabs() {
   }, [currentSpace, getTabGroups]);
 
   const openNewTab = useCallback(() => {
-    void flow.newTab.open();
+    void blinker.newTab.open();
   }, []);
 
   return (

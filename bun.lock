@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "flow-browser",
+      "name": "blinker-browser",
       "dependencies": {
         "@ghostery/adblocker-electron": "^2.14.1",
         "@phosphor-icons/core": "^2.1.1",

@@ -13,14 +13,14 @@ import { NSApplication, NSImage, NSImageView, NSWorkspace } from "objcjs-types/A
 import { NSDistributedNotificationCenter } from "objcjs-types/Foundation";
 import { NSStringFromString } from "objcjs-types/helpers";
 import { debugError, debugPrint } from "@/modules/output";
-import { FLOW_DATA_DIR } from "@/modules/paths";
+import { BLINKER_DATA_DIR } from "@/modules/paths";
 import { NSClassFromString } from "objcjs-types/Foundation/functions";
 
 // ---------------------------------------------------------------------------
 // Shared-file path for DockTilePlugin communication
 // ---------------------------------------------------------------------------
 
-const SHARED_DIR = FLOW_DATA_DIR;
+const SHARED_DIR = BLINKER_DATA_DIR;
 const SHARED_FILE = path.join(SHARED_DIR, "dock-tile-icon-path");
 const DOCK_TILE_UPDATE_NOTIFICATION = "dev.lovly.blinker.dock-tile.update";
 

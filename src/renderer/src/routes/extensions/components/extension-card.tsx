@@ -32,7 +32,7 @@ function ExtensionCard({ extension, isProcessing, setExtensionEnabled, onDetails
   const onRemoveClick = async () => {
     setIsRemoving(true);
 
-    const success = await flow.extensions.uninstallExtension(extension.id);
+    const success = await blinker.extensions.uninstallExtension(extension.id);
 
     if (success) {
       toast.success("Extension uninstalled successfully!");

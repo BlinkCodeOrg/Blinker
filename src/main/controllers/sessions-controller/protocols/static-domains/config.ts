@@ -43,7 +43,7 @@ export const STATIC_DOMAINS: StaticDomainInfo[] = [
     }
   },
 
-  // flow
+  // blinker
   {
     protocol: "blinker",
     hostname: "new-tab",

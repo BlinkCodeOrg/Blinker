@@ -2,7 +2,7 @@
 
 ## Problem Statement
 
-Flow's UI composites multiple rendering surfaces: the base BrowserWindow
+Blinker's UI composites multiple rendering surfaces: the base BrowserWindow
 webContents (browser chrome), child WebContentsViews (tabs, portals, omnibox),
 and CSS-stacked elements within each renderer. The current system manages these
 with scattered magic numbers, duplicated constants, and two completely decoupled
@@ -169,7 +169,7 @@ export const UILayer = {
   /** Default stacking level. Most elements live here. No z-index needed. */
   BASE: 0,
 
-  /** Elements that float above their normal document-flow siblings.
+  /** Elements that float above their normal document-layout siblings.
       Examples: floating sidebar (position:fixed over content area),
       loading indicator bar, search suggestion dropdowns, drag-and-drop
       indicator overlays, sticky toolbars. */

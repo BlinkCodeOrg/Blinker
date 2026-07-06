@@ -21,7 +21,11 @@ export function setupBetterPdfViewer(session: Session) {
       }
 
       const { pathname } = urlObject;
-      if (pathname && pathname.toLowerCase().endsWith(".pdf") && getSettingValueById("enableFlowPdfViewer") === true) {
+      if (
+        pathname &&
+        pathname.toLowerCase().endsWith(".pdf") &&
+        getSettingValueById("enableBlinkerPdfViewer") === true
+      ) {
         const response = await session.fetch(url).catch(() => null);
         if (!response) {
           return callback({});

@@ -16,7 +16,7 @@ export type HonoApp = typeof app;
 registerStaticDomainsRoutes("blinker-external", app);
 
 // Export Protocol Handler
-export function registerFlowExternalProtocol(protocol: Protocol) {
+export function registerBlinkerExternalProtocol(protocol: Protocol) {
   protocol.handle("blinker-external", async (request) => {
     return app.fetch(request);
   });

@@ -19,7 +19,7 @@ registerTabSnapshotRoutes(app);
 registerStaticDomainsRoutes("blinker-internal", app);
 
 // Export Protocol Handler
-export function registerFlowInternalProtocol(protocol: Protocol) {
+export function registerBlinkerInternalProtocol(protocol: Protocol) {
   protocol.handle("blinker-internal", async (request) => {
     return app.fetch(request);
   });

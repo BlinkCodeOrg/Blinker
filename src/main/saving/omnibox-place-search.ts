@@ -5,7 +5,7 @@ import { spawnSync } from "child_process";
 import { app } from "electron";
 import { getDb } from "@/saving/db";
 import { bookmarks, historyUrls } from "@/saving/db/schema";
-import type { OmniboxPlaceSuggestion, OmniboxPlaceSuggestionSource } from "~/flow/interfaces/browser/omnibox";
+import type { OmniboxPlaceSuggestion, OmniboxPlaceSuggestionSource } from "~/blinker/interfaces/browser/omnibox";
 
 const DEFAULT_LIMIT = 8;
 const MAX_LIMIT = 20;

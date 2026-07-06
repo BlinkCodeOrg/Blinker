@@ -30,7 +30,7 @@ export function AppUpdatesProvider({ children }: AppUpdatesProviderProps) {
   useEffect(() => {
     const fetchUpdateStatus = async () => {
       try {
-        const status = await flow.updates.getUpdateStatus();
+        const status = await blinker.updates.getUpdateStatus();
         setUpdateStatus(status);
       } catch (error) {
         console.error("Failed to get update status:", error);
@@ -39,7 +39,7 @@ export function AppUpdatesProvider({ children }: AppUpdatesProviderProps) {
 
     const checkAutoUpdateSupport = async () => {
       try {
-        const supported = await flow.updates.isAutoUpdateSupported();
+        const supported = await blinker.updates.isAutoUpdateSupported();
         setIsAutoUpdateSupported(supported);
       } catch (error) {
         console.error("Failed to check auto update support:", error);
@@ -49,7 +49,7 @@ export function AppUpdatesProvider({ children }: AppUpdatesProviderProps) {
 
     const checkHasUpdated = async () => {
       try {
-        const updated = await flow.updates.hasUpdated();
+        const updated = await blinker.updates.hasUpdated();
         setHasUpdated(updated);
       } catch (error) {
         console.error("Failed to check if app has updated:", error);
@@ -67,7 +67,7 @@ export function AppUpdatesProvider({ children }: AppUpdatesProviderProps) {
       setUpdateStatus(status);
     };
 
-    const unsubscribe = flow.updates.onUpdateStatusChanged(handleUpdateStatusChanged);
+    const unsubscribe = blinker.updates.onUpdateStatusChanged(handleUpdateStatusChanged);
 
     return () => {
       // Cleanup
@@ -83,7 +83,7 @@ export function AppUpdatesProvider({ children }: AppUpdatesProviderProps) {
   const checkForUpdates = useCallback(async () => {
     setIsCheckingForUpdates(true);
     try {
-      const isUpdateAvailable = await flow.updates.checkForUpdates();
+      const isUpdateAvailable = await blinker.updates.checkForUpdates();
       setIsCheckingForUpdates(false);
       return isUpdateAvailable;
     } catch (error) {
@@ -95,7 +95,7 @@ export function AppUpdatesProvider({ children }: AppUpdatesProviderProps) {
 
   const downloadUpdate = useCallback(async () => {
     try {
-      const success = await flow.updates.downloadUpdate();
+      const success = await blinker.updates.downloadUpdate();
       return success;
     } catch (error) {
       console.error("Failed to download update:", error);
@@ -106,7 +106,7 @@ export function AppUpdatesProvider({ children }: AppUpdatesProviderProps) {
   const installUpdate = useCallback(async () => {
     setIsInstallingUpdate(true);
     try {
-      const success = await flow.updates.installUpdate();
+      const success = await blinker.updates.installUpdate();
       setIsInstallingUpdate(false);
       return success;
     } catch (error) {

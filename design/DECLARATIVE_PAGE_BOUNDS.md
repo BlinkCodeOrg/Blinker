@@ -154,7 +154,7 @@ over the same 100ms duration with the same `ease-in-out` timing function. This
 mirrors the CSS transition exactly, so the `WebContentsView` tracks the content
 area without any renderer round-trip during the animation.
 
-The flow:
+The sequence:
 
 ```
 Renderer                                     Main Process
@@ -200,7 +200,7 @@ overlay (`PortalComponent`) and does not affect `BrowserContent` bounds.
 ## New Shared Types
 
 ```typescript
-// src/shared/flow/types.ts
+// src/shared/blinker/types.ts
 
 export interface PageLayoutParams {
   /** Pixel height of the topbar (0 when not applicable, e.g. macOS with left sidebar). */
@@ -236,7 +236,7 @@ export interface PageLayoutParams {
 
 ### `page:set-layout-params`
 
-Replaces `page:set-bounds` for the primary page bounds flow.
+Replaces `page:set-bounds` for the primary page bounds blinker.
 
 - **Direction:** Renderer -> Main (fire-and-forget, `ipcRenderer.send`)
 - **Payload:** `PageLayoutParams`
@@ -436,7 +436,7 @@ function BrowserContent() {
       sidebarVisible,
       sidebarAnimating: isAnimating,
     };
-    flow.page.setLayoutParams(params);
+    blinker.page.setLayoutParams(params);
   }, [topbarHeight, topbarVisible, sidebarVisible, sidebarSide, isAnimating,
       recordedSidebarSizeRef]);
 

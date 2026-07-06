@@ -66,13 +66,13 @@ export function WindowControls() {
 
   useEffect(() => {
     let cancelled = false;
-    flow.windows.getCurrentWindowState().then((state) => {
+    blinker.windows.getCurrentWindowState().then((state) => {
       if (!cancelled) {
         setIsMaximized(state.isMaximized);
       }
     });
 
-    const removeListener = flow.windows.onCurrentWindowStateChanged((state) => {
+    const removeListener = blinker.windows.onCurrentWindowStateChanged((state) => {
       setIsMaximized(state.isMaximized);
     });
     return () => {
@@ -84,7 +84,7 @@ export function WindowControls() {
   return (
     <div className="hidden platform-linux:flex items-center gap-1">
       <button
-        onClick={() => flow.windows.minimizeCurrentWindow()}
+        onClick={() => blinker.windows.minimizeCurrentWindow()}
         className={cn(CONTROL_BUTTON_CLASSES, "hover:bg-gray-200/20 dark:hover:bg-gray-700/50")}
         title="Minimize"
       >
@@ -92,7 +92,7 @@ export function WindowControls() {
       </button>
 
       <button
-        onClick={() => flow.windows.maximizeCurrentWindow()}
+        onClick={() => blinker.windows.maximizeCurrentWindow()}
         className={cn(CONTROL_BUTTON_CLASSES, "hover:bg-gray-200/20 dark:hover:bg-gray-700/50")}
         title={isMaximized ? "Restore" : "Maximize"}
       >
@@ -100,7 +100,7 @@ export function WindowControls() {
       </button>
 
       <button
-        onClick={() => flow.windows.closeCurrentWindow()}
+        onClick={() => blinker.windows.closeCurrentWindow()}
         className={cn(CONTROL_BUTTON_CLASSES, "hover:bg-red-500 dark:hover:bg-red-500 [&:hover_svg]:stroke-white")}
         title="Close"
       >

@@ -59,7 +59,7 @@ export type PersistedTabGroupData = {
  * Combines persisted fields with runtime-only fields.
  *
  * navHistory and navHistoryIndex are omitted because the renderer never reads
- * them — navigation history is fetched on demand via `flow.navigation.*`.
+ * them — navigation history is fetched on demand via `blinker.navigation.*`.
  * Excluding them avoids serializing potentially large arrays on every tab
  * state update, which is a significant performance win during page loads.
  */

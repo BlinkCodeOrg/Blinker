@@ -34,9 +34,9 @@ export function BottomExtrasMenu() {
 
   const onItemSelected = useCallback((url: string) => {
     if (url === "internal://settings") {
-      flow.windows.openSettingsWindow();
+      blinker.windows.openSettingsWindow();
     } else {
-      flow.tabs.newTab(url, true);
+      blinker.tabs.newTab(url, true);
     }
     setOpen(false);
   }, []);

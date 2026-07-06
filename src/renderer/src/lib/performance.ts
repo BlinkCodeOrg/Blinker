@@ -18,7 +18,7 @@ function recordRendererMeasure(label: string, duration: number, startedAtMs: num
   }
 
   try {
-    flow?.app?.recordPerformanceEvent({
+    blinker.app.recordPerformanceEvent({
       kind: "measure",
       source: "renderer",
       name: label,

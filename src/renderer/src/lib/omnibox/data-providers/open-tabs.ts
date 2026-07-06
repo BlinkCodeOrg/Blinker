@@ -1,8 +1,8 @@
 export async function getOpenTabsInSpace() {
-  const spaceId = await flow.spaces.getUsingSpace();
+  const spaceId = await blinker.spaces.getUsingSpace();
   if (!spaceId) return [];
 
-  const tabsData = await flow.tabs.getData();
+  const tabsData = await blinker.tabs.getData();
 
   const tabs = tabsData.tabs.filter((tab) => tab.spaceId === spaceId);
   return tabs;

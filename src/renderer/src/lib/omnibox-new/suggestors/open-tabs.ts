@@ -139,7 +139,7 @@ export function primeOpenTabsCache(
     return Promise.resolve();
   }
 
-  const refreshPromise = flow.tabs
+  const refreshPromise = blinker.tabs
     .getData()
     .then((tabsData) => {
       const normalizedTabs = tabsData.tabs.map(normalizeOpenTab);

@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Popover, PopoverContent, PopoverTitle, PopoverTrigger } from "@/components/ui/popover";
 import { t } from "@/lib/i18n";
-import type { Profile } from "~/flow/interfaces/sessions/profiles";
+import type { Profile } from "~/blinker/interfaces/sessions/profiles";
 
 type ImportItem = {
   id: "passwords" | "bookmarks" | "extensions";
@@ -97,8 +97,8 @@ export function ImportDataSettings() {
 
   const loadProfiles = useCallback(async () => {
     const [allProfiles, currentProfileId] = await Promise.all([
-      flow.profiles.getProfiles(),
-      flow.profiles.getUsingProfile()
+      blinker.profiles.getProfiles(),
+      blinker.profiles.getUsingProfile()
     ]);
     const userProfiles = allProfiles.filter((profile) => !profile.internal);
     setProfiles(userProfiles);
@@ -113,7 +113,7 @@ export function ImportDataSettings() {
     if (!profileId) return;
     setIsImportingPasswords(true);
     try {
-      const result = await flow.passwords.importFromCsv(profileId);
+      const result = await blinker.passwords.importFromCsv(profileId);
       if (!result) return;
       toast.success(`Пароли: ${result.imported} новых, ${result.updated} обновлено, ${result.skipped} пропущено.`);
     } catch (error) {
@@ -127,7 +127,7 @@ export function ImportDataSettings() {
   const importExtensions = async () => {
     setIsImportingExtensions(true);
     try {
-      const extension = await flow.extensions.importUnpacked();
+      const extension = await blinker.extensions.importUnpacked();
       if (!extension) return;
       toast.success(`Расширение импортировано: ${extension.name}`);
     } catch (error) {

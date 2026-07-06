@@ -41,7 +41,7 @@ The overall design favours an event-driven model: each coordinator extends the t
 - Update management wraps `electron-updater`, honouring platform support, user settings, and optionally mock data for manual testing. Status changes are emitted so renderer components can reflect availability, download progress, and installation prompts.
 - Default protocol registration exposes high-level helpers that branch per operating system to set Blinker as the default browser when requested.
 
-### Shutdown flow
+### Shutdown sequence
 
 - Quit guards listen to `before-quit`, defer the native quit sequence, and run asynchronous cleanup (session flushes, cookie writes, etc.). Only after all tasks resolve truthy does the app re-trigger the quit call to let Electron exit normally.
 

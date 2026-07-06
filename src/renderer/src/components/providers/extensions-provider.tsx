@@ -35,7 +35,7 @@ export const ExtensionsProvider = ({ dataKey = "extensions", profileId = null, c
 
   const fetchExtensions = useCallback(
     async (targetProfileId?: string | null) => {
-      if (!flow) {
+      if (!blinker) {
         return;
       }
 
@@ -48,8 +48,8 @@ export const ExtensionsProvider = ({ dataKey = "extensions", profileId = null, c
 
       try {
         const data = targetProfileId
-          ? await flow.extensions.getAllInProfile(targetProfileId)
-          : await flow.extensions.getAllInCurrentProfile();
+          ? await blinker.extensions.getAllInProfile(targetProfileId)
+          : await blinker.extensions.getAllInCurrentProfile();
 
         if (!hasExplicitProfileScope) {
           if (requestId === fetchRequestIdRef.current) {
@@ -84,9 +84,9 @@ export const ExtensionsProvider = ({ dataKey = "extensions", profileId = null, c
   }, [dataKey]);
 
   useEffect(() => {
-    if (!flow) return;
+    if (!blinker) return;
 
-    const unsubscribe = flow.extensions.onUpdated((profileId, data) => {
+    const unsubscribe = blinker.extensions.onUpdated((profileId, data) => {
       if (!hasExplicitProfileScope || currentProfileIdRef.current === profileId) {
         setExtensions(data);
       }

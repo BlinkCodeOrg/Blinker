@@ -184,7 +184,7 @@ export function primeBookmarksCache(
     return Promise.resolve();
   }
 
-  const refreshPromise = flow.bookmarks
+  const refreshPromise = blinker.bookmarks
     .list()
     .then((bookmarks) => {
       bookmarksCache.set(profileId, {

@@ -178,7 +178,7 @@ export const BasicSettings: BasicSetting[] = [
     ]
   },
   {
-    id: "enableFlowPdfViewer",
+    id: "enableBlinkerPdfViewer",
     name: "Enable Blinker PDF viewer",
     showName: true,
     type: "boolean",
@@ -241,7 +241,7 @@ export const BasicSettingCards: BasicSettingCard[] = [
   {
     title: "Experimental settings",
     subtitle: "Experimental Blinker features",
-    settings: ["enableFlowPdfViewer"]
+    settings: ["enableBlinkerPdfViewer"]
   },
   {
     title: "Advanced settings",

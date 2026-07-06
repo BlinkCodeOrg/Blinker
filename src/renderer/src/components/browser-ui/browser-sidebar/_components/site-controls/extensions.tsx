@@ -174,7 +174,7 @@ function ExtensionGridTile({
         )}
         onClick={(event) => {
           event.stopPropagation();
-          flow.extensions.setExtensionPinned(action.id, !isPinned);
+          blinker.extensions.setExtensionPinned(action.id, !isPinned);
         }}
         tabIndex={-1}
       >
@@ -207,7 +207,7 @@ export function ExtensionsList({ setOpen }: { setOpen: (open: boolean) => void }
       <ExtensionButtonContainer
         onClick={(event) => {
           event.stopPropagation();
-          flow.tabs.newTab(CHROME_WEB_STORE_URL, true);
+          blinker.tabs.newTab(CHROME_WEB_STORE_URL, true);
           setOpen(false);
         }}
       >
@@ -232,7 +232,7 @@ export function SiteControlExtensions({ setOpen }: { setOpen: (open: boolean) =>
           )}
           tabIndex={-1}
           onClick={(event) => {
-            flow.tabs.newTab("blinker://extensions", true);
+            blinker.tabs.newTab("blinker://extensions", true);
             setOpen(false);
             event.stopPropagation();
           }}

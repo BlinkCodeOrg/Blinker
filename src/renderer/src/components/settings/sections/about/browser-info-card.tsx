@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { t } from "@/lib/i18n";
 
-const getAppInfo = flow.app.getAppInfo;
+const getAppInfo = blinker.app.getAppInfo;
 
 interface InfoRowProps {
   label: string;

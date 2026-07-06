@@ -30,7 +30,7 @@ export const AddressBar = memo(function AddressBar() {
       return;
     }
 
-    flow.omnibox.show(
+    blinker.omnibox.show(
       {
         x: rect.x,
         y: rect.y,
@@ -82,7 +82,13 @@ export const AddressBar = memo(function AddressBar() {
       <p className={cn("text-sm font-medium min-w-0 flex-1 truncate")}>
         {isPlaceholder ? "Search or Enter URL..." : simplifiedUrl}
       </p>
-      <div className="ml-auto flex items-center gap-0.5 shrink-0">
+      <div
+        className="ml-auto flex items-center gap-0.5 shrink-0"
+        data-address-bar-control
+        onPointerDown={(event) => {
+          event.stopPropagation();
+        }}
+      >
         <BookmarkButton />
         <PinnedBrowserActions />
         <div>

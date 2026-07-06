@@ -165,7 +165,7 @@ const TabFindInPage = memo(function TabFindInPage({
   // Only listen for results while this tab is focused
   useEffect(() => {
     if (!isFocused) return;
-    return flow.findInPage.onResult((result) => {
+    return blinker.findInPage.onResult((result) => {
       setActiveMatch(result.activeMatchOrdinal);
       setTotalMatches(result.matches);
     });
@@ -178,12 +178,12 @@ const TabFindInPage = memo(function TabFindInPage({
       if (!value) {
         setActiveMatch(0);
         setTotalMatches(0);
-        if (isFocused) flow.findInPage.stop("clearSelection");
+        if (isFocused) blinker.findInPage.stop("clearSelection");
         return;
       }
 
       if (isFocused) {
-        flow.findInPage.find(value, { forward: true, findNext: true });
+        blinker.findInPage.find(value, { forward: true, findNext: true });
       }
     },
     [isFocused]
@@ -191,12 +191,12 @@ const TabFindInPage = memo(function TabFindInPage({
 
   const handleFindNext = useCallback(() => {
     if (!queryRef.current || !isFocused) return;
-    flow.findInPage.find(queryRef.current, { forward: true, findNext: false });
+    blinker.findInPage.find(queryRef.current, { forward: true, findNext: false });
   }, [isFocused]);
 
   const handleFindPrevious = useCallback(() => {
     if (!queryRef.current || !isFocused) return;
-    flow.findInPage.find(queryRef.current, { forward: false, findNext: false });
+    blinker.findInPage.find(queryRef.current, { forward: false, findNext: false });
   }, [isFocused]);
 
   const handleClose = useCallback(() => {
@@ -240,12 +240,12 @@ export function FindInPage({ anchorRef }: FindInPageProps) {
   const anchorRect = useBoundingRect(anchorRef);
 
   useEffect(() => {
-    return flow.findInPage.onToggle(() => {
+    return blinker.findInPage.onToggle(() => {
       const tabId = focusedTabIdRef.current;
       if (tabId === null) return;
 
       if (openTabIdsRef.current.includes(tabId)) {
-        flow.findInPage.stop("keepSelection");
+        blinker.findInPage.stop("keepSelection");
         setOpenTabIds((prev) => prev.filter((id) => id !== tabId));
       } else {
         setOpenTabIds((prev) => [...prev, tabId]);
@@ -265,7 +265,7 @@ export function FindInPage({ anchorRef }: FindInPageProps) {
 
   const handleClose = useCallback((tabId: number) => {
     if (tabId === focusedTabIdRef.current) {
-      flow.findInPage.stop("keepSelection");
+      blinker.findInPage.stop("keepSelection");
     }
     setOpenTabIds((prev) => prev.filter((id) => id !== tabId));
   }, []);

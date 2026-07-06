@@ -16,7 +16,7 @@ These dependencies are bundled into the `node_modules` of the app. These should 
 
 ### Uncategorized Dependencies
 
-- @ghostery/adblocker-electron - Built-in adblocker for Flow.
+- @ghostery/adblocker-electron - Built-in adblocker for Blinker.
 - @phosphor-icons/core - Space icon metadata and SVG assets for the app.
 - electron-chrome-extensions - Patches the chrome extensions API to ensure they work.
 - electron-chrome-web-store - Patches APIs the Chrome Web Store needs to work & make it think this is Chrome.

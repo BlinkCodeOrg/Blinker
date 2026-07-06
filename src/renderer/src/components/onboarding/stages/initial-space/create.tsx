@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2, AlertCircle, CheckCircle } from "lucide-react";
-import type { Profile } from "~/flow/interfaces/sessions/profiles";
+import type { Profile } from "~/blinker/interfaces/sessions/profiles";
 
 const DEFAULT_SPACE_NAME = "Personal";
 
@@ -30,12 +30,12 @@ export function OnboardingCreateSpace({
       setErrorMessage(null);
 
       try {
-        const profiles = await flow.profiles.getProfiles();
+        const profiles = await blinker.profiles.getProfiles();
         const main = profiles.find((p) => p.id === "main") || null;
         setMainProfile(main);
 
         if (main) {
-          const spaces = await flow.spaces.getSpacesFromProfile(main.id);
+          const spaces = await blinker.spaces.getSpacesFromProfile(main.id);
           setHasSpaces(spaces.length > 0);
         }
       } catch (error) {
@@ -56,10 +56,10 @@ export function OnboardingCreateSpace({
     setErrorMessage(null);
 
     try {
-      const created = await flow.spaces.createSpace(mainProfile.id, spaceName);
+      const created = await blinker.spaces.createSpace(mainProfile.id, spaceName);
 
       if (created) {
-        const spaces = await flow.spaces.getSpacesFromProfile(mainProfile.id);
+        const spaces = await blinker.spaces.getSpacesFromProfile(mainProfile.id);
         const newSpace = spaces.find((s) => s.name === spaceName);
 
         if (newSpace) {

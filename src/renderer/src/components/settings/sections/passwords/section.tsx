@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { WebsiteFavicon } from "@/components/main/website-favicon";
-import type { Profile } from "~/flow/interfaces/sessions/profiles";
+import type { Profile } from "~/blinker/interfaces/sessions/profiles";
 import type { PasswordEntry, PasswordEntryInput } from "~/types/passwords";
 
 const emptyDraft: PasswordEntryInput = {
@@ -154,8 +154,8 @@ export function PasswordsSettings() {
 
   const loadProfiles = useCallback(async () => {
     const [allProfiles, currentProfileId] = await Promise.all([
-      flow.profiles.getProfiles(),
-      flow.profiles.getUsingProfile()
+      blinker.profiles.getProfiles(),
+      blinker.profiles.getUsingProfile()
     ]);
     const userProfiles = allProfiles.filter((profile) => !profile.internal);
     setProfiles(userProfiles);
@@ -171,7 +171,7 @@ export function PasswordsSettings() {
 
     setIsLoading(true);
     try {
-      setEntries(await flow.passwords.list(profileId));
+      setEntries(await blinker.passwords.list(profileId));
     } catch (error) {
       console.error("Failed to load passwords:", error);
       toast.error("Не удалось загрузить пароли.");
@@ -209,7 +209,7 @@ export function PasswordsSettings() {
 
   const handleSave = async (entry: PasswordEntryInput) => {
     if (!profileId) return;
-    await flow.passwords.save(profileId, entry);
+    await blinker.passwords.save(profileId, entry);
     toast.success("Пароль сохранен.");
     await loadPasswords();
   };
@@ -218,7 +218,7 @@ export function PasswordsSettings() {
     if (!profileId) return;
     setIsExporting(true);
     try {
-      const exported = await flow.passwords.exportToCsv(profileId);
+      const exported = await blinker.passwords.exportToCsv(profileId);
       if (exported) toast.success("CSV с паролями экспортирован.");
     } catch (error) {
       console.error("Failed to export passwords:", error);
@@ -230,7 +230,7 @@ export function PasswordsSettings() {
 
   const handleDelete = async (id: number) => {
     if (!profileId) return;
-    const deleted = await flow.passwords.delete(profileId, id);
+    const deleted = await blinker.passwords.delete(profileId, id);
     if (deleted) {
       toast.success("Пароль удален.");
       await loadPasswords();
@@ -240,12 +240,12 @@ export function PasswordsSettings() {
   };
 
   const copyUsername = (username: string) => {
-    flow.app.writeTextToClipboard(username);
+    blinker.app.writeTextToClipboard(username);
     toast.success("Логин скопирован.");
   };
 
   const copyPassword = (id: number, password: string) => {
-    flow.app.writeTextToClipboard(password);
+    blinker.app.writeTextToClipboard(password);
     setCopiedPasswordId(id);
     window.setTimeout(() => {
       setCopiedPasswordId((current) => (current === id ? null : current));

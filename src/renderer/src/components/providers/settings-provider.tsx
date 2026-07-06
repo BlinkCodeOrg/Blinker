@@ -44,11 +44,11 @@ export const SettingsProvider = ({ children }: SettingsProviderProps) => {
   const [settingsValues, setSettingsValues] = useState<Record<string, unknown>>({});
 
   const fetchSettings = useCallback(async () => {
-    if (!flow) return;
+    if (!blinker) return;
 
     const { settings: fetchedSettings, cards: fetchedCards } = await measureAsync(
       "renderer.settings.getBasicSettings",
-      () => flow.settings.getBasicSettings()
+      () => blinker.settings.getBasicSettings()
     );
     setSettings(fetchedSettings);
     setCards(fetchedCards);
@@ -58,7 +58,7 @@ export const SettingsProvider = ({ children }: SettingsProviderProps) => {
       () =>
         Promise.all(
           fetchedSettings.map(async (setting) => {
-            const value = await flow.settings.getSetting(setting.id);
+            const value = await blinker.settings.getSetting(setting.id);
             syncRendererSetting(setting.id, value);
             return [setting.id, value] as const;
           })
@@ -83,7 +83,7 @@ export const SettingsProvider = ({ children }: SettingsProviderProps) => {
   }, [fetchSettings]);
 
   useEffect(() => {
-    const unsub = flow.settings.onSettingsChanged(() => {
+    const unsub = blinker.settings.onSettingsChanged(() => {
       revalidate();
     });
     return () => unsub();
@@ -97,7 +97,7 @@ export const SettingsProvider = ({ children }: SettingsProviderProps) => {
   );
 
   const setSetting = useCallback(async (settingId: string, value: unknown) => {
-    const saved = await flow.settings.setSetting(settingId, value);
+    const saved = await blinker.settings.setSetting(settingId, value);
     if (saved) {
       syncRendererSetting(settingId, value);
       setSettingsValues((prev) => {

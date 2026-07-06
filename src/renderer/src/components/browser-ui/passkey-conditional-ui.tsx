@@ -121,7 +121,7 @@ function DeniedContent() {
       <p className="px-1 text-sm text-white/70">Passkey access was denied. You can re-enable it in System Settings.</p>
       <button
         type="button"
-        onClick={() => flow.passkey.openSystemSettings()}
+        onClick={() => blinker.passkey.openSystemSettings()}
         className={cn(
           "w-full px-3 py-1.5 rounded-md text-sm font-medium",
           "bg-white/10 text-white border border-white/10",
@@ -301,8 +301,8 @@ function useConditionalPasskeyPanels(conditionalRequests: ConditionalPasskeyRequ
       }
 
       const status = promptForPermission
-        ? await flow.passkey.requestPermissionToListPasskeys()
-        : await flow.passkey.hasPermissionToListPasskeys();
+        ? await blinker.passkey.requestPermissionToListPasskeys()
+        : await blinker.passkey.hasPermissionToListPasskeys();
 
       if (!isCurrentOperation(tabId, request.operationId)) {
         return;
@@ -332,7 +332,7 @@ function useConditionalPasskeyPanels(conditionalRequests: ConditionalPasskeyRequ
         // Do not set initialized yet — wait until we know there are passkeys
       }));
 
-      const passkeys = await flow.passkey.listPasskeys(request.rpId);
+      const passkeys = await blinker.passkey.listPasskeys(request.rpId);
       if (!isCurrentOperation(tabId, request.operationId)) {
         return;
       }
@@ -450,7 +450,7 @@ function useConditionalPasskeyPanels(conditionalRequests: ConditionalPasskeyRequ
         isClosing: currentPanel.visibility === "open" ? true : currentPanel.isClosing
       }));
 
-      const accepted = await flow.passkey.selectConditionalPasskey(panel.request.operationId, passkey.id);
+      const accepted = await blinker.passkey.selectConditionalPasskey(panel.request.operationId, passkey.id);
       if (accepted || !isCurrentOperation(tabId, panel.request.operationId)) {
         return;
       }

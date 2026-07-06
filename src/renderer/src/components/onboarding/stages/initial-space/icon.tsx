@@ -30,7 +30,7 @@ export function OnboardingSpaceIcon({
       setErrorMessage(null);
 
       try {
-        const spaces = await flow.spaces.getSpacesFromProfile(profileId);
+        const spaces = await blinker.spaces.getSpacesFromProfile(profileId);
         const space = spaces.find((s) => s.id === spaceId);
 
         if (space && space.icon) {
@@ -54,7 +54,7 @@ export function OnboardingSpaceIcon({
     setErrorMessage(null);
 
     try {
-      await flow.spaces.updateSpace(profileId, spaceId, {
+      await blinker.spaces.updateSpace(profileId, spaceId, {
         icon: selectedIcon
       });
 

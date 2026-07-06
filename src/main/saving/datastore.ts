@@ -1,10 +1,10 @@
-import { FLOW_DATA_DIR } from "@/modules/paths";
+import { BLINKER_DATA_DIR } from "@/modules/paths";
 import { Queue } from "@/modules/queue";
 import { debugPrint, debugError } from "@/modules/output";
 import fs from "fs/promises";
 import path from "path";
 
-const DATASTORE_DIR = path.join(FLOW_DATA_DIR, "datastore");
+const DATASTORE_DIR = path.join(BLINKER_DATA_DIR, "datastore");
 
 type Data = {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

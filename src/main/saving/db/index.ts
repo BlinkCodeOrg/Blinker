@@ -3,12 +3,12 @@ import { drizzle } from "drizzle-orm/better-sqlite3";
 import { migrate } from "drizzle-orm/better-sqlite3/migrator";
 import path from "path";
 import { app } from "electron";
-import { FLOW_DATA_DIR } from "@/modules/paths";
+import { BLINKER_DATA_DIR } from "@/modules/paths";
 import { debugPrint, debugError } from "@/modules/output";
 import { pruneBrowsingHistory } from "@/saving/history/browsing-history";
 import * as schema from "./schema";
 
-const DB_PATH = path.join(FLOW_DATA_DIR, "flow.db");
+const DB_PATH = path.join(BLINKER_DATA_DIR, "blinker.db");
 
 let sqlite: Database.Database | null = null;
 let db: ReturnType<typeof drizzle<typeof schema>> | null = null;

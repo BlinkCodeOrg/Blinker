@@ -106,7 +106,7 @@ export function PortalComponent({
 
     try {
       // layerType is fixed for the lifetime of an allocated portal window.
-      flow.interface.allocateComponentWindow(portal.id, layerType, visibleRef.current);
+      blinker.interface.allocateComponentWindow(portal.id, layerType, visibleRef.current);
     } catch (error) {
       console.warn("Failed to allocate portal:", error);
     }
@@ -117,7 +117,7 @@ export function PortalComponent({
     if (!portal?.window || portal.window.closed) return;
 
     try {
-      flow.interface.setComponentWindowVisible(portal.id, visible);
+      blinker.interface.setComponentWindowVisible(portal.id, visible);
     } catch (error) {
       console.warn("Failed to set portal visibility:", error);
     }
@@ -132,7 +132,7 @@ export function PortalComponent({
 
     hasAutoFocusedRef.current = true;
     try {
-      flow.interface.focusComponentWindow(portal.id);
+      blinker.interface.focusComponentWindow(portal.id);
     } catch (error) {
       console.warn("Failed to focus portal:", error);
     }
@@ -144,7 +144,7 @@ export function PortalComponent({
     if (!bounds) return;
 
     try {
-      flow.interface.setComponentWindowBounds(portal.id, {
+      blinker.interface.setComponentWindowBounds(portal.id, {
         x: bounds.x,
         y: bounds.y,
         width: bounds.width,

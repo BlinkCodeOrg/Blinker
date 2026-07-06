@@ -43,7 +43,7 @@ export const ShortcutsProvider = ({ children }: ShortcutsProviderProps) => {
   const fetchShortcuts = useCallback(async () => {
     setIsLoading(true);
     try {
-      const fetchedShortcuts = await flow.shortcuts.getShortcuts();
+      const fetchedShortcuts = await blinker.shortcuts.getShortcuts();
       setShortcuts(fetchedShortcuts);
     } catch (error) {
       console.error("Failed to fetch shortcuts:", error);
@@ -56,7 +56,7 @@ export const ShortcutsProvider = ({ children }: ShortcutsProviderProps) => {
     fetchShortcuts();
 
     // Add listener for shortcut updates
-    const unsubscribe = flow.shortcuts.onShortcutsUpdated(() => {
+    const unsubscribe = blinker.shortcuts.onShortcutsUpdated(() => {
       fetchShortcuts();
     });
 
@@ -66,7 +66,7 @@ export const ShortcutsProvider = ({ children }: ShortcutsProviderProps) => {
   const setShortcut = useCallback(
     async (actionId: string, shortcut: string): Promise<boolean> => {
       try {
-        const success = await flow.shortcuts.setShortcut(actionId, shortcut);
+        const success = await blinker.shortcuts.setShortcut(actionId, shortcut);
         if (success) {
           fetchShortcuts(); // Refresh shortcut data
         }
@@ -82,7 +82,7 @@ export const ShortcutsProvider = ({ children }: ShortcutsProviderProps) => {
   const resetShortcut = useCallback(
     async (actionId: string): Promise<boolean> => {
       try {
-        const success = await flow.shortcuts.resetShortcut(actionId);
+        const success = await blinker.shortcuts.resetShortcut(actionId);
         if (success) {
           fetchShortcuts(); // Refresh shortcut data
         }
@@ -98,7 +98,7 @@ export const ShortcutsProvider = ({ children }: ShortcutsProviderProps) => {
   const resetAllShortcuts = useCallback(async (): Promise<void> => {
     setIsLoading(true);
     try {
-      const resetPromises = shortcuts.map((shortcut) => flow.shortcuts.resetShortcut(shortcut.id));
+      const resetPromises = shortcuts.map((shortcut) => blinker.shortcuts.resetShortcut(shortcut.id));
       await Promise.all(resetPromises);
       fetchShortcuts();
     } catch (error) {

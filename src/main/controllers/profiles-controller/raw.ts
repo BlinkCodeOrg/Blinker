@@ -1,5 +1,5 @@
 import { debugError } from "@/modules/output";
-import { FLOW_DATA_DIR } from "@/modules/paths";
+import { BLINKER_DATA_DIR } from "@/modules/paths";
 import { getAllDirectories, getCurrentTimestamp } from "@/modules/utils";
 import path from "path";
 import fs from "fs/promises";
@@ -9,7 +9,7 @@ import { profilesController } from "@/controllers/profiles-controller";
 import { spacesController } from "@/controllers/spaces-controller";
 import { loadedProfilesController } from "@/controllers/loaded-profiles-controller";
 
-const PROFILES_DIR = path.join(FLOW_DATA_DIR, "Profiles");
+const PROFILES_DIR = path.join(BLINKER_DATA_DIR, "Profiles");
 
 // Types
 type RawCreateProfileResult =

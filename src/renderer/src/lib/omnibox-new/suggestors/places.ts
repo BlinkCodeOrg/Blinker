@@ -4,7 +4,7 @@ import { measureAsync } from "@/lib/performance";
 
 export async function flushPlaceSuggestions(input: string, flush: OmniboxFlush, signal: AbortSignal): Promise<void> {
   try {
-    const places = await measureAsync("renderer.omnibox.searchPlaces", () => flow.omnibox.searchPlaces(input, 6), {
+    const places = await measureAsync("renderer.omnibox.searchPlaces", () => blinker.omnibox.searchPlaces(input, 6), {
       inputLength: input.length,
       limit: 6
     });

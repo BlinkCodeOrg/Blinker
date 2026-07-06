@@ -23,14 +23,14 @@ export function ActivePromptsProvider({ children }: ActivePromptsProviderProps) 
   const [activePrompts, setActivePrompts] = useState<ActivePrompt[]>([]);
 
   const fetchActivePrompts = useCallback(async () => {
-    const prompts = await flow.prompts.getActivePrompts();
+    const prompts = await blinker.prompts.getActivePrompts();
     setActivePrompts(prompts);
   }, []);
 
   useEffect(() => {
     fetchActivePrompts();
 
-    const unsub = flow.prompts.onActivePromptsChanged((prompts) => {
+    const unsub = blinker.prompts.onActivePromptsChanged((prompts) => {
       setActivePrompts(prompts);
     });
 

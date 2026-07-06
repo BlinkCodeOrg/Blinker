@@ -13,7 +13,7 @@ interface Paths {
   ASSETS: string;
 }
 
-export const FLOW_DATA_DIR = app.getPath("userData");
+export const BLINKER_DATA_DIR = app.getPath("userData");
 
 export const PATHS: Paths = {
   ROOT: ROOT_DIR,

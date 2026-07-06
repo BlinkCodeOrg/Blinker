@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Loader2, AlertCircle, CheckCircle } from "lucide-react";
 import { BackgroundGradientEditor } from "@/components/settings/sections/spaces/theme-editors/background-gradient";
-import type { Space } from "~/flow/interfaces/sessions/spaces";
+import type { Space } from "~/blinker/interfaces/sessions/spaces";
 
 export function OnboardingSpaceColors({
   advance,
@@ -29,7 +29,7 @@ export function OnboardingSpaceColors({
       setErrorMessage(null);
 
       try {
-        const spaces = await flow.spaces.getSpacesFromProfile(profileId);
+        const spaces = await blinker.spaces.getSpacesFromProfile(profileId);
         const space = spaces.find((s) => s.id === spaceId);
 
         if (space) {
@@ -61,12 +61,12 @@ export function OnboardingSpaceColors({
     setErrorMessage(null);
 
     try {
-      await flow.spaces.updateSpace(profileId, spaceId, {
+      await blinker.spaces.updateSpace(profileId, spaceId, {
         bgStartColor: spaceData.bgStartColor,
         bgEndColor: spaceData.bgEndColor
       });
 
-      await flow.spaces.setUsingSpace(profileId, spaceId);
+      await blinker.spaces.setUsingSpace(profileId, spaceId);
       setSaveSuccess(true);
 
       setTimeout(() => {

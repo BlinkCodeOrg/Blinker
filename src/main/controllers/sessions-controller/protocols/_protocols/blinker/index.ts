@@ -23,7 +23,7 @@ registerPdfCacheRoutes(app);
 registerStaticDomainsRoutes("blinker", app);
 
 // Export Protocol Handler
-export function registerFlowProtocol(protocol: Protocol) {
+export function registerBlinkerProtocol(protocol: Protocol) {
   protocol.handle("blinker", async (request) => {
     return app.fetch(request);
   });

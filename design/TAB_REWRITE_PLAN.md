@@ -421,12 +421,12 @@ Updated IPC channels:
 - `tabs:get-data` -- serialization uses new `serializeTabForRenderer` / `serializeTabGroupForRenderer`
 - `tabs:show-context-menu` -- add "Reopen Closed Tab" option
 
-### 5b. Flow API interface (`src/shared/flow/interfaces/browser/tabs.ts`)
+### 5b. Blinker API interface (`src/shared/blinker/interfaces/browser/tabs.ts`)
 
 Add new methods:
 
 ```typescript
-interface FlowTabsAPI {
+interface BlinkerTabsAPI {
   // ... existing methods ...
   getRecentlyClosed(): Promise<RecentlyClosedTabData[]>;
   restoreRecentlyClosed(uniqueId: string): Promise<boolean>;
@@ -481,7 +481,7 @@ Add to the sidebar tab context menu:
 new MenuItem({
   label: "Reopen Closed Tab",
   enabled: hasRecentlyClosed,
-  click: () => flow.tabs.restoreRecentlyClosed(mostRecentClosedTab.uniqueId)
+  click: () => blinker.tabs.restoreRecentlyClosed(mostRecentClosedTab.uniqueId)
 });
 ```
 
@@ -666,7 +666,7 @@ src/main/ipc/browser/tabs.ts               -- IPC handlers (thinner, delegates t
 - [x] Add `tabs:restore-recently-closed` IPC
 - [x] Add `tabs:clear-recently-closed` IPC
 - [x] Add `tabs:batch-move-tabs` IPC
-- [x] Update `FlowTabsAPI` interface with new methods
+- [x] Update `BlinkerTabsAPI` interface with new methods
 - [x] Update preload bindings
 - [x] Add "Reopen Closed Tab" to sidebar context menu
 
@@ -704,7 +704,7 @@ TabData (sent to renderer = PersistedTabData + runtime fields):
   + isLoading, audible, fullScreen, isPictureInPicture, asleep
 ```
 
-### Persistence Flow
+### Persistence sequence
 
 ```
 Tab state changes -> Tab emits "state-updated"

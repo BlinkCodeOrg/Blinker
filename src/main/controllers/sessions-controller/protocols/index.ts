@@ -1,6 +1,6 @@
-import { registerFlowProtocol } from "./_protocols/blinker";
-import { registerFlowInternalProtocol } from "./_protocols/blinker-internal";
-import { registerFlowExternalProtocol } from "./_protocols/blinker-external";
+import { registerBlinkerProtocol } from "./_protocols/blinker";
+import { registerBlinkerInternalProtocol } from "./_protocols/blinker-internal";
+import { registerBlinkerExternalProtocol } from "./_protocols/blinker-external";
 import { protocol, Session } from "electron";
 import type { CustomProtocol } from "./types";
 
@@ -51,12 +51,12 @@ export function registerProtocolsWithSession(session: Session, protocols: Custom
   const protocol = session.protocol;
 
   if (protocols.includes("blinker")) {
-    registerFlowProtocol(protocol);
+    registerBlinkerProtocol(protocol);
   }
   if (protocols.includes("blinker-internal")) {
-    registerFlowInternalProtocol(protocol);
+    registerBlinkerInternalProtocol(protocol);
   }
   if (protocols.includes("blinker-external")) {
-    registerFlowExternalProtocol(protocol);
+    registerBlinkerExternalProtocol(protocol);
   }
 }

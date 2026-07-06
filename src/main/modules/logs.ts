@@ -2,7 +2,7 @@ import { app } from "electron";
 import fs from "fs";
 import path from "path";
 import os from "os";
-import { FLOW_DATA_DIR } from "@/modules/paths";
+import { BLINKER_DATA_DIR } from "@/modules/paths";
 
 function getAppLogPath() {
   const appName = app.getName();
@@ -11,7 +11,7 @@ function getAppLogPath() {
     return path.join(os.homedir(), "Library/Logs", appName);
   }
 
-  return path.join(FLOW_DATA_DIR, "logs");
+  return path.join(BLINKER_DATA_DIR, "logs");
 }
 
 const appLogPath = getAppLogPath();

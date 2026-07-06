@@ -88,14 +88,14 @@ const SidebarTab = memo(
 
     const handleClick = useCallback(() => {
       if (!tab.id) return;
-      flow.tabs.switchToTab(tab.id);
+      blinker.tabs.switchToTab(tab.id);
     }, [tab.id]);
 
     const handleCloseTab = useCallback(
       (e: React.MouseEvent) => {
         if (!tab.id) return;
         e.preventDefault();
-        flow.tabs.closeTab(tab.id);
+        blinker.tabs.closeTab(tab.id);
       },
       [tab.id]
     );
@@ -117,7 +117,7 @@ const SidebarTab = memo(
         e.stopPropagation();
         if (!tab.id) return;
         const newMutedState = !tab.muted;
-        flow.tabs.setTabMuted(tab.id, newMutedState);
+        blinker.tabs.setTabMuted(tab.id, newMutedState);
       },
       [tab.id, tab.muted]
     );
@@ -125,7 +125,7 @@ const SidebarTab = memo(
     const handleContextMenu = useCallback(
       (e: React.MouseEvent) => {
         e.preventDefault();
-        flow.tabs.showContextMenu(tab.id);
+        blinker.tabs.showContextMenu(tab.id);
       },
       [tab.id]
     );
@@ -287,7 +287,7 @@ export const TabGroup = memo(
           if (tabGroupData.profileId !== tabGroup.profileId) {
             // TODO: @MOVE_TABS_BETWEEN_PROFILES not supported yet
           } else {
-            flow.tabs.moveTabToWindowSpace(sourceTabId, tabGroup.spaceId, newPos);
+            blinker.tabs.moveTabToWindowSpace(sourceTabId, tabGroup.spaceId, newPos);
           }
         } else if (newPos !== undefined) {
           moveTab(sourceTabId, newPos);

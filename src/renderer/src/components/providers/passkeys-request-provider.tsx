@@ -23,14 +23,14 @@ export function PasskeysRequestProvider({ children }: PasskeysRequestProviderPro
   const [conditionalRequests, setConditionalRequests] = useState<ConditionalPasskeyRequest[]>([]);
 
   const fetchConditionalRequests = useCallback(async () => {
-    const requests = await flow.passkey.getConditionalRequests();
+    const requests = await blinker.passkey.getConditionalRequests();
     setConditionalRequests(requests);
   }, []);
 
   useEffect(() => {
     fetchConditionalRequests();
 
-    const unsub = flow.passkey.onConditionalRequestsUpdated((requests) => {
+    const unsub = blinker.passkey.onConditionalRequestsUpdated((requests) => {
       setConditionalRequests(requests);
     });
 

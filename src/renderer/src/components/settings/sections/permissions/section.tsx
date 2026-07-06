@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { t } from "@/lib/i18n";
-import type { Profile } from "~/flow/interfaces/sessions/profiles";
+import type { Profile } from "~/blinker/interfaces/sessions/profiles";
 import type { SitePermissionEntry, SitePermissionSetting } from "~/types/site-permissions";
 
 const permissionLabelKeys: Record<string, string> = {
@@ -38,8 +38,8 @@ export function PermissionsSettings() {
     let cancelled = false;
     async function loadProfiles() {
       const [allProfiles, currentProfileId] = await Promise.all([
-        flow.profiles.getProfiles(),
-        flow.profiles.getUsingProfile()
+        blinker.profiles.getProfiles(),
+        blinker.profiles.getUsingProfile()
       ]);
       if (cancelled) return;
       setProfiles(allProfiles);
@@ -60,7 +60,7 @@ export function PermissionsSettings() {
         return;
       }
       setLoading(true);
-      const list = await flow.sitePermissions.list(profileId);
+      const list = await blinker.sitePermissions.list(profileId);
       if (!cancelled) {
         setPermissions(list);
         setLoading(false);
@@ -82,7 +82,7 @@ export function PermissionsSettings() {
 
   const updatePermission = async (entry: SitePermissionEntry, setting: SitePermissionSetting) => {
     if (!profileId) return;
-    const updated = await flow.sitePermissions.set(profileId, {
+    const updated = await blinker.sitePermissions.set(profileId, {
       origin: entry.origin,
       permission: entry.permission,
       setting
@@ -92,13 +92,13 @@ export function PermissionsSettings() {
 
   const removePermission = async (entry: SitePermissionEntry) => {
     if (!profileId) return;
-    const removed = await flow.sitePermissions.remove(profileId, entry.id);
+    const removed = await blinker.sitePermissions.remove(profileId, entry.id);
     if (removed) setPermissions((current) => current.filter((item) => item.id !== entry.id));
   };
 
   const clearAll = async () => {
     if (!profileId) return;
-    await flow.sitePermissions.clear(profileId);
+    await blinker.sitePermissions.clear(profileId);
     setPermissions([]);
   };
 

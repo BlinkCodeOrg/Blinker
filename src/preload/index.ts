@@ -16,38 +16,38 @@ import type { SharedExtensionData } from "~/types/extensions";
 import type { TabData, WindowTabsData } from "~/types/tabs";
 import type { PinnedTabData } from "~/types/pinned-tabs";
 import type { UpdateStatus } from "~/types/updates";
-import type { WindowState } from "~/flow/types";
+import type { WindowState } from "~/blinker/types";
 
 // API TYPES //
-import { FlowBrowserAPI } from "~/flow/interfaces/browser/browser";
-import { FlowPageAPI } from "~/flow/interfaces/browser/page";
-import { FlowNavigationAPI } from "~/flow/interfaces/browser/navigation";
-import { FlowInterfaceAPI } from "~/flow/interfaces/browser/interface";
-import { FlowProfilesAPI } from "~/flow/interfaces/sessions/profiles";
-import { FlowSpacesAPI } from "~/flow/interfaces/sessions/spaces";
-import { FlowAppAPI } from "~/flow/interfaces/app/app";
-import { FlowIconsAPI } from "~/flow/interfaces/settings/icons";
-import { FlowNewTabAPI } from "~/flow/interfaces/browser/newTab";
-import { FlowOpenExternalAPI } from "~/flow/interfaces/settings/openExternal";
-import { FlowOnboardingAPI } from "~/flow/interfaces/settings/onboarding";
-import { FlowPasswordsAPI } from "~/flow/interfaces/settings/passwords";
-import { FlowSitePermissionsAPI } from "~/flow/interfaces/settings/site-permissions";
-import type { FlowOmniboxAPI, OmniboxOpenParams } from "~/flow/interfaces/browser/omnibox";
-import { FlowSettingsAPI } from "~/flow/interfaces/settings/settings";
-import { FlowWindowsAPI } from "~/flow/interfaces/app/windows";
-import { FlowExtensionsAPI } from "~/flow/interfaces/app/extensions";
-import { FlowTabsAPI } from "~/flow/interfaces/browser/tabs";
-import { FlowPinnedTabsAPI } from "~/flow/interfaces/browser/pinned-tabs";
-import { FlowUpdatesAPI } from "~/flow/interfaces/app/updates";
-import { FlowActionsAPI } from "~/flow/interfaces/app/actions";
-import { FlowShortcutsAPI, ShortcutsData } from "~/flow/interfaces/app/shortcuts";
-import { FlowFindInPageAPI, FindInPageResult } from "~/flow/interfaces/browser/find-in-page";
-import { FlowHistoryAPI } from "~/flow/interfaces/browser/history";
-import { FlowDownloadsAPI } from "~/flow/interfaces/browser/downloads";
-import { FlowBookmarksAPI } from "~/flow/interfaces/browser/bookmarks";
-import { FlowPasskeyAPI } from "~/flow/interfaces/browser/passkey";
+import { BlinkerBrowserAPI } from "~/blinker/interfaces/browser/browser";
+import { BlinkerPageAPI } from "~/blinker/interfaces/browser/page";
+import { BlinkerNavigationAPI } from "~/blinker/interfaces/browser/navigation";
+import { BlinkerInterfaceAPI } from "~/blinker/interfaces/browser/interface";
+import { BlinkerProfilesAPI } from "~/blinker/interfaces/sessions/profiles";
+import { BlinkerSpacesAPI } from "~/blinker/interfaces/sessions/spaces";
+import { BlinkerAppAPI } from "~/blinker/interfaces/app/app";
+import { BlinkerIconsAPI } from "~/blinker/interfaces/settings/icons";
+import { BlinkerNewTabAPI } from "~/blinker/interfaces/browser/newTab";
+import { BlinkerOpenExternalAPI } from "~/blinker/interfaces/settings/openExternal";
+import { BlinkerOnboardingAPI } from "~/blinker/interfaces/settings/onboarding";
+import { BlinkerPasswordsAPI } from "~/blinker/interfaces/settings/passwords";
+import { BlinkerSitePermissionsAPI } from "~/blinker/interfaces/settings/site-permissions";
+import type { BlinkerOmniboxAPI, OmniboxOpenParams } from "~/blinker/interfaces/browser/omnibox";
+import { BlinkerSettingsAPI } from "~/blinker/interfaces/settings/settings";
+import { BlinkerWindowsAPI } from "~/blinker/interfaces/app/windows";
+import { BlinkerExtensionsAPI } from "~/blinker/interfaces/app/extensions";
+import { BlinkerTabsAPI } from "~/blinker/interfaces/browser/tabs";
+import { BlinkerPinnedTabsAPI } from "~/blinker/interfaces/browser/pinned-tabs";
+import { BlinkerUpdatesAPI } from "~/blinker/interfaces/app/updates";
+import { BlinkerActionsAPI } from "~/blinker/interfaces/app/actions";
+import { BlinkerShortcutsAPI, ShortcutsData } from "~/blinker/interfaces/app/shortcuts";
+import { BlinkerFindInPageAPI, FindInPageResult } from "~/blinker/interfaces/browser/find-in-page";
+import { BlinkerHistoryAPI } from "~/blinker/interfaces/browser/history";
+import { BlinkerDownloadsAPI } from "~/blinker/interfaces/browser/downloads";
+import { BlinkerBookmarksAPI } from "~/blinker/interfaces/browser/bookmarks";
+import { BlinkerPasskeyAPI } from "~/blinker/interfaces/browser/passkey";
 import type { ConditionalPasskeyRequest, PasskeyCredential } from "~/types/passkey";
-import { FlowPromptsAPI } from "~/flow/interfaces/browser/prompts";
+import { BlinkerPromptsAPI } from "~/blinker/interfaces/browser/prompts";
 import type { ActivePrompt } from "~/types/prompts";
 
 // const isIFrame = !process.isMainFrame;
@@ -64,10 +64,10 @@ function isLocation(protocol: string, hostname: string) {
 type Permission = "all" | "app" | "browser" | "session" | "settings";
 
 function hasPermission(permission: Permission) {
-  const isFlowProtocol = isProtocol("blinker:");
-  const isFlowInternalProtocol = isProtocol("blinker-internal:");
+  const isBlinkerProtocol = isProtocol("blinker:");
+  const isBlinkerInternalProtocol = isProtocol("blinker-internal:");
 
-  const isInternalProtocols = isFlowInternalProtocol || isFlowProtocol;
+  const isInternalProtocols = isBlinkerInternalProtocol || isBlinkerProtocol;
 
   // Browser UI
   const isMainUI = isLocation("blinker-internal:", "main-ui");
@@ -95,7 +95,7 @@ function hasPermission(permission: Permission) {
     case "browser":
       return isBrowserUI || isOmnibox || isHistoryPage || isDownloadsPage || isBookmarksPage;
     case "session":
-      return isFlowInternalProtocol || isOmnibox || isBrowserUI || isSettingsPage;
+      return isBlinkerInternalProtocol || isOmnibox || isBrowserUI || isSettingsPage;
     case "settings":
       return isInternalProtocols;
     default:
@@ -114,13 +114,13 @@ function installPasswordAutofillBridge() {
     if (event.source !== window) return;
 
     const message = event.data;
-    if (!message || message.source !== "flow-passwords" || typeof message.requestId !== "string") return;
+    if (!message || message.source !== "blinker-passwords" || typeof message.requestId !== "string") return;
 
     if (message.type === "get-autofill") {
       const entries = await ipcRenderer.invoke("passwords:get-autofill", location.href);
       window.postMessage(
         {
-          source: "flow-passwords",
+          source: "blinker-passwords",
           type: "autofill-result",
           requestId: message.requestId,
           entries
@@ -134,7 +134,7 @@ function installPasswordAutofillBridge() {
 
   contextBridge.executeInMainWorld({
     func: () => {
-      type FlowCredential = {
+      type BlinkerCredential = {
         id: number;
         username: string;
         password: string;
@@ -148,13 +148,13 @@ function installPasswordAutofillBridge() {
         passwordField: HTMLInputElement;
       };
 
-      let credentialsCache: FlowCredential[] | null = null;
+      let credentialsCache: BlinkerCredential[] | null = null;
       let popupHost: HTMLDivElement | null = null;
       let lastCapturedKey = "";
       let lastCapturedAt = 0;
 
       const requestAutofill = () =>
-        new Promise<FlowCredential[]>((resolve) => {
+        new Promise<BlinkerCredential[]>((resolve) => {
           const requestId = crypto.randomUUID();
           const timeout = window.setTimeout(() => {
             window.removeEventListener("message", handleMessage);
@@ -166,7 +166,7 @@ function installPasswordAutofillBridge() {
             if (
               event.source !== window ||
               !message ||
-              message.source !== "flow-passwords" ||
+              message.source !== "blinker-passwords" ||
               message.type !== "autofill-result" ||
               message.requestId !== requestId
             ) {
@@ -179,7 +179,7 @@ function installPasswordAutofillBridge() {
           }
 
           window.addEventListener("message", handleMessage);
-          window.postMessage({ source: "flow-passwords", type: "get-autofill", requestId }, location.origin);
+          window.postMessage({ source: "blinker-passwords", type: "get-autofill", requestId }, location.origin);
         });
 
       const textInputTypes = new Set(["", "text", "email", "tel", "url", "search"]);
@@ -328,7 +328,7 @@ function installPasswordAutofillBridge() {
         popupHost.style.width = `${width}px`;
       }
 
-      function fillCredential(pair: LoginFieldPair, credential: FlowCredential) {
+      function fillCredential(pair: LoginFieldPair, credential: BlinkerCredential) {
         if (pair.usernameField) {
           setNativeValue(pair.usernameField, credential.username);
         }
@@ -337,7 +337,7 @@ function installPasswordAutofillBridge() {
         pair.passwordField.focus();
       }
 
-      function renderPopup(pair: LoginFieldPair, credentials: FlowCredential[], anchor: HTMLInputElement) {
+      function renderPopup(pair: LoginFieldPair, credentials: BlinkerCredential[], anchor: HTMLInputElement) {
         const host = ensurePopup();
         const shadow = host.shadowRoot;
         if (!shadow) return;
@@ -411,7 +411,7 @@ function installPasswordAutofillBridge() {
 
         window.postMessage(
           {
-            source: "flow-passwords",
+            source: "blinker-passwords",
             type: "save-candidate",
             requestId: crypto.randomUUID(),
             candidate: {
@@ -426,7 +426,13 @@ function installPasswordAutofillBridge() {
       }
 
       document.addEventListener("focusin", (event) => void showAutofillFor(event.target), true);
-      document.addEventListener("click", (event) => void showAutofillFor(event.target), true);
+      document.addEventListener(
+        "input",
+        (event) => {
+          if (pairForTarget(event.target)) void showAutofillFor(event.target);
+        },
+        true
+      );
       document.addEventListener(
         "click",
         (event) => {
@@ -504,7 +510,7 @@ function polyfillPopup() {
       throw new Error("Invalid arguments: x and y must be provided as numbers");
     }
 
-    flow.interface.moveWindowBy(x, y);
+    blinker.interface.moveWindowBy(x, y);
   };
 
   window.moveTo = (x: number, y: number) => {
@@ -512,7 +518,7 @@ function polyfillPopup() {
       throw new Error("Invalid arguments: x and y must be provided as numbers");
     }
 
-    flow.interface.moveWindowTo(x, y);
+    blinker.interface.moveWindowTo(x, y);
   };
 
   window.resizeBy = (width: number, height: number) => {
@@ -520,7 +526,7 @@ function polyfillPopup() {
       throw new Error("Invalid arguments: width and height must be provided as numbers");
     }
 
-    flow.interface.resizeWindowBy(width, height);
+    blinker.interface.resizeWindowBy(width, height);
   };
 
   window.resizeTo = (width: number, height: number) => {
@@ -528,7 +534,7 @@ function polyfillPopup() {
       throw new Error("Invalid arguments: width and height must be provided as numbers");
     }
 
-    flow.interface.resizeWindowTo(width, height);
+    blinker.interface.resizeWindowTo(width, height);
   };
 }
 
@@ -586,7 +592,7 @@ function wrapAPI<T extends object>(
         }
 
         if (noPermission) {
-          throw new Error(`Permission denied: flow.${permission}.${key}()`);
+          throw new Error(`Permission denied: blinker.${permission}.${key}()`);
         }
 
         return value(...args);
@@ -600,7 +606,7 @@ function wrapAPI<T extends object>(
 }
 
 // BROWSER API //
-const browserAPI: FlowBrowserAPI = {
+const browserAPI: BlinkerBrowserAPI = {
   loadProfile: async (profileId: string) => {
     return ipcRenderer.send("browser:load-profile", profileId);
   },
@@ -616,7 +622,7 @@ const browserAPI: FlowBrowserAPI = {
 };
 
 // TABS API //
-const tabsAPI: FlowTabsAPI = {
+const tabsAPI: BlinkerTabsAPI = {
   getData: async () => {
     return ipcRenderer.invoke("tabs:get-data");
   },
@@ -684,7 +690,7 @@ const tabsAPI: FlowTabsAPI = {
 };
 
 // PINNED TABS API //
-const pinnedTabsAPI: FlowPinnedTabsAPI = {
+const pinnedTabsAPI: BlinkerPinnedTabsAPI = {
   getData: async () => {
     return ipcRenderer.invoke("pinned-tabs:get-data");
   },
@@ -715,7 +721,7 @@ const pinnedTabsAPI: FlowPinnedTabsAPI = {
 };
 
 // PAGE API //
-const pageAPI: FlowPageAPI = {
+const pageAPI: BlinkerPageAPI = {
   setPageBounds: (bounds: { x: number; y: number; width: number; height: number }) => {
     return ipcRenderer.send("page:set-bounds", bounds);
   },
@@ -725,7 +731,7 @@ const pageAPI: FlowPageAPI = {
 };
 
 // NAVIGATION API //
-const navigationAPI: FlowNavigationAPI = {
+const navigationAPI: BlinkerNavigationAPI = {
   getTabNavigationStatus: (tabId: number) => {
     return ipcRenderer.invoke("navigation:get-tab-status", tabId);
   },
@@ -744,7 +750,7 @@ const navigationAPI: FlowNavigationAPI = {
 };
 
 // HISTORY API //
-const historyAPI: FlowHistoryAPI = {
+const historyAPI: BlinkerHistoryAPI = {
   list: async () => {
     return ipcRenderer.invoke("history:list");
   },
@@ -766,7 +772,7 @@ const historyAPI: FlowHistoryAPI = {
 };
 
 // DOWNLOADS API //
-const downloadsAPI: FlowDownloadsAPI = {
+const downloadsAPI: BlinkerDownloadsAPI = {
   listRecent: async (limit?: number) => {
     return ipcRenderer.invoke("downloads:list-recent", limit);
   },
@@ -818,7 +824,7 @@ const downloadsAPI: FlowDownloadsAPI = {
 };
 
 // PASSKEY API //
-const passkeyAPI: FlowPasskeyAPI = {
+const passkeyAPI: BlinkerPasskeyAPI = {
   getConditionalRequests: async (): Promise<ConditionalPasskeyRequest[]> => {
     return ipcRenderer.invoke("passkey:get-conditional-requests");
   },
@@ -843,7 +849,7 @@ const passkeyAPI: FlowPasskeyAPI = {
 };
 
 // INTERFACE API //
-const interfaceAPI: FlowInterfaceAPI = {
+const interfaceAPI: BlinkerInterfaceAPI = {
   setWindowButtonPosition: (position: { x: number; y: number }) => {
     return ipcRenderer.send("window-button:set-position", position);
   },
@@ -853,18 +859,20 @@ const interfaceAPI: FlowInterfaceAPI = {
   onToggleSidebar: (callback: () => void) => {
     return listenOnIPCChannel("sidebar:on-toggle", callback);
   },
-  onCursorAtEdge: (callback: (event: import("~/flow/interfaces/browser/interface").CursorEdgeEvent) => void) => {
+  onCursorAtEdge: (callback: (event: import("~/blinker/interfaces/browser/interface").CursorEdgeEvent) => void) => {
     return listenOnIPCChannel("interface:cursor-at-edge", callback);
   },
   setComponentWindowBounds: (componentId: string, bounds: Electron.Rectangle) => {
     return ipcRenderer.send("interface:set-component-window-bounds", componentId, bounds);
   },
   allocateComponentWindow: (
-    ...[componentId, layerType, visible]: Parameters<FlowInterfaceAPI["allocateComponentWindow"]>
+    ...[componentId, layerType, visible]: Parameters<BlinkerInterfaceAPI["allocateComponentWindow"]>
   ) => {
     return ipcRenderer.send("interface:allocate-component-window", componentId, layerType, visible);
   },
-  setComponentWindowVisible: (...[componentId, visible]: Parameters<FlowInterfaceAPI["setComponentWindowVisible"]>) => {
+  setComponentWindowVisible: (
+    ...[componentId, visible]: Parameters<BlinkerInterfaceAPI["setComponentWindowVisible"]>
+  ) => {
     return ipcRenderer.send("interface:set-component-window-visible", componentId, visible);
   },
   releaseComponentWindow: (componentId: string) => {
@@ -908,7 +916,7 @@ const interfaceAPI: FlowInterfaceAPI = {
 };
 
 // PROFILES API //
-const profilesAPI: FlowProfilesAPI = {
+const profilesAPI: BlinkerProfilesAPI = {
   getProfiles: async () => {
     return ipcRenderer.invoke("profiles:get-all");
   },
@@ -930,7 +938,7 @@ const profilesAPI: FlowProfilesAPI = {
 };
 
 // SPACES API //
-const spacesAPI: FlowSpacesAPI = {
+const spacesAPI: BlinkerSpacesAPI = {
   getSpaces: async () => {
     return ipcRenderer.invoke("spaces:get-all");
   },
@@ -967,7 +975,7 @@ const spacesAPI: FlowSpacesAPI = {
 };
 
 // APP API //
-const appAPI: FlowAppAPI = {
+const appAPI: BlinkerAppAPI = {
   getAppInfo: async () => {
     const appInfo: {
       version: string;
@@ -1013,7 +1021,7 @@ const appAPI: FlowAppAPI = {
 };
 
 // ICONS API //
-const iconsAPI: FlowIconsAPI = {
+const iconsAPI: BlinkerIconsAPI = {
   getIcons: async () => {
     return ipcRenderer.invoke("icons:get-all");
   },
@@ -1029,14 +1037,14 @@ const iconsAPI: FlowIconsAPI = {
 };
 
 // NEW TAB API //
-const newTabAPI: FlowNewTabAPI = {
+const newTabAPI: BlinkerNewTabAPI = {
   open: () => {
     return ipcRenderer.send("new-tab:open");
   }
 };
 
 // OPEN EXTERNAL API //
-const openExternalAPI: FlowOpenExternalAPI = {
+const openExternalAPI: BlinkerOpenExternalAPI = {
   getAlwaysOpenExternal: async () => {
     return ipcRenderer.invoke("open-external:get");
   },
@@ -1046,7 +1054,7 @@ const openExternalAPI: FlowOpenExternalAPI = {
 };
 
 // ONBOARDING API //
-const onboardingAPI: FlowOnboardingAPI = {
+const onboardingAPI: BlinkerOnboardingAPI = {
   finish: () => {
     return ipcRenderer.send("onboarding:finish");
   },
@@ -1056,7 +1064,7 @@ const onboardingAPI: FlowOnboardingAPI = {
 };
 
 // PASSWORDS API //
-const passwordsAPI: FlowPasswordsAPI = {
+const passwordsAPI: BlinkerPasswordsAPI = {
   list: async (profileId: string) => {
     return ipcRenderer.invoke("passwords:list", profileId);
   },
@@ -1075,7 +1083,7 @@ const passwordsAPI: FlowPasswordsAPI = {
 };
 
 // BOOKMARKS API //
-const bookmarksAPI: FlowBookmarksAPI = {
+const bookmarksAPI: BlinkerBookmarksAPI = {
   list: async () => {
     return ipcRenderer.invoke("bookmarks:list");
   },
@@ -1100,7 +1108,7 @@ const bookmarksAPI: FlowBookmarksAPI = {
 };
 
 // SITE PERMISSIONS API //
-const sitePermissionsAPI: FlowSitePermissionsAPI = {
+const sitePermissionsAPI: BlinkerSitePermissionsAPI = {
   list: async (profileId) => {
     return ipcRenderer.invoke("site-permissions:list", profileId);
   },
@@ -1116,7 +1124,7 @@ const sitePermissionsAPI: FlowSitePermissionsAPI = {
 };
 
 // OMNIBOX API //
-const omniboxAPI: FlowOmniboxAPI = {
+const omniboxAPI: BlinkerOmniboxAPI = {
   show: (bounds: Electron.Rectangle | null, params: OmniboxOpenParams | null) => {
     return ipcRenderer.send("omnibox:show", bounds, params);
   },
@@ -1135,7 +1143,7 @@ const omniboxAPI: FlowOmniboxAPI = {
 };
 
 // FIND IN PAGE API //
-const findInPageAPI: FlowFindInPageAPI = {
+const findInPageAPI: BlinkerFindInPageAPI = {
   find: (text: string, options?: { forward?: boolean; findNext?: boolean }) => {
     ipcRenderer.send("find-in-page:find", text, options);
   },
@@ -1158,7 +1166,7 @@ const findInPageAPI: FlowFindInPageAPI = {
 };
 
 // PROMPTS API //
-const promptsAPI: FlowPromptsAPI = {
+const promptsAPI: BlinkerPromptsAPI = {
   getActivePrompts: async () => {
     return ipcRenderer.invoke("prompts:get-active-prompts");
   },
@@ -1172,7 +1180,7 @@ const promptsAPI: FlowPromptsAPI = {
 };
 
 // SETTINGS API //
-const settingsAPI: FlowSettingsAPI = {
+const settingsAPI: BlinkerSettingsAPI = {
   getSetting: async (settingId: string) => {
     return ipcRenderer.invoke("settings:get-setting", settingId);
   },
@@ -1188,7 +1196,7 @@ const settingsAPI: FlowSettingsAPI = {
 };
 
 // WINDOWS API //
-const windowsAPI: FlowWindowsAPI = {
+const windowsAPI: BlinkerWindowsAPI = {
   openSettingsWindow: () => {
     void ipcRenderer.invoke("tabs:new-tab", "blinker://settings/", true);
   },
@@ -1215,7 +1223,7 @@ const windowsAPI: FlowWindowsAPI = {
 };
 
 // EXTENSIONS API //
-const extensionsAPI: FlowExtensionsAPI = {
+const extensionsAPI: BlinkerExtensionsAPI = {
   getAllInProfile: async (profileId: string) => {
     return ipcRenderer.invoke("extensions:get-all-in-profile", profileId);
   },
@@ -1240,7 +1248,7 @@ const extensionsAPI: FlowExtensionsAPI = {
 };
 
 // UPDATES API //
-const updatesAPI: FlowUpdatesAPI = {
+const updatesAPI: BlinkerUpdatesAPI = {
   isAutoUpdateSupported: async () => {
     return ipcRenderer.invoke("updates:is-auto-update-supported");
   },
@@ -1265,7 +1273,7 @@ const updatesAPI: FlowUpdatesAPI = {
 };
 
 // ACTIONS API //
-const actionsAPI: FlowActionsAPI = {
+const actionsAPI: BlinkerActionsAPI = {
   onCopyLink: (callback: () => void) => {
     return listenOnIPCChannel("actions:on-copy-link", callback);
   },
@@ -1275,7 +1283,7 @@ const actionsAPI: FlowActionsAPI = {
 };
 
 // SHORTCUTS API //
-const shortcutsAPI: FlowShortcutsAPI = {
+const shortcutsAPI: BlinkerShortcutsAPI = {
   getShortcuts: async () => {
     return ipcRenderer.invoke("shortcuts:get-all");
   },
@@ -1290,8 +1298,8 @@ const shortcutsAPI: FlowShortcutsAPI = {
   }
 };
 
-// EXPOSE FLOW API //
-const flowAPI: typeof flow = {
+// EXPOSE BLINKER API //
+const blinkerAPI: typeof blinker = {
   // App APIs
   app: wrapAPI(appAPI, "app", {
     getPlatform: "all"
@@ -1344,4 +1352,5 @@ const flowAPI: typeof flow = {
   passwords: wrapAPI(passwordsAPI, "settings"),
   sitePermissions: wrapAPI(sitePermissionsAPI, "settings")
 };
-contextBridge.exposeInMainWorld("flow", flowAPI);
+
+contextBridge.exposeInMainWorld("blinker", blinkerAPI);

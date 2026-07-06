@@ -17,7 +17,7 @@ export function ResetOnboardingCard() {
   const handleReset = async () => {
     setIsResetting(true);
     try {
-      flow.onboarding.reset();
+      blinker.onboarding.reset();
     } catch (error) {
       console.error("Failed to reset onboarding:", error);
     } finally {

@@ -1,6 +1,6 @@
 import { type AttachedDirection } from "./provider";
 import { useEffect, useRef, useState } from "react";
-import { type CursorEdgeEvent } from "~/flow/interfaces/browser/interface";
+import { type CursorEdgeEvent } from "~/blinker/interfaces/browser/interface";
 
 /**
  * Triggers the floating sidebar when the cursor dwells near a window edge.
@@ -66,7 +66,7 @@ export function useFloatingSidebarTrigger(
       }
     };
 
-    const removeListener = flow.interface.onCursorAtEdge(handleCursorEdge);
+    const removeListener = blinker.interface.onCursorAtEdge(handleCursorEdge);
 
     return () => {
       removeListener();

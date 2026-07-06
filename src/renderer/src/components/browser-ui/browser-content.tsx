@@ -1,5 +1,5 @@
 import { memo, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
-import { PageLayoutParams } from "~/flow/types";
+import { PageLayoutParams } from "~/blinker/types";
 import { cn } from "@/lib/utils";
 import { useBrowserSidebar } from "@/components/browser-ui/browser-sidebar/provider";
 import { useAdaptiveTopbar } from "@/components/browser-ui/adaptive-topbar";
@@ -43,7 +43,7 @@ function BrowserContent() {
       }
     };
 
-    const unsub = flow.tabs.onPlaceholderChanged(({ snapshotId, generation, spaceId }: TabPlaceholderUpdate) => {
+    const unsub = blinker.tabs.onPlaceholderChanged(({ snapshotId, generation, spaceId }: TabPlaceholderUpdate) => {
       if (spaceId !== currentSpaceIdRef.current) {
         return;
       }
@@ -108,7 +108,7 @@ function BrowserContent() {
         sidebarAnimating: isAnimating,
         contentTopOffset
       };
-      flow.page.setLayoutParams(params);
+      blinker.page.setLayoutParams(params);
     },
     [contentTopOffset, isAnimating, sidebarSide, sidebarVisible, topbarHeight, topbarVisible]
   );

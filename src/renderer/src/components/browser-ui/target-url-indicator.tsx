@@ -142,7 +142,7 @@ export function TargetUrlIndicator({ anchorRef }: TargetUrlIndicatorProps) {
   const anchorRect = useBoundingRect(anchorRef);
 
   useEffect(() => {
-    return flow.tabs.onTargetUrlChanged((update: TabTargetUrlUpdate) => {
+    return blinker.tabs.onTargetUrlChanged((update: TabTargetUrlUpdate) => {
       setUrlsByTabId((prev) => {
         const next = new Map(prev);
         if (update.url) {

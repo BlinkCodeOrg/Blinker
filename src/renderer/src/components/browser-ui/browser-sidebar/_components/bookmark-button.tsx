@@ -29,7 +29,7 @@ export function BookmarkButton() {
       return;
     }
 
-    void flow.bookmarks.getForUrl(url).then((entry) => {
+    void blinker.bookmarks.getForUrl(url).then((entry) => {
       if (!cancelled) setBookmark(entry);
     });
 
@@ -45,10 +45,10 @@ export function BookmarkButton() {
     setBusy(true);
     try {
       if (bookmark) {
-        const removed = await flow.bookmarks.delete(bookmark.id);
+        const removed = await blinker.bookmarks.delete(bookmark.id);
         if (removed) setBookmark(null);
       } else {
-        const created = await flow.bookmarks.save({
+        const created = await blinker.bookmarks.save({
           url,
           title: focusedTab?.title || url,
           faviconUrl: focusedTab?.faviconURL ?? null

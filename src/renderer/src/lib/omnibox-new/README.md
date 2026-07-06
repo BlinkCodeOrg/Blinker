@@ -37,7 +37,7 @@ It suggests:
 
 ## Quick History
 
-- History data comes from `flow.history.list()` and is cached in the renderer per profile id.
+- History data comes from `blinker.history.list()` and is cached in the renderer per profile id.
 - `OmniboxMain` keeps the cache warm when the active profile changes and when the omnibox open sequence changes.
 - `suggestor.ts` reads the active profile indirectly through `states.ts`, which is set immediately before each request.
 - Quick History only runs for non-empty input and returns at most 3 results.

@@ -41,13 +41,13 @@ function JavaScriptDialogCard({ prompt }: { prompt: JsDialogActivePrompt }) {
   const cancel = useCallback(() => {
     switch (type) {
       case "prompt":
-        flow.prompts.confirmPrompt(prompt.id, null, suppressChecked);
+        blinker.prompts.confirmPrompt(prompt.id, null, suppressChecked);
         break;
       case "confirm":
-        flow.prompts.confirmPrompt(prompt.id, false, suppressChecked);
+        blinker.prompts.confirmPrompt(prompt.id, false, suppressChecked);
         break;
       case "alert":
-        flow.prompts.confirmPrompt(prompt.id, undefined, suppressChecked);
+        blinker.prompts.confirmPrompt(prompt.id, undefined, suppressChecked);
         break;
     }
   }, [type, prompt.id, suppressChecked]);
@@ -56,13 +56,13 @@ function JavaScriptDialogCard({ prompt }: { prompt: JsDialogActivePrompt }) {
     const value = inputRef.current?.value;
     switch (type) {
       case "prompt":
-        flow.prompts.confirmPrompt(prompt.id, value, suppressChecked);
+        blinker.prompts.confirmPrompt(prompt.id, value, suppressChecked);
         break;
       case "confirm":
-        flow.prompts.confirmPrompt(prompt.id, true, suppressChecked);
+        blinker.prompts.confirmPrompt(prompt.id, true, suppressChecked);
         break;
       case "alert":
-        flow.prompts.confirmPrompt(prompt.id, undefined, suppressChecked);
+        blinker.prompts.confirmPrompt(prompt.id, undefined, suppressChecked);
         break;
     }
   }, [type, prompt.id, suppressChecked]);
@@ -152,14 +152,14 @@ function BasicAuthCard({ prompt }: { prompt: BasicAuthActivePrompt }) {
   const passwordRef = useRef<HTMLInputElement | null>(null);
 
   const cancel = useCallback(() => {
-    flow.prompts.confirmPrompt(prompt.id, null, false);
+    blinker.prompts.confirmPrompt(prompt.id, null, false);
   }, [prompt.id]);
 
   const confirm = useCallback(() => {
     const username = usernameRef.current?.value ?? "";
     const password = passwordRef.current?.value ?? "";
     const credentials: BasicAuthCredentials = { username, password };
-    flow.prompts.confirmPrompt(prompt.id, credentials, false);
+    blinker.prompts.confirmPrompt(prompt.id, credentials, false);
   }, [prompt.id]);
 
   useEffect(() => {
@@ -221,15 +221,15 @@ function SavePasswordCard({ prompt }: { prompt: SavePasswordActivePrompt }) {
   const originLabel = prompt.originUrl ? getOriginFromURL(prompt.originUrl) : t("prompt.siteFallback");
 
   const dismiss = useCallback(() => {
-    flow.prompts.confirmPrompt(prompt.id, null, false);
+    blinker.prompts.confirmPrompt(prompt.id, null, false);
   }, [prompt.id]);
 
   const never = useCallback(() => {
-    flow.prompts.confirmPrompt(prompt.id, "never", true);
+    blinker.prompts.confirmPrompt(prompt.id, "never", true);
   }, [prompt.id]);
 
   const save = useCallback(() => {
-    flow.prompts.confirmPrompt(prompt.id, "save", false);
+    blinker.prompts.confirmPrompt(prompt.id, "save", false);
   }, [prompt.id]);
 
   useEffect(() => {
@@ -304,15 +304,15 @@ function SitePermissionCard({ prompt }: { prompt: SitePermissionActivePrompt }) 
   const permissionLabel = t(prompt.permissionLabelKey);
 
   const block = useCallback(() => {
-    flow.prompts.confirmPrompt(prompt.id, "block", false);
+    blinker.prompts.confirmPrompt(prompt.id, "block", false);
   }, [prompt.id]);
 
   const allow = useCallback(() => {
-    flow.prompts.confirmPrompt(prompt.id, "allow", false);
+    blinker.prompts.confirmPrompt(prompt.id, "allow", false);
   }, [prompt.id]);
 
   const always = useCallback(() => {
-    flow.prompts.confirmPrompt(prompt.id, "always", false);
+    blinker.prompts.confirmPrompt(prompt.id, "always", false);
   }, [prompt.id]);
 
   useEffect(() => {

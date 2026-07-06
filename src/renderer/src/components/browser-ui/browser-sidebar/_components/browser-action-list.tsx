@@ -119,7 +119,7 @@ function BrowserAction({
 
   const togglePin = useCallback(() => {
     if (!extensionId) return;
-    flow.extensions.setExtensionPinned(extensionId, !isPinned);
+    blinker.extensions.setExtensionPinned(extensionId, !isPinned);
   }, [extensionId, isPinned]);
 
   return (
@@ -156,7 +156,7 @@ export function BrowserActionList() {
   const alignment = useMemo(() => "right bottom", []);
 
   const openExtensionsPage = useCallback(() => {
-    flow.tabs.newTab("blinker://extensions", true);
+    blinker.tabs.newTab("blinker://extensions", true);
     setOpen(false);
   }, []);
 
@@ -175,6 +175,9 @@ export function BrowserActionList() {
           "transition-colors duration-150",
           "relative shrink-0"
         )}
+        onPointerDown={(event) => {
+          event.stopPropagation();
+        }}
         onClick={(event) => {
           event.stopPropagation();
         }}

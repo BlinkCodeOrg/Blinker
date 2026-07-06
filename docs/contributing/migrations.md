@@ -79,7 +79,7 @@ On first database access, Blinker Browser runs Drizzle's migrator against the `d
 The local SQLite database file is stored at:
 
 ```text
-app.getPath("userData")/flow.db
+app.getPath("userData")/blinker.db
 ```
 
 ### 5. Verify the change
@@ -110,7 +110,7 @@ bun run format
 
 ## Example
 
-For a new index on `history_urls.title`, the flow would be:
+For a new index on `history_urls.title`, the sequence would be:
 
 1. Add the index to `src/main/saving/db/schema.ts`.
 2. Run `bunx drizzle-kit generate --config drizzle.config.ts --name add_history_title_index`.

@@ -98,20 +98,20 @@ export function DownloadsButton() {
   }, []);
 
   useEffect(() => {
-    void flow.downloads.getSessionDownloads().then((next) => {
+    void blinker.downloads.getSessionDownloads().then((next) => {
       const visible = next.slice(0, 5);
       latestDownloadsRef.current = visible;
       lastSeenDownloadIdRef.current = visible[0]?.id ?? null;
       setDownloads(visible);
     });
 
-    const unsubscribeChanged = flow.downloads.onChanged((next) => {
+    const unsubscribeChanged = blinker.downloads.onChanged((next) => {
       const visible = next.slice(0, 5);
       latestDownloadsRef.current = visible;
       setDownloads(visible);
     });
 
-    const unsubscribeCreated = flow.downloads.onCreated((created) => {
+    const unsubscribeCreated = blinker.downloads.onCreated((created) => {
       const createdId = created?.id ?? latestDownloadsRef.current[0]?.id ?? null;
       if (createdId && createdId === lastSeenDownloadIdRef.current) return;
       lastSeenDownloadIdRef.current = createdId;
@@ -166,7 +166,7 @@ export function DownloadsButton() {
 
   const openDownloadsPage = useCallback(() => {
     markInternalInteraction();
-    void flow.tabs.newTab("blinker://downloads", true);
+    void blinker.tabs.newTab("blinker://downloads", true);
     closePreview();
   }, [closePreview, markInternalInteraction]);
 

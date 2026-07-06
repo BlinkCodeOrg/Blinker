@@ -76,7 +76,7 @@ Uses `objc-js` + `objcjs-types` for type-safe Objective-C bridging.
 | `resetAppIconImage()`                           | `NSApplication.sharedApplication().setApplicationIconImage$(nil)`                 | Reset running Dock icon to bundle icon (Liquid Glass)    |
 | `invalidateDockCache()`                         | `SLSIconAppearanceConfiguration.fetchCurrentIconAppearanceConfiguration().save()` | Force Dock to recompute all icons (private API)          |
 | `getAppBundlePath()`                            | Resolve from `app.getAppPath()` up to `.app`                                      | Get the path to the running `.app` bundle                |
-| `writeIconChoiceToSharedFile(iconPath or null)` | Write to `~/Library/Application Support/Flow/dock-tile-icon-path`                 | Shared file the DockTilePlugin reads                     |
+| `writeIconChoiceToSharedFile(iconPath or null)` | Write to `~/Library/Application Support/Blinker/dock-tile-icon-path`              | Shared file the DockTilePlugin reads                     |
 
 ### 4. Modified icon system logic (`src/main/modules/icons.ts`)
 
@@ -109,12 +109,12 @@ Uses `objc-js` + `objcjs-types` for type-safe Objective-C bridging.
 
 A native macOS plugin bundle that the Dock loads even when the app isn't running.
 
-**Source:** `build/dock-tile-plugin/FlowDockTilePlugin.m` (Objective-C)
+**Source:** `build/dock-tile-plugin/BlinkerDockTilePlugin.m` (Objective-C)
 
 The plugin:
 
 1. Implements `NSDockTilePlugIn` protocol
-2. In `setDockTile:`, reads the shared file at `~/Library/Application Support/Flow/dock-tile-icon-path`
+2. In `setDockTile:`, reads the shared file at `~/Library/Application Support/Blinker/dock-tile-icon-path`
 3. If file is empty/missing: `setContentView:nil` (Liquid Glass renders)
 4. If file contains an icon path: load `NSImage`, create `NSImageView`, set as `contentView`, call `display`
 
@@ -123,9 +123,9 @@ The plugin:
 ```
 DockTilePlugIn.plugin/
   Contents/
-    Info.plist          (NSPrincipalClass = FlowDockTilePlugin)
+    Info.plist          (NSPrincipalClass = BlinkerDockTilePlugin)
     MacOS/
-      FlowDockTilePlugin  (compiled binary)
+      BlinkerDockTilePlugin  (compiled binary)
 ```
 
 **Build integration:**
@@ -141,7 +141,7 @@ DockTilePlugIn.plugin/
 
 ### 7. Shared state: plugin communication
 
-The app writes the custom icon's absolute file path to `~/Library/Application Support/Flow/dock-tile-icon-path`. The DockTilePlugin reads this file. This is simpler than NSUserDefaults because the plugin runs in the Dock's process.
+The app writes the custom icon's absolute file path to `~/Library/Application Support/Blinker/dock-tile-icon-path`. The DockTilePlugin reads this file. This is simpler than NSUserDefaults because the plugin runs in the Dock's process.
 
 - File present with a path -> custom icon
 - File absent or empty -> default (Liquid Glass)
@@ -161,14 +161,14 @@ This tells macOS "something about icon appearance changed, recompute everything.
 
 ## Files
 
-| File                                          | Action                                                                     |
-| --------------------------------------------- | -------------------------------------------------------------------------- |
-| `src/main/modules/icons.ts`                   | Modify -- re-enable macOS, change set/reset logic                          |
-| `src/main/modules/macos-icon.ts`              | **Create** -- native macOS API calls via objc-js                           |
-| `build/dock-tile-plugin/FlowDockTilePlugin.m` | **Create** -- NSDockTilePlugIn source                                      |
-| `build/dock-tile-plugin/Info.plist`           | **Create** -- plugin bundle Info.plist                                     |
-| `build/hooks/afterPack.js`                    | Modify -- add plugin compilation step                                      |
-| `build/hooks/components/dock-tile-plugin.js`  | **Create** -- compilation logic                                            |
-| `electron-builder.ts`                         | Modify -- add NSDockTilePlugIn to extendInfo                               |
-| `electron.vite.config.ts`                     | Modify -- add `objcjs-types` to `externalizeDeps.exclude` for tree-shaking |
-| `package.json`                                | Modify -- add `objcjs-types` dependency                                    |
+| File                                             | Action                                                                     |
+| ------------------------------------------------ | -------------------------------------------------------------------------- |
+| `src/main/modules/icons.ts`                      | Modify -- re-enable macOS, change set/reset logic                          |
+| `src/main/modules/macos-icon.ts`                 | **Create** -- native macOS API calls via objc-js                           |
+| `build/dock-tile-plugin/BlinkerDockTilePlugin.m` | **Create** -- NSDockTilePlugIn source                                      |
+| `build/dock-tile-plugin/Info.plist`              | **Create** -- plugin bundle Info.plist                                     |
+| `build/hooks/afterPack.js`                       | Modify -- add plugin compilation step                                      |
+| `build/hooks/components/dock-tile-plugin.js`     | **Create** -- compilation logic                                            |
+| `electron-builder.ts`                            | Modify -- add NSDockTilePlugIn to extendInfo                               |
+| `electron.vite.config.ts`                        | Modify -- add `objcjs-types` to `externalizeDeps.exclude` for tree-shaking |
+| `package.json`                                   | Modify -- add `objcjs-types` dependency                                    |

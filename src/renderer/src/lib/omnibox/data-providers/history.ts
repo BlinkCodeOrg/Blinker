@@ -59,5 +59,5 @@ export async function getHistory(): Promise<BrowsingHistoryEntry[]> {
   if (MOCK_HISTORY_ENABLED) {
     return MOCK_HISTORY;
   }
-  return flow.history.list();
+  return blinker.history.list();
 }

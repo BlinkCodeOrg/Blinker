@@ -1,4 +1,4 @@
-import { Space } from "~/flow/interfaces/sessions/spaces";
+import { Space } from "~/blinker/interfaces/sessions/spaces";
 import { SpaceIcon } from "@/lib/phosphor-icons";
 import { cn } from "@/lib/utils";
 

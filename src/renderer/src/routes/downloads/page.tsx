@@ -135,7 +135,7 @@ function DownloadCard({
     >
       <button
         className="flex min-w-0 flex-1 items-center gap-4 text-left"
-        onClick={() => void flow.downloads.openFile(download.id)}
+        onClick={() => void blinker.downloads.openFile(download.id)}
         disabled={!canOpen}
       >
         <div className="flex size-10 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
@@ -165,7 +165,7 @@ function DownloadCard({
           variant="ghost"
           size="icon"
           className="size-8 shrink-0"
-          onClick={() => void runAction(flow.downloads.pause(download.id))}
+          onClick={() => void runAction(blinker.downloads.pause(download.id))}
           aria-label={t("downloads.pause")}
         >
           <Pause className="size-4" />
@@ -176,7 +176,7 @@ function DownloadCard({
           variant="ghost"
           size="icon"
           className="size-8 shrink-0"
-          onClick={() => void runAction(flow.downloads.resume(download.id))}
+          onClick={() => void runAction(blinker.downloads.resume(download.id))}
           aria-label={t("downloads.resume")}
         >
           <Play className="size-4" />
@@ -187,7 +187,7 @@ function DownloadCard({
           variant="ghost"
           size="icon"
           className="size-8 shrink-0"
-          onClick={() => void runAction(flow.downloads.cancel(download.id))}
+          onClick={() => void runAction(blinker.downloads.cancel(download.id))}
           aria-label={t("downloads.cancel")}
         >
           <X className="size-4" />
@@ -198,7 +198,7 @@ function DownloadCard({
           variant="ghost"
           size="icon"
           className="size-8 shrink-0"
-          onClick={() => void runAction(flow.downloads.retry(download.id))}
+          onClick={() => void runAction(blinker.downloads.retry(download.id))}
           aria-label={t("downloads.downloadAgain")}
         >
           <RotateCcw className="size-4" />
@@ -208,7 +208,7 @@ function DownloadCard({
         variant="ghost"
         size="icon"
         className="size-8 shrink-0"
-        onClick={() => void flow.downloads.showInFolder(download.id)}
+        onClick={() => void blinker.downloads.showInFolder(download.id)}
         disabled={!download.exists}
         aria-label={t("downloads.showInFolder")}
       >
@@ -241,7 +241,7 @@ function DownloadsPage() {
   const { data, fetchNextPage, hasNextPage, isError, isFetchingNextPage, isPending, refetch } = useInfiniteQuery({
     queryKey: queryKey(debouncedSearch),
     queryFn: async ({ pageParam }: { pageParam: DownloadsPageCursor | undefined }) => {
-      return flow.downloads.listPage({
+      return blinker.downloads.listPage({
         search: debouncedSearch || undefined,
         limit: DOWNLOADS_PAGE_SIZE,
         cursor: pageParam
@@ -252,7 +252,7 @@ function DownloadsPage() {
   });
 
   useEffect(() => {
-    const unsubscribe = flow.downloads.onChanged(() => {
+    const unsubscribe = blinker.downloads.onChanged(() => {
       void queryClient.invalidateQueries({ queryKey: ["downloads"] });
     });
     return () => unsubscribe();
@@ -281,12 +281,12 @@ function DownloadsPage() {
   };
 
   const remove = async (id: number) => {
-    const ok = await flow.downloads.remove(id);
+    const ok = await blinker.downloads.remove(id);
     if (ok) invalidate();
   };
 
   const clearAll = async () => {
-    await flow.downloads.clearAll();
+    await blinker.downloads.clearAll();
     toast.success(t("downloads.cleared"));
     invalidate();
   };

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Loader2, Save, Settings, Trash2, PaintBucket, Check } from "lucide-react";
-import type { Space } from "~/flow/interfaces/sessions/spaces";
+import type { Space } from "~/blinker/interfaces/sessions/spaces";
 import { BasicSettingsTab, ThemeSettingsTab } from "./editor-tabs";
 import { DeleteConfirmDialog } from "./space-dialogs";
 import { motion, AnimatePresence } from "motion/react";
@@ -56,7 +56,7 @@ export function SpaceEditor({ space, onClose, onDelete, onSpacesUpdate }: SpaceE
       if (Object.keys(updatedFields).length > 0) {
         console.log("Updating space:", space.id, updatedFields);
 
-        await flow.spaces.updateSpace(space.profileId, space.id, updatedFields);
+        await blinker.spaces.updateSpace(space.profileId, space.id, updatedFields);
         onSpacesUpdate(); // Refetch spaces after successful update
         setSaveSuccess(true);
 
@@ -81,7 +81,7 @@ export function SpaceEditor({ space, onClose, onDelete, onSpacesUpdate }: SpaceE
   const handleDeleteConfirm = async () => {
     setIsDeleting(true);
     try {
-      await flow.spaces.deleteSpace(space.profileId, space.id);
+      await blinker.spaces.deleteSpace(space.profileId, space.id);
       onDelete();
       onClose();
     } catch (error) {

@@ -6,13 +6,13 @@ import path from "path";
 import { knex, Knex } from "knex";
 import { net, Session } from "electron";
 import { createHash } from "crypto";
-import { FLOW_DATA_DIR } from "./paths";
+import { BLINKER_DATA_DIR } from "./paths";
 import sharp from "sharp";
 import { debugError, debugPrint } from "./output";
 import { FLAGS } from "@/modules/flags";
 import { parseICO } from "icojs";
 
-const dbPath = path.join(FLOW_DATA_DIR, "favicons.db");
+const dbPath = path.join(BLINKER_DATA_DIR, "favicons.db");
 
 // Database configuration with optimizations for concurrency and performance
 const db = knex({

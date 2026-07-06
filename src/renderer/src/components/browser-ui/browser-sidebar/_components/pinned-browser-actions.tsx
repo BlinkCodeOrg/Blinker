@@ -57,6 +57,9 @@ function PinnedAction({ action, activeTabId, partition, activate }: PinnedAction
         "transition-colors duration-150",
         "relative shrink-0"
       )}
+      onPointerDown={(event) => {
+        event.stopPropagation();
+      }}
       onClick={(event) => handleClick(event, "click")}
       onContextMenu={(event) => handleClick(event, "contextmenu")}
       title={action.title}

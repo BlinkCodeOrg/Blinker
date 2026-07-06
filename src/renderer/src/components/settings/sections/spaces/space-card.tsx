@@ -1,5 +1,5 @@
 import { motion } from "motion/react";
-import type { Space } from "~/flow/interfaces/sessions/spaces";
+import type { Space } from "~/blinker/interfaces/sessions/spaces";
 import { SpaceIcon } from "@/lib/phosphor-icons";
 
 // ==============================

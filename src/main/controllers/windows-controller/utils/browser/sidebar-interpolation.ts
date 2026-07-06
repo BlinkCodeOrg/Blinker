@@ -1,4 +1,4 @@
-import { evaluateSidebarAnimationEasing } from "~/flow/sidebar-animation";
+import { evaluateSidebarAnimationEasing } from "~/blinker/sidebar-animation";
 
 /**
  * Tick interval in milliseconds.

@@ -53,7 +53,7 @@ const omniboxBackend = new Omnibox(handleSuggestionsUpdate);
 omniboxBackend.handleInput("", "focus");
 
 // Example: Keystroke event
-omniboxBackend.handleInput("flow", "keystroke");
+omniboxBackend.handleInput("blinker", "keystroke");
 
 // Example: Selecting a match
 const selectedMatch: AutocompleteMatch = /* ... get match from UI */;
@@ -160,7 +160,7 @@ The following providers are currently implemented and used:
   - Searches tab titles and URLs for the input text.
   - Generates suggestions with `type: 'open-tab'` and a high relevance score, using `spaceId:tabId` as the `destinationUrl`.
 
-## Architecture & Data Flow
+## Architecture & Data Movement
 
 1.  User interaction (`focus` or `keystroke`) triggers `Omnibox.handleInput`.
 2.  `Omnibox` creates an `AutocompleteInput` and calls `AutocompleteController.start`.

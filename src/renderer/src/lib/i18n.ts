@@ -53,7 +53,7 @@ const ru = {
   "setting.sidebarSide": "Сторона боковой панели",
   "setting.archiveTabAfter": "Архивировать вкладку через",
   "setting.sleepTabAfter": "Усыплять вкладку через",
-  "setting.enableFlowPdfViewer": "Включить PDF-просмотрщик Blinker",
+  "setting.enableBlinkerPdfViewer": "Включить PDF-просмотрщик Blinker",
   "setting.enableMv2Extensions": "Снова включить расширения Manifest V2",
 
   "setting.option.system": "Как в системе",
@@ -441,7 +441,7 @@ const en: Record<keyof typeof ru, string> = {
   "setting.sidebarSide": "Sidebar side",
   "setting.archiveTabAfter": "Archive tab after",
   "setting.sleepTabAfter": "Sleep tab after",
-  "setting.enableFlowPdfViewer": "Enable Blinker PDF viewer",
+  "setting.enableBlinkerPdfViewer": "Enable Blinker PDF viewer",
   "setting.enableMv2Extensions": "Re-enable Manifest V2 extensions",
   "setting.option.system": "System",
   "setting.option.ru": "Russian",

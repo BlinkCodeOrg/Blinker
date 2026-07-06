@@ -1,7 +1,7 @@
-# Logs from Flow
+# Logs from Blinker
 
 Logs can be found in these directories:
 
-- on Linux: `~/.config/Flow/logs/`
-- on macOS: `~/Library/Logs/Flow/`
-- on Windows: `%USERPROFILE%\AppData\Roaming\Flow\logs\`
+- on Linux: `~/.config/Blinker/logs/`
+- on macOS: `~/Library/Logs/Blinker/`
+- on Windows: `%USERPROFILE%\AppData\Roaming\Blinker\logs\`

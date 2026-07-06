@@ -89,7 +89,7 @@ function HistoryPage() {
   const { data, fetchNextPage, hasNextPage, isError, isFetchingNextPage, isPending, refetch } = useInfiniteQuery({
     queryKey: historyVisitsQueryKey(debouncedSearch),
     queryFn: async ({ pageParam }: { pageParam: HistoryVisitsPageCursor | undefined }) => {
-      return flow.history.listVisitsPage({
+      return blinker.history.listVisitsPage({
         search: debouncedSearch || undefined,
         limit: HISTORY_PAGE_SIZE,
         cursor: pageParam
@@ -127,7 +127,7 @@ function HistoryPage() {
   const grouped = useMemo(() => groupVisitsByDay(visits), [visits]);
 
   const openInNewTab = (url: string) => {
-    void flow.tabs.newTab(url, true);
+    void blinker.tabs.newTab(url, true);
   };
 
   const copyLinkAddress = (url: string) => {
@@ -138,7 +138,7 @@ function HistoryPage() {
   };
 
   const removeVisit = async (visitId: number) => {
-    const ok = await flow.history.deleteVisit(visitId);
+    const ok = await blinker.history.deleteVisit(visitId);
     if (ok) {
       toast.success("Removed from history");
       invalidateHistory();
@@ -148,7 +148,7 @@ function HistoryPage() {
   };
 
   const removeAllForSite = async (urlRowId: number) => {
-    const ok = await flow.history.deleteAllForUrl(urlRowId);
+    const ok = await blinker.history.deleteAllForUrl(urlRowId);
     if (ok) {
       toast.success("Removed visits for this site");
       invalidateHistory();
@@ -158,7 +158,7 @@ function HistoryPage() {
   };
 
   const clearAll = async () => {
-    await flow.history.clearAll();
+    await blinker.history.clearAll();
     toast.success("History cleared");
     invalidateHistory();
   };

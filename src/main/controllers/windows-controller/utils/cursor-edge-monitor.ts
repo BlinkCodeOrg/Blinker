@@ -17,7 +17,7 @@
 import { screen } from "electron";
 import { windowsController } from "@/controllers/windows-controller";
 import { BrowserWindow } from "@/controllers/windows-controller/types/browser";
-import type { CursorEdgeEvent } from "~/flow/interfaces/browser/interface";
+import type { CursorEdgeEvent } from "~/blinker/interfaces/browser/interface";
 
 const POLL_MS = 1000 / 30; // ~30 fps
 const EDGE_THRESHOLD = 12; // px from edge to trigger

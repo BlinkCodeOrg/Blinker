@@ -24,7 +24,7 @@ export function IconSettings() {
       setIsLoading(true);
       try {
         // Check if platform supports icon customization
-        const supported = await flow.icons.isPlatformSupported();
+        const supported = await blinker.icons.isPlatformSupported();
         setIsSupported(supported);
 
         if (!supported) {
@@ -33,7 +33,7 @@ export function IconSettings() {
         }
 
         // Fetch both icons and current icon in parallel
-        const [icons, currentIconId] = await Promise.all([flow.icons.getIcons(), flow.icons.getCurrentIcon()]);
+        const [icons, currentIconId] = await Promise.all([blinker.icons.getIcons(), blinker.icons.getCurrentIcon()]);
 
         setSelectedIcon(currentIconId);
 
@@ -64,7 +64,7 @@ export function IconSettings() {
 
     setIsUpdating(true);
     try {
-      const success = await flow.icons.setCurrentIcon(iconId);
+      const success = await blinker.icons.setCurrentIcon(iconId);
       if (success) {
         toast.success("Icon updated!");
         setSelectedIcon(iconId);

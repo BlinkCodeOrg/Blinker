@@ -40,7 +40,7 @@ function BookmarksPage() {
 
   const { data, isError, isPending, refetch } = useQuery({
     queryKey: bookmarksQueryKey(),
-    queryFn: () => flow.bookmarks.list()
+    queryFn: () => blinker.bookmarks.list()
   });
 
   useEffect(() => {
@@ -66,7 +66,7 @@ function BookmarksPage() {
   const invalidate = () => void queryClient.invalidateQueries({ queryKey: bookmarksQueryKey() });
 
   const remove = async (id: number) => {
-    const ok = await flow.bookmarks.delete(id);
+    const ok = await blinker.bookmarks.delete(id);
     if (ok) {
       toast.success(t("bookmarks.deleted"));
       invalidate();
@@ -76,14 +76,14 @@ function BookmarksPage() {
   };
 
   const importHtml = async () => {
-    const count = await flow.bookmarks.importFromHtml();
+    const count = await blinker.bookmarks.importFromHtml();
     if (count == null) return;
     toast.success(t("bookmarks.imported", { count }));
     invalidate();
   };
 
   const exportHtml = async () => {
-    const ok = await flow.bookmarks.exportToHtml();
+    const ok = await blinker.bookmarks.exportToHtml();
     if (ok) toast.success(t("bookmarks.exported"));
   };
 
@@ -152,7 +152,7 @@ function BookmarksPage() {
                       >
                         <button
                           className="flex min-w-0 flex-1 items-center gap-3 rounded text-left text-inherit"
-                          onClick={() => void flow.tabs.newTab(bookmark.url, true)}
+                          onClick={() => void blinker.tabs.newTab(bookmark.url, true)}
                         >
                           <WebsiteFavicon
                             url={bookmark.url}
@@ -171,7 +171,7 @@ function BookmarksPage() {
                           variant="ghost"
                           size="icon"
                           className="size-7 opacity-0 transition-opacity group-hover:opacity-70 hover:opacity-100"
-                          onClick={() => void flow.tabs.newTab(bookmark.url, true)}
+                          onClick={() => void blinker.tabs.newTab(bookmark.url, true)}
                           aria-label={t("bookmarks.open")}
                         >
                           <ExternalLink className="size-3.5" />

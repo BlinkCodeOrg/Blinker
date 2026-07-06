@@ -14,10 +14,10 @@ export function WebsiteFavicon({
   cacheOnly?: boolean;
   onLoadedChange?: (loaded: boolean) => void;
 }) {
-  const [useFlowUtility, setUseFlowUtility] = useState(true);
+  const [useBlinkerUtility, setUseBlinkerUtility] = useState(true);
   const [useCustomFavicon, setUseCustomFavicon] = useState(false);
 
-  if (useFlowUtility) {
+  if (useBlinkerUtility) {
     const srcUrl = new URL("blinker://favicon");
     srcUrl.searchParams.set("url", url);
     return (
@@ -28,7 +28,7 @@ export function WebsiteFavicon({
         onLoad={() => onLoadedChange?.(true)}
         onError={() => {
           onLoadedChange?.(false);
-          setUseFlowUtility(false);
+          setUseBlinkerUtility(false);
           if (!cacheOnly && favicon) {
             setUseCustomFavicon(true);
           }

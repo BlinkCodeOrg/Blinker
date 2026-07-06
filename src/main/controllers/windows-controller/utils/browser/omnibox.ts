@@ -10,9 +10,9 @@ import type {
   OmniboxOpenParams,
   OmniboxOpenState,
   OmniboxShadowPadding
-} from "~/flow/interfaces/browser/omnibox";
+} from "~/blinker/interfaces/browser/omnibox";
 import type {
-  BrowserWindow as FlowBrowserWindow,
+  BrowserWindow as BlinkerBrowserWindow,
   BrowserWindowType
 } from "@/controllers/windows-controller/types/browser";
 
@@ -78,7 +78,7 @@ export class Omnibox {
   public layer: Layer<WebContentsView>;
 
   private window: ElectronBrowserWindow;
-  private browserWindow: FlowBrowserWindow;
+  private browserWindow: BlinkerBrowserWindow;
   private bounds: Electron.Rectangle | null = null;
   private ignoreBlurEvents: boolean = false;
   private blurIgnoreTimeout: NodeJS.Timeout | null = null;
@@ -92,7 +92,7 @@ export class Omnibox {
   private disabled: boolean = false;
   private isDestroyed: boolean = false;
 
-  constructor(parentWindow: FlowBrowserWindow, windowType: BrowserWindowType) {
+  constructor(parentWindow: BlinkerBrowserWindow, windowType: BrowserWindowType) {
     debugPrint("OMNIBOX", `Creating new omnibox for window ${parentWindow.id}`);
     const electronWindow = parentWindow.browserWindow;
     const onmiboxView = new WebContentsView({

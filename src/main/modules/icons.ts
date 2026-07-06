@@ -1,7 +1,7 @@
 import { app, NativeImage, nativeImage } from "electron";
 import path from "path";
 import { PATHS } from "./paths";
-import { FLOW_DATA_DIR } from "./paths";
+import { BLINKER_DATA_DIR } from "./paths";
 import fs from "fs";
 import sharp from "sharp";
 import { type } from "arktype";
@@ -35,7 +35,7 @@ export const supportedPlatforms: NodeJS.Platform[] = [
 const iconsDirectory = path.join(PATHS.ASSETS, "public", process.platform === "darwin" ? "macos-icons" : "icons");
 
 // Persistent icon directory — transformed PNGs saved here for macOS Finder/Dock
-const persistentIconsDir = path.join(FLOW_DATA_DIR, "icons");
+const persistentIconsDir = path.join(BLINKER_DATA_DIR, "icons");
 
 type IconData = {
   id: string;
@@ -394,7 +394,7 @@ export async function setAppIcon(iconId: string) {
     // Use the transformed icon
     const imgBuffer = await transformAppIcon(imagePath);
 
-    // macOS: full persistent icon flow
+    // macOS: full persistent icon path
     if (process.platform === "darwin") {
       return setCustomIconMacOS(iconId, imgBuffer);
     }

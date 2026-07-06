@@ -272,7 +272,7 @@ export class TabLifecycleManager {
           const onLeavePiP = () => {
             setTimeout(() => {
               const goBackToTab = !video.paused && !video.ended;
-              flow.tabs.disablePictureInPicture(goBackToTab);
+              blinker.tabs.disablePictureInPicture(goBackToTab);
             }, 50);
             video.removeEventListener("leavepictureinpicture", onLeavePiP);
           };

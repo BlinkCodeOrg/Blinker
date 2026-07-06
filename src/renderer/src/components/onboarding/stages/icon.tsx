@@ -23,7 +23,7 @@ export function OnboardingIcon({ advance }: { advance: OnboardingAdvanceCallback
     const fetchIcons = async () => {
       setIsLoading(true);
       try {
-        const supported = await flow.icons.isPlatformSupported();
+        const supported = await blinker.icons.isPlatformSupported();
         setIsSupported(supported);
 
         if (!supported) {
@@ -31,7 +31,7 @@ export function OnboardingIcon({ advance }: { advance: OnboardingAdvanceCallback
           return;
         }
 
-        const [icons, currentIconId] = await Promise.all([flow.icons.getIcons(), flow.icons.getCurrentIcon()]);
+        const [icons, currentIconId] = await Promise.all([blinker.icons.getIcons(), blinker.icons.getCurrentIcon()]);
 
         setSelectedIcon(currentIconId);
 
@@ -59,7 +59,7 @@ export function OnboardingIcon({ advance }: { advance: OnboardingAdvanceCallback
 
     setIsUpdating(true);
     try {
-      const success = await flow.icons.setCurrentIcon(iconId);
+      const success = await blinker.icons.setCurrentIcon(iconId);
       if (success) {
         setSelectedIcon(iconId);
         setIconOptions((prev) =>

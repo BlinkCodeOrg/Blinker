@@ -1,4 +1,4 @@
-import { Space } from "~/flow/interfaces/sessions/spaces";
+import { Space } from "~/blinker/interfaces/sessions/spaces";
 import { cn } from "@/lib/utils";
 import { useSpaces } from "@/components/providers/spaces-provider";
 import { SpaceIcon } from "@/lib/phosphor-icons";
@@ -90,7 +90,7 @@ function SpaceButton({ space, isActive, compact }: SpaceButtonProps) {
         // Move the tab to this space (no specific position — append to end)
         const sourceData = args.source.data as TabGroupSourceData;
         const sourceTabId = sourceData.primaryTabId;
-        flow.tabs.moveTabToWindowSpace(sourceTabId, space.id);
+        blinker.tabs.moveTabToWindowSpace(sourceTabId, space.id);
       }
     });
   }, [onClick, removeDraggingTimeout, space.profileId, space.id]);

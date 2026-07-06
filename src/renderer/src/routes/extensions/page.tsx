@@ -24,7 +24,7 @@ function ExtensionsPage() {
   const setExtensionEnabled = async (id: string, enabled: boolean) => {
     setIsProcessing(true);
 
-    const success = await flow.extensions.setExtensionEnabled(id, enabled);
+    const success = await blinker.extensions.setExtensionEnabled(id, enabled);
     if (success) {
       toast.success(`This extension has been successfully ${enabled ? "enabled" : "disabled"}!`);
     } else {
@@ -38,7 +38,7 @@ function ExtensionsPage() {
   const setExtensionPinned = async (id: string, pinned: boolean) => {
     setIsProcessing(true);
 
-    const success = await flow.extensions.setExtensionPinned(id, pinned);
+    const success = await blinker.extensions.setExtensionPinned(id, pinned);
     if (success) {
       toast.success(`This extension has been successfully ${pinned ? "pinned" : "unpinned"}!`);
     } else {

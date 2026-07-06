@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
-import type { Space } from "~/flow/interfaces/sessions/spaces";
+import type { Space } from "~/blinker/interfaces/sessions/spaces";
 import { hexToOKLCHString } from "@/lib/colors";
 import { hex_is_light } from "@/lib/utils";
 import type { BrowserUIType } from "@/components/browser-ui/types";
@@ -78,9 +78,9 @@ export const SpacesProvider = ({ windowType, children }: SpacesProviderProps) =>
 
   const fetchSpaces = useCallback(
     async (preferredSpaceId?: string) => {
-      if (!flow) return;
+      if (!blinker) return;
       try {
-        const [spaces, profiles] = await Promise.all([flow.spaces.getSpaces(), flow.profiles.getProfiles()]);
+        const [spaces, profiles] = await Promise.all([blinker.spaces.getSpaces(), blinker.profiles.getProfiles()]);
         const nextAreProfilesInternal = Object.fromEntries(profiles.map((profile) => [profile.id, profile.internal]));
         const nextAreProfilesEphemeral = Object.fromEntries(profiles.map((profile) => [profile.id, profile.ephemeral]));
         setAllSpaces(spaces);
@@ -105,7 +105,7 @@ export const SpacesProvider = ({ windowType, children }: SpacesProviderProps) =>
         }
 
         // Get and set window space if available
-        const windowSpaceId = await flow.spaces.getUsingSpace();
+        const windowSpaceId = await blinker.spaces.getUsingSpace();
         if (windowSpaceId) {
           const windowSpace = spaces.find((space) => space.id === windowSpaceId);
           if (windowSpace) {
@@ -115,7 +115,7 @@ export const SpacesProvider = ({ windowType, children }: SpacesProviderProps) =>
         }
 
         // Get and set last used space if no window space
-        const lastUsedSpace = await flow.spaces.getLastUsedSpace();
+        const lastUsedSpace = await blinker.spaces.getLastUsedSpace();
         if (lastUsedSpace) {
           setCurrentSpace(lastUsedSpace);
         } else if (spaces.length > 0) {
@@ -123,7 +123,7 @@ export const SpacesProvider = ({ windowType, children }: SpacesProviderProps) =>
           const firstVisible = spaces.find((space) => !nextAreProfilesInternal[space.profileId]) ?? spaces[0];
           setCurrentSpace(firstVisible);
           if (!isReadOnlyConsumer) {
-            await flow.spaces.setUsingSpace(firstVisible.profileId, firstVisible.id);
+            await blinker.spaces.setUsingSpace(firstVisible.profileId, firstVisible.id);
           }
         }
       } catch (error) {
@@ -150,13 +150,13 @@ export const SpacesProvider = ({ windowType, children }: SpacesProviderProps) =>
   const handleSetCurrentSpace = useCallback(
     async (spaceId: string) => {
       if (windowType !== "main") return;
-      if (!flow) return;
+      if (!blinker) return;
       const space = allSpaces.find((s) => s.id === spaceId);
       if (!space) return;
       if (space.id === currentSpaceRef.current?.id) return;
 
       try {
-        await flow.spaces.setUsingSpace(space.profileId, spaceId);
+        await blinker.spaces.setUsingSpace(space.profileId, spaceId);
         setCurrentSpace(space);
       } catch (error) {
         console.error("Failed to set current space:", error);
@@ -172,11 +172,11 @@ export const SpacesProvider = ({ windowType, children }: SpacesProviderProps) =>
   useEffect(() => {
     if (isReadOnlyConsumer) return;
     if (!currentSpace) return;
-    flow.browser.loadProfile(currentSpace.profileId);
+    blinker.browser.loadProfile(currentSpace.profileId);
   }, [currentSpace, isReadOnlyConsumer]);
 
   useEffect(() => {
-    const unsub = flow.spaces.onSetWindowSpace((spaceId) => {
+    const unsub = blinker.spaces.onSetWindowSpace((spaceId) => {
       const space = allSpaces.find((entry) => entry.id === spaceId);
       if (space) {
         setCurrentSpace(space);
@@ -189,7 +189,7 @@ export const SpacesProvider = ({ windowType, children }: SpacesProviderProps) =>
   }, [allSpaces, fetchSpaces]);
 
   useEffect(() => {
-    const unsub = flow.spaces.onSpacesChanged(() => {
+    const unsub = blinker.spaces.onSpacesChanged(() => {
       revalidate();
     });
     return () => unsub();
@@ -207,7 +207,7 @@ export const SpacesProvider = ({ windowType, children }: SpacesProviderProps) =>
     if (currentSpaceIdRef.current === currentSpace?.id) return;
     if (!currentSpace) return;
     currentSpaceIdRef.current = currentSpace.id;
-    flow.omnibox.hide();
+    blinker.omnibox.hide();
   }, [currentSpace, isReadOnlyConsumer]);
 
   const contextValue = useMemo(

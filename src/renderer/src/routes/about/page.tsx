@@ -36,7 +36,7 @@ function Page() {
   const loadSnapshot = useCallback(async () => {
     setLoadingSnapshot(true);
     try {
-      setSnapshot(await flow.app.getPerformanceSnapshot());
+      setSnapshot(await blinker.app.getPerformanceSnapshot());
     } finally {
       setLoadingSnapshot(false);
     }
@@ -62,7 +62,7 @@ function Page() {
   }, [snapshot]);
 
   const clearSnapshot = useCallback(async () => {
-    await flow.app.clearPerformanceSnapshot();
+    await blinker.app.clearPerformanceSnapshot();
     await loadSnapshot();
   }, [loadSnapshot]);
 

@@ -21,12 +21,12 @@ export function SidebarWindowControlsMacOS({
   const [isFullscreen, setIsFullscreen] = useState(false);
   useEffect(() => {
     let updated = false;
-    flow.interface.getWindowState().then((state) => {
+    blinker.interface.getWindowState().then((state) => {
       if (!updated) {
         setIsFullscreen(state.isFullscreen);
       }
     });
-    const removeListener = flow.interface.onWindowStateChanged((state) => {
+    const removeListener = blinker.interface.onWindowStateChanged((state) => {
       setIsFullscreen(state.isFullscreen);
       updated = true;
     });
@@ -38,7 +38,7 @@ export function SidebarWindowControlsMacOS({
   // Position: only update if this is still the latest instance
   useEffect(() => {
     if (titlebarBounds && generationRef.current === globalGeneration) {
-      flow.interface.setWindowButtonPosition({
+      blinker.interface.setWindowButtonPosition({
         x: titlebarBounds.left,
         y: titlebarBounds.top - offset
       });
@@ -51,7 +51,7 @@ export function SidebarWindowControlsMacOS({
   useEffect(() => {
     globalGeneration++;
     generationRef.current = globalGeneration;
-    flow.interface.setWindowButtonVisibility(true);
+    blinker.interface.setWindowButtonVisibility(true);
 
     const myGeneration = globalGeneration;
     return () => {
@@ -59,7 +59,7 @@ export function SidebarWindowControlsMacOS({
       // globalGeneration will have been bumped and we skip the hide.
       requestAnimationFrame(() => {
         if (globalGeneration === myGeneration) {
-          flow.interface.setWindowButtonVisibility(false);
+          blinker.interface.setWindowButtonVisibility(false);
         }
       });
     };

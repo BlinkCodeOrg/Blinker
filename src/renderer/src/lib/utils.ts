@@ -8,7 +8,7 @@ export function cn(...inputs: ClassValue[]) {
 
 // Sometimes we cannot use `navigator.clipboard`, as this requires the webContents to be focused & active, which it might not be.
 export async function copyTextToClipboardFallback(text: string) {
-  flow.app.writeTextToClipboard(text);
+  blinker.app.writeTextToClipboard(text);
   return true;
 }
 

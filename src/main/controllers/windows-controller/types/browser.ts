@@ -1,7 +1,7 @@
 import { BaseWindow, BaseWindowEvents } from "@/controllers/windows-controller/types/base";
 import { app, BrowserWindow as ElectronBrowserWindow, nativeTheme, WebContents } from "electron";
 import { type PageBounds } from "@/ipc/browser/page";
-import { type PageLayoutParams } from "~/flow/types";
+import { type PageLayoutParams } from "~/blinker/types";
 import { appMenuController } from "@/controllers/app-menu-controller";
 import { LayerManager } from "@/controllers/windows-controller/layer-manager";
 import { FakeWebContentsViewLayer } from "@/controllers/windows-controller/layer-manager/fake-webcontentsview-layer";
@@ -18,7 +18,7 @@ import { hex_is_light } from "@/modules/utils";
 import { relocateTabsFromClosingWindow } from "@/controllers/tabs-controller/tab-sync";
 import { createModalTo, focusPriorities, zIndexes } from "~/layers";
 import { SidebarInterpolation } from "@/controllers/windows-controller/utils/browser/sidebar-interpolation";
-import { SIDEBAR_ANIMATION_DURATION_MS } from "~/flow/sidebar-animation";
+import { SIDEBAR_ANIMATION_DURATION_MS } from "~/blinker/sidebar-animation";
 
 export type BrowserWindowType = "normal" | "popup";
 

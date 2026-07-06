@@ -121,7 +121,7 @@ function AutoNewTab({ isReady }: { isReady: boolean }) {
     if (isReady && !openedNewTabRef.current) {
       openedNewTabRef.current = true;
       if (tabGroups.length === 0) {
-        flow.newTab.open();
+        blinker.newTab.open();
       }
     }
   }, [isReady, tabGroups.length]);

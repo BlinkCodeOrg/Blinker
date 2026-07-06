@@ -9,7 +9,7 @@ export const UILayer = {
   /** Default stacking level. Most elements live here. No z-index needed. */
   BASE: 0,
 
-  /** Elements that float above their normal document-flow siblings.
+  /** Elements that float above their normal document-layout siblings.
       Examples: floating sidebar (position:fixed over content area),
       loading indicator bar, search suggestion dropdowns, drag-and-drop
       indicator overlays, sticky toolbars. */

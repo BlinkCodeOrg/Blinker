@@ -10,7 +10,7 @@ import { SidebarInner } from "./inner";
 import { type ImperativeResizablePanelWrapperHandle, PixelBasedResizablePanel } from "@/components/ui/resizable-extras";
 import { PortalComponent } from "@/components/portal/portal";
 import { SpaceBackgroundStylesheet } from "@/components/providers/spaces-provider";
-import { SIDEBAR_ANIMATION_CSS_EASING, SIDEBAR_ANIMATION_DURATION_MS } from "~/flow/sidebar-animation";
+import { SIDEBAR_ANIMATION_CSS_EASING, SIDEBAR_ANIMATION_DURATION_MS } from "~/blinker/sidebar-animation";
 
 // Component //
 const SIDEBAR_ANIMATION_STYLE: CSSProperties = {
@@ -148,7 +148,7 @@ export function BrowserSidebar({
     event.stopPropagation();
 
     urls.forEach((url, index) => {
-      void flow.tabs.newTab(url, index === 0);
+      void blinker.tabs.newTab(url, index === 0);
     });
   }, []);
 

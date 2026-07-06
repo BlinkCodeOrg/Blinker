@@ -4,7 +4,7 @@ import { spacesController } from "@/controllers/spaces-controller";
 import { debugPrint } from "@/modules/output";
 import { searchOmniboxPlacesForProfile } from "@/saving/omnibox-place-search";
 import { ipcMain } from "electron";
-import type { OmniboxOpenParams } from "~/flow/interfaces/browser/omnibox";
+import type { OmniboxOpenParams } from "~/blinker/interfaces/browser/omnibox";
 import { measurePerformanceSync } from "@/modules/performance";
 
 async function profileIdFromSender(sender: Electron.WebContents): Promise<string | null> {

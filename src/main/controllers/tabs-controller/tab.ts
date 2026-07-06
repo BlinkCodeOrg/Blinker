@@ -132,7 +132,7 @@ function createWebContentsView(
     nodeIntegrationInSubFrames: true,
     contextIsolation: true
 
-    // Provide access to 'flow' globals (replaced by implementation in protocols.ts)
+    // Provide access to 'blinker' globals (replaced by implementation in protocols.ts)
     // preload: PATHS.PRELOAD
   };
 

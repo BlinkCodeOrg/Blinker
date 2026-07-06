@@ -3,7 +3,7 @@ import type { Session } from "electron";
 
 export function registerPreloadScripts(session: Session) {
   session.registerPreloadScript({
-    id: "flow-preload",
+    id: "blinker-preload",
     type: "frame",
     filePath: PATHS.PRELOAD
   });

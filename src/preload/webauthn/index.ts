@@ -169,6 +169,21 @@ export function tryPatchPasskeys() {
 
         if ("navigator" in globalThis && "credentials" in globalThis.navigator) {
           const credentials = globalThis.navigator.credentials;
+          const patchKey = "__blinkerCredentialsPatched";
+          if ((credentials as unknown as Record<string, boolean>)[patchKey]) {
+            delete globalThis.electronCredentials;
+            return;
+          }
+          try {
+            Object.defineProperty(credentials, patchKey, {
+              value: true,
+              configurable: false,
+              enumerable: false
+            });
+          } catch {
+            delete globalThis.electronCredentials;
+            return;
+          }
           const oldCredentialsCreate = credentials.create.bind(credentials);
           const oldCredentialsGet = credentials.get.bind(credentials);
 
