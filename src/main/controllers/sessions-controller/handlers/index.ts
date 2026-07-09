@@ -7,14 +7,7 @@ import { getSitePermissionSetting, setSitePermissionForProfile } from "@/saving/
 import { app, dialog, OpenExternalPermissionRequest, type Session } from "electron";
 import type { PromptResult, PromptState, SitePermissionPromptResult } from "~/types/prompts";
 
-const MANAGED_PERMISSIONS = new Set([
-  "media",
-  "geolocation",
-  "notifications",
-  "midiSysex",
-  "pointerLock",
-  "fullscreen"
-]);
+const MANAGED_PERMISSIONS = new Set(["media", "geolocation", "notifications", "midiSysex", "pointerLock"]);
 
 function originFromUrl(url: string): string | null {
   try {
@@ -69,6 +62,11 @@ async function requestSitePermission(tabId: number, origin: string, permission: 
 export function registerHandlersWithSession(session: Session) {
   session.setPermissionRequestHandler(async (webContents, permission, callback, details) => {
     debugPrint("PERMISSIONS", "permission request", webContents?.getURL() || "unknown-url", permission);
+
+    if (permission === "fullscreen") {
+      callback(true);
+      return;
+    }
 
     if (permission === "openExternal") {
       const openExternalDetails = details as OpenExternalPermissionRequest;

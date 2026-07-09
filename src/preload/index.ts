@@ -1354,3 +1354,4 @@ const blinkerAPI: typeof blinker = {
 };
 
 contextBridge.exposeInMainWorld("blinker", blinkerAPI);
+contextBridge.exposeInMainWorld("flow", blinkerAPI);

@@ -1,5 +1,6 @@
 import { debugPrint } from "@/modules/output";
 import { markPerformance } from "@/modules/performance";
+import { runStartupDataMigrations } from "@/modules/data-migration";
 import { app } from "electron";
 
 function printHeader() {
@@ -39,6 +40,8 @@ function initializeApp() {
 
   // Print header
   printHeader();
+
+  runStartupDataMigrations();
 
   // Import everything
   import("@/browser");
