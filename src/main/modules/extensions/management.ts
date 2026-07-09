@@ -8,6 +8,7 @@ import { TypedEventEmitter } from "@/modules/typed-event-emitter";
 import { fireOnExtensionsUpdated } from "@/ipc/app/extensions";
 import { uninstallExtension } from "electron-chrome-web-store";
 import { startExtensionServiceWorker } from "./helpers";
+import { prepareExtensionSourceForImport } from "./firefox-compat";
 
 export type ExtensionData = {
   type: ExtensionType;
@@ -410,30 +411,50 @@ export class ExtensionManager extends TypedEventEmitter<{
   }
 
   public async importUnpackedExtension(sourcePath: string): Promise<string | null> {
-    const manifest = await getManifest(sourcePath);
+    const unpackedPath = this.getExtensionsPath("unpacked");
+    const importStagingPath = path.join(unpackedPath, ".firefox-imports");
+    const preparedImport = await prepareExtensionSourceForImport(sourcePath, importStagingPath);
+    const extensionSourcePath = preparedImport.extensionPath;
+    const manifest = await getManifest(extensionSourcePath);
     if (!manifest) return null;
 
-    const extension = await this.profileSession.extensions.loadExtension(sourcePath);
-    if (!extension) return null;
-
-    const extensionId = extension.id;
-    const unpackedPath = this.getExtensionsPath("unpacked");
-    const destinationPath = path.join(unpackedPath, extensionId);
-    const sourcePathResolved = path.resolve(sourcePath);
-    const destinationPathResolved = path.resolve(destinationPath);
-
-    await fs.mkdir(unpackedPath, { recursive: true });
-    if (sourcePathResolved !== destinationPathResolved) {
-      await fs.rm(destinationPath, { recursive: true, force: true });
-      await fs.cp(sourcePath, destinationPath, { recursive: true });
+    if (preparedImport.warnings.length > 0) {
+      console.warn("Imported Firefox WebExtension with compatibility changes:", preparedImport.warnings);
     }
-    await this.profileSession.extensions.removeExtension(extensionId);
 
-    const added = await this.addInstalledExtension("unpacked", extensionId);
-    if (!added) return null;
+    try {
+      const extension = await this.profileSession.extensions.loadExtension(extensionSourcePath);
+      if (!extension) return null;
 
-    await this.loadExtensionWithData(extensionId, { type: "unpacked", disabled: false, pinned: DEFAULT_PINNED_STATE });
-    return extensionId;
+      const extensionId = extension.id;
+      const destinationPath = path.join(unpackedPath, extensionId);
+      const sourcePathResolved = path.resolve(extensionSourcePath);
+      const destinationPathResolved = path.resolve(destinationPath);
+
+      await fs.mkdir(unpackedPath, { recursive: true });
+      if (sourcePathResolved !== destinationPathResolved) {
+        await fs.rm(destinationPath, { recursive: true, force: true });
+        await fs.cp(extensionSourcePath, destinationPath, { recursive: true });
+      }
+      await this.profileSession.extensions.removeExtension(extensionId);
+
+      const added = await this.addInstalledExtension("unpacked", extensionId);
+      if (!added) return null;
+
+      await this.loadExtensionWithData(extensionId, {
+        type: "unpacked",
+        disabled: false,
+        pinned: DEFAULT_PINNED_STATE
+      });
+      return extensionId;
+    } catch (error) {
+      console.error(`Failed to import unpacked extension from ${sourcePath}:`, error);
+      return null;
+    } finally {
+      for (const cleanupPath of preparedImport.cleanupPaths) {
+        await fs.rm(cleanupPath, { recursive: true, force: true });
+      }
+    }
   }
 
   /**

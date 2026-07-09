@@ -187,8 +187,12 @@ ipcMain.handle("extensions:import-unpacked", async (event: IpcMainInvokeEvent): 
 
   const window = browserWindowsController.getWindowFromWebContents(event.sender);
   const dialogOptions: Electron.OpenDialogOptions = {
-    title: "Импорт расширения",
-    properties: ["openDirectory"]
+    title: "Import Extension",
+    properties: ["openDirectory", "openFile"],
+    filters: [
+      { name: "Browser extensions", extensions: ["xpi"] },
+      { name: "All files", extensions: ["*"] }
+    ]
   };
   const result = window
     ? await dialog.showOpenDialog(window.browserWindow, dialogOptions)
