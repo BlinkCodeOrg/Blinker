@@ -44,6 +44,7 @@
     "reset": "rm -rf dist && rm -rf out && rm -rf yalc.lock && rm -rf .yalc && rm -rf node_modules && bun pm cache rm && echo 'Reset complete!'"
   },
   "dependencies": {
+    "adm-zip": "^0.5.18",
     "@ghostery/adblocker-electron": "^2.14.1",
     "@phosphor-icons/core": "^2.1.1",
     "arktype": "^2.2.0",

@@ -1,6 +1,7 @@
 import { debugPrint } from "@/modules/output";
 import { markPerformance } from "@/modules/performance";
 import { runStartupDataMigrations } from "@/modules/data-migration";
+import { applyPendingProfileBackup } from "@/modules/profile-backup";
 import { app } from "electron";
 
 function printHeader() {
@@ -41,10 +42,11 @@ function initializeApp() {
   // Print header
   printHeader();
 
-  runStartupDataMigrations();
-
-  // Import everything
-  import("@/browser");
+  void (async () => {
+    await applyPendingProfileBackup();
+    runStartupDataMigrations();
+    await import("@/browser");
+  })();
 
   markPerformance("browser.import.requested", "startup");
 

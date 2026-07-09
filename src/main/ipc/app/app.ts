@@ -8,6 +8,7 @@ import {
   recordPerformanceMeasure
 } from "@/modules/performance";
 import type { PerformanceEvent } from "~/types/performance";
+import { exportProfileBackup, stageProfileBackupImport } from "@/modules/profile-backup";
 
 ipcMain.handle("app:get-info", async () => {
   return {
@@ -47,3 +48,6 @@ ipcMain.on(
 ipcMain.handle("app:clear-performance-snapshot", () => {
   clearPerformanceEvents();
 });
+
+ipcMain.handle("app:export-profile-backup", () => exportProfileBackup());
+ipcMain.handle("app:import-profile-backup", () => stageProfileBackupImport());

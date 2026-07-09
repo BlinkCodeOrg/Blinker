@@ -99,5 +99,11 @@ export function closeDatabase(): void {
   }
 }
 
+/** Flush the SQLite write-ahead log before copying the database into a backup. */
+export function checkpointDatabaseForBackup(): void {
+  if (!sqlite) return;
+  sqlite.pragma("wal_checkpoint(TRUNCATE)");
+}
+
 // Re-export schema for convenience
 export { schema };

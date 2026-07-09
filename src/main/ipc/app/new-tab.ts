@@ -3,6 +3,13 @@ import { ipcMain } from "electron";
 import { browserWindowsController } from "@/controllers/windows-controller/interfaces/browser";
 import { BrowserWindow } from "@/controllers/windows-controller/types";
 import { NEW_TAB_URL, tabsController } from "@/controllers/tabs-controller";
+import {
+  chooseNewTabBackground,
+  clearNewTabBackground,
+  getNewTabBackground,
+  updateNewTabBackground
+} from "@/modules/new-tab-background";
+import type { NewTabBackground } from "~/blinker/interfaces/browser/newTab";
 
 export function openNewTab(window: BrowserWindow) {
   const omnibox = window.omnibox;
@@ -28,3 +35,11 @@ ipcMain.on("new-tab:open", (event) => {
 
   return openNewTab(win);
 });
+
+ipcMain.handle("new-tab-background:get", () => getNewTabBackground());
+ipcMain.handle("new-tab-background:choose", () => chooseNewTabBackground());
+ipcMain.handle(
+  "new-tab-background:update",
+  (_event, patch: Partial<Omit<NewTabBackground, "sourceUrl" | "mediaType">>) => updateNewTabBackground(patch)
+);
+ipcMain.handle("new-tab-background:clear", () => clearNewTabBackground());

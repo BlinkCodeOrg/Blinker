@@ -1013,6 +1013,12 @@ const appAPI: BlinkerAppAPI = {
   clearPerformanceSnapshot: async () => {
     return ipcRenderer.invoke("app:clear-performance-snapshot");
   },
+  exportProfileBackup: async () => {
+    return ipcRenderer.invoke("app:export-profile-backup");
+  },
+  importProfileBackup: async () => {
+    return ipcRenderer.invoke("app:import-profile-backup");
+  },
 
   // Special Exception: This is allowed for all pages everywhere.
   getPlatform: () => {
@@ -1040,6 +1046,18 @@ const iconsAPI: BlinkerIconsAPI = {
 const newTabAPI: BlinkerNewTabAPI = {
   open: () => {
     return ipcRenderer.send("new-tab:open");
+  },
+  getBackground: async () => {
+    return ipcRenderer.invoke("new-tab-background:get");
+  },
+  chooseBackground: async () => {
+    return ipcRenderer.invoke("new-tab-background:choose");
+  },
+  updateBackground: async (patch) => {
+    return ipcRenderer.invoke("new-tab-background:update", patch);
+  },
+  clearBackground: async () => {
+    return ipcRenderer.invoke("new-tab-background:clear");
   }
 };
 

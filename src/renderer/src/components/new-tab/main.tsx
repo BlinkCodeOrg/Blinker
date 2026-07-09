@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, type CSSProperties } from "react";
 import { motion } from "motion/react";
 import { Moon, Sun, Search, GlobeIcon } from "lucide-react";
 import { useTheme } from "@/components/main/theme";
@@ -7,6 +7,8 @@ import { cn } from "@/lib/utils";
 import { Omnibox } from "@/lib/omnibox/omnibox";
 import { AutocompleteMatch } from "@/lib/omnibox/types";
 import { Command, CommandGroup, CommandItem, CommandList } from "@/components/ui/command";
+import { NewTabBackgroundControls } from "./background-controls";
+import type { NewTabBackground } from "~/blinker/interfaces/browser/newTab";
 
 const MAX_SUGGESTIONS = 6;
 
@@ -34,6 +36,7 @@ export function NewTabPage() {
   const inputRef = useRef<HTMLInputElement>(null);
   const omniboxRef = useRef<Omnibox | null>(null);
   const [commandValue, setCommandValue] = useState("");
+  const [background, setBackground] = useState<NewTabBackground | null>(null);
 
   // Update search query when command value changes
   useEffect(() => {
@@ -46,6 +49,10 @@ export function NewTabPage() {
   // Mount effect
   useEffect(() => {
     setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    void blinker.newTab.getBackground().then(setBackground);
   }, []);
 
   // Initialize omnibox
@@ -94,10 +101,37 @@ export function NewTabPage() {
     return <div className="min-h-screen bg-gray-50 dark:bg-gray-900"></div>;
   }
 
+  const backgroundStyle: CSSProperties | undefined = background?.sourceUrl
+    ? {
+        objectFit: background.fit === "stretch" ? "fill" : background.fit,
+        objectPosition: `${background.positionX}% ${background.positionY}%`,
+        transform: `scale(${background.scale})`
+      }
+    : undefined;
+
   return (
-    <div className="flex flex-col items-center justify-between min-h-screen bg-gradient-to-br from-gray-50 to-blue-100 dark:from-gray-900 dark:to-gray-800 text-gray-800 dark:text-white p-4 md:p-8 font-sans transition-colors duration-300 select-none">
+    <div className="relative flex min-h-screen flex-col items-center justify-between overflow-hidden bg-gradient-to-br from-gray-50 to-blue-100 p-4 font-sans text-gray-800 transition-colors duration-300 select-none dark:from-gray-900 dark:to-gray-800 dark:text-white md:p-8">
+      {background?.sourceUrl && (
+        <div className="pointer-events-none absolute inset-0 overflow-hidden bg-black">
+          {background.mediaType === "video" ? (
+            <video
+              src={background.sourceUrl}
+              muted
+              autoPlay
+              loop
+              playsInline
+              className="size-full origin-center"
+              style={backgroundStyle}
+            />
+          ) : (
+            <img src={background.sourceUrl} alt="" className="size-full origin-center" style={backgroundStyle} />
+          )}
+          <div className="absolute inset-0 bg-black" style={{ opacity: background.overlay / 100 }} />
+        </div>
+      )}
       {/* Theme toggle button */}
-      <div className="w-full flex justify-end">
+      <div className="relative z-10 flex w-full justify-end gap-2">
+        {background && <NewTabBackgroundControls background={background} onChange={setBackground} />}
         <button
           onClick={toggleTheme}
           type="button"

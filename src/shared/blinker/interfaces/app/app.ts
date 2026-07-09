@@ -49,4 +49,10 @@ export interface BlinkerAppAPI {
    * Clears the in-memory performance buffer.
    */
   clearPerformanceSnapshot: () => Promise<void>;
+
+  /** Writes all portable browser data into a .blinker archive. */
+  exportProfileBackup: () => Promise<{ success: boolean; filePath?: string; error?: string }>;
+
+  /** Stages a .blinker archive, then restarts to restore it safely. */
+  importProfileBackup: () => Promise<{ success: boolean; error?: string }>;
 }

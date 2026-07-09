@@ -214,6 +214,11 @@ export const BasicSettingCards: BasicSettingCard[] = [
     settings: []
   },
   {
+    title: "INTERNAL_BACKUP",
+    subtitle: "",
+    settings: []
+  },
+  {
     title: "New Tab Mode",
     subtitle: "Choose how new tabs open",
     settings: ["newTabMode"]

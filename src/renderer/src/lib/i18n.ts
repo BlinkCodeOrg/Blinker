@@ -766,6 +766,64 @@ const en: Record<keyof typeof ru, string> = {
   "search.verbatim": 'Search for "{query}"'
 };
 
+Object.assign(ru, {
+  "newTab.background": "Фон новой вкладки",
+  "newTab.backgroundDescription": "Настройте изображение, GIF или видео без звука.",
+  "newTab.backgroundEmpty": "Фон не выбран",
+  "newTab.chooseBackground": "Выбрать файл",
+  "newTab.removeBackground": "Удалить фон",
+  "newTab.backgroundFit": "Подгонка",
+  "newTab.fitCover": "Заполнить",
+  "newTab.fitContain": "Вписать",
+  "newTab.fitStretch": "Растянуть",
+  "newTab.backgroundScale": "Масштаб",
+  "newTab.backgroundHorizontal": "По горизонтали",
+  "newTab.backgroundVertical": "По вертикали",
+  "newTab.backgroundOverlay": "Затемнение",
+  "newTab.resetBackgroundFrame": "Сбросить положение",
+  "backup.title": "Резервная копия",
+  "backup.description": "Сохраните весь профиль в файл .blinker или восстановите его на этом устройстве.",
+  "backup.export": "Экспортировать .blinker",
+  "backup.exportHint": "Пароли, настройки, история, расширения и профили",
+  "backup.import": "Импортировать .blinker",
+  "backup.importHint": "Заменит текущие данные после перезапуска",
+  "backup.importConfirmTitle": "Восстановить резервную копию?",
+  "backup.importConfirmDescription":
+    "Текущие данные Blinker будут заменены данными из выбранного файла. Браузер сразу перезапустится.",
+  "backup.exported": "Резервная копия создана.",
+  "backup.exportFailed": "Не удалось создать резервную копию.",
+  "backup.importFailed": "Не удалось подготовить резервную копию."
+});
+
+Object.assign(en, {
+  "newTab.background": "New tab background",
+  "newTab.backgroundDescription": "Use an image, GIF, or muted video.",
+  "newTab.backgroundEmpty": "No background selected",
+  "newTab.chooseBackground": "Choose file",
+  "newTab.removeBackground": "Remove background",
+  "newTab.backgroundFit": "Fit",
+  "newTab.fitCover": "Fill",
+  "newTab.fitContain": "Fit",
+  "newTab.fitStretch": "Stretch",
+  "newTab.backgroundScale": "Scale",
+  "newTab.backgroundHorizontal": "Horizontal position",
+  "newTab.backgroundVertical": "Vertical position",
+  "newTab.backgroundOverlay": "Darken",
+  "newTab.resetBackgroundFrame": "Reset framing",
+  "backup.title": "Backup",
+  "backup.description": "Save the entire profile as a .blinker file or restore it on this device.",
+  "backup.export": "Export .blinker",
+  "backup.exportHint": "Passwords, settings, history, extensions, and profiles",
+  "backup.import": "Import .blinker",
+  "backup.importHint": "Replaces current data after restart",
+  "backup.importConfirmTitle": "Restore this backup?",
+  "backup.importConfirmDescription":
+    "Current Blinker data will be replaced with the selected backup. The browser will restart immediately.",
+  "backup.exported": "Backup created.",
+  "backup.exportFailed": "Could not create the backup.",
+  "backup.importFailed": "Could not prepare the backup."
+});
+
 const dictionaries = { ru, en };
 
 type TranslationKey = keyof typeof ru;

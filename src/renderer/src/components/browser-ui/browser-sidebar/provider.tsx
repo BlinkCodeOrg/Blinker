@@ -175,16 +175,17 @@ export function BrowserSidebarProvider({ children, hasSidebar = true }: BrowserS
   }, []);
 
   // Visibility State //
-  // Wait until the attached direction is loaded before rendering the sidebar first time.
-  // For popup windows (hasSidebar=false), the sidebar is never made visible.
+  // Always show the sidebar on first render for main windows. The direction has a
+  // safe left-side fallback, so waiting for a persisted setting could leave a
+  // newly-created profile with a permanently hidden sidebar after restart.
   const [isVisible, setVisible] = useState(false);
   const hasFirstRenderedRef = useRef(false);
   useLayoutEffect(() => {
-    if (sidebarEnabled && !hasFirstRenderedRef.current && attachedDirectionSetting) {
+    if (sidebarEnabled && !hasFirstRenderedRef.current) {
       hasFirstRenderedRef.current = true;
       setVisible(true);
     }
-  }, [sidebarEnabled, attachedDirectionSetting]);
+  }, [sidebarEnabled]);
 
   // Floating Sidebar //
   const isLockedRef = useRef(false);
