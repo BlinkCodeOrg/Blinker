@@ -172,6 +172,37 @@ function Page() {
             </div>
           </CardContent>
         </Card>
+
+        <Card className="border-border shadow-lg">
+          <CardHeader>
+            <CardTitle className="text-3xl font-bold">Repository</CardTitle>
+            <CardDescription>Project source and upstream reference.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3 text-sm">
+            <div className="flex flex-col gap-1 rounded-md bg-muted p-3">
+              <span className="text-muted-foreground">Current repository</span>
+              <a
+                className="font-medium text-primary underline-offset-4 hover:underline"
+                href="https://github.com/BlinkCodeOrg/Blinker"
+                rel="noreferrer"
+                target="_blank"
+              >
+                https://github.com/BlinkCodeOrg/Blinker
+              </a>
+            </div>
+            <div className="flex flex-col gap-1 rounded-md bg-muted p-3">
+              <span className="text-muted-foreground">Original repository</span>
+              <a
+                className="font-medium text-primary underline-offset-4 hover:underline"
+                href="https://github.com/MultiboxLabs/flow-browser"
+                rel="noreferrer"
+                target="_blank"
+              >
+                https://github.com/MultiboxLabs/flow-browser
+              </a>
+            </div>
+          </CardContent>
+        </Card>
       </motion.div>
     </div>
   );

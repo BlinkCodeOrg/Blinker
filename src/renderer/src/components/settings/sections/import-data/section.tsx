@@ -56,9 +56,9 @@ function getImportItems(): ImportItem[] {
       description: t("import.extensionsDescription"),
       helpTitle: "Как импортировать расширение",
       help: [
-        "Выберите папку unpacked-расширения, в которой лежит manifest.json.",
-        "Для своих расширений это обычно папка проекта расширения или распакованный архив.",
-        "Chrome Web Store не даёт безопасно скопировать установленные расширения напрямую: лучше скачать исходную unpacked-папку или установить расширение заново."
+        "Нажмите «Импорт расширения» и выберите файл Firefox .xpi или папку unpacked-расширения с manifest.json.",
+        "После импорта расширение появится на странице blinker://extensions/.",
+        "Blinker запускает совместимые WebExtension API. Firefox-only API из Gecko, которым нужен XPCOM/Gecko, будут пропущены с предупреждением."
       ],
       icon: <Puzzle className="h-5 w-5" />,
       ready: true
@@ -167,7 +167,7 @@ export function ImportDataSettings() {
               ) : item.id === "extensions" ? (
                 <Button onClick={importExtensions} disabled={isImportingExtensions}>
                   <FolderInput className="h-4 w-4" />
-                  {t("import.importFolder")}
+                  {t("import.importExtension")}
                 </Button>
               ) : (
                 <Button variant="outline" disabled={!item.ready}>
