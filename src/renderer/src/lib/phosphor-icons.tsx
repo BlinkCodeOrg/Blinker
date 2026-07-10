@@ -20,7 +20,7 @@ const iconSvgCache = new Map<string, string>();
 const iconLoaderPathCache = new Map<string, IconLoader | null>();
 const fallbackDotSvg =
   '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" fill="currentColor"><path d="M128 32a96 96 0 1 0 96 96 96.11 96.11 0 0 0-96-96Zm0 168a72 72 0 1 1 72-72 72.08 72.08 0 0 1-72 72Z" opacity="0.22"/><path d="M128 84a44 44 0 1 0 44 44 44.05 44.05 0 0 0-44-44Zm0 64a20 20 0 1 1 20-20 20 20 0 0 1-20 20Z"/></svg>';
-const duotoneIconLoaders = import.meta.glob("/node_modules/@phosphor-icons/core/assets/duotone/*.svg", {
+const duotoneIconLoaders = import.meta.glob("../../../../node_modules/@phosphor-icons/core/assets/duotone/*.svg", {
   query: "?raw",
   import: "default"
 }) as Record<string, IconLoader>;

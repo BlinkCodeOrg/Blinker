@@ -116,14 +116,17 @@ export const SpacesProvider = ({ windowType, children }: SpacesProviderProps) =>
 
         // Get and set last used space if no window space
         const lastUsedSpace = await blinker.spaces.getLastUsedSpace();
-        if (lastUsedSpace) {
-          setCurrentSpace(lastUsedSpace);
-        } else if (spaces.length > 0) {
-          // If no last used space, default to first non-internal space
-          const firstVisible = spaces.find((space) => !nextAreProfilesInternal[space.profileId]) ?? spaces[0];
-          setCurrentSpace(firstVisible);
+        const fallbackSpace =
+          (lastUsedSpace && spaces.find((space) => space.id === lastUsedSpace.id)) ??
+          spaces.find((space) => !nextAreProfilesInternal[space.profileId]) ??
+          spaces[0];
+
+        if (fallbackSpace) {
+          setCurrentSpace(fallbackSpace);
+          // The restored window can reference a space that was deleted manually.
+          // Persist the fallback so the next launch cannot return to the stale ID.
           if (!isReadOnlyConsumer) {
-            await blinker.spaces.setUsingSpace(firstVisible.profileId, firstVisible.id);
+            await blinker.spaces.setUsingSpace(fallbackSpace.profileId, fallbackSpace.id);
           }
         }
       } catch (error) {

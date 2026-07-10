@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { ResetOnboardingCard } from "@/components/settings/sections/general/reset-onboarding-card";
 import { UpdateCard } from "@/components/settings/sections/general/update-card";
 import { ProfileBackupCard } from "@/components/settings/sections/general/profile-backup-card";
+import { NewTabBackgroundCard } from "@/components/settings/sections/general/new-tab-background-card";
 import { SetAsDefaultBrowserSetting } from "@/components/settings/sections/general/set-as-default-browser-setting";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { t } from "@/lib/i18n";
@@ -324,6 +325,8 @@ export function BasicSettingsCard({ card, transparent }: { card: BasicSettingCar
     return <UpdateCard />;
   } else if (card.title === "INTERNAL_BACKUP") {
     return <ProfileBackupCard />;
+  } else if (card.title === "INTERNAL_NEW_TAB_BACKGROUND") {
+    return <NewTabBackgroundCard />;
   } else if (card.title === "INTERNAL_ONBOARDING") {
     return <ResetOnboardingCard />;
   }
