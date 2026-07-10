@@ -11,8 +11,8 @@ ipcMain.handle("profiles:get-are-internal", async () => {
   return await profilesController.getAreProfilesInternal();
 });
 
-ipcMain.handle("profiles:create", async (_event, profileName: string) => {
-  return await profilesController.create(profileName);
+ipcMain.handle("profiles:create", async (_event, profileName: string, icon?: string) => {
+  return await profilesController.create(profileName, true, {}, icon);
 });
 
 ipcMain.handle("profiles:update", async (_event, profileId: string, profileData: Partial<ProfileData>) => {

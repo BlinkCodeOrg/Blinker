@@ -16,6 +16,8 @@ import {
 } from "@/components/ui/dialog";
 import { useEffect, useState } from "react";
 import { t } from "@/lib/i18n";
+import { SpaceIconPicker } from "@/components/settings/sections/spaces/icon-picker";
+import { SpaceIcon } from "@/lib/phosphor-icons";
 
 // ==============================
 // Profile Card Component
@@ -34,6 +36,7 @@ function ProfileCard({ profile, activateEdit }: ProfileCardProps) {
       className="flex items-center border rounded-lg p-4 cursor-pointer hover:border-primary/50"
       onClick={() => activateEdit()}
     >
+      <SpaceIcon id={profile.icon} className="mr-3 size-7 text-primary" />
       <div className="flex-1 min-w-0">
         <h3 className="font-medium text-base truncate">{profile.name}</h3>
         <p className="text-xs text-muted-foreground truncate">ID: {profile.id}</p>
@@ -59,9 +62,10 @@ interface BasicSettingsTabProps {
   profile: Profile;
   editedProfile: Profile;
   handleNameChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  setEditedProfile: React.Dispatch<React.SetStateAction<Profile>>;
 }
 
-function BasicSettingsTab({ profile, editedProfile, handleNameChange }: BasicSettingsTabProps) {
+function BasicSettingsTab({ profile, editedProfile, handleNameChange, setEditedProfile }: BasicSettingsTabProps) {
   return (
     <Card>
       <CardHeader>
@@ -76,6 +80,15 @@ function BasicSettingsTab({ profile, editedProfile, handleNameChange }: BasicSet
             value={editedProfile.name}
             onChange={handleNameChange}
             placeholder={t("profiles.namePlaceholder")}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label>{t("profiles.profileIcon")}</Label>
+          <SpaceIconPicker
+            selectedIcon={editedProfile.icon}
+            onSelectIcon={(icon) => {
+              setEditedProfile((current) => ({ ...current, icon }));
+            }}
           />
         </div>
 
@@ -441,7 +454,12 @@ function ProfileEditor({
         <div className="flex-1 p-6 overflow-auto">
           {activeTab === "basic" && (
             <div className="space-y-6">
-              <BasicSettingsTab profile={profile} editedProfile={editedProfile} handleNameChange={handleNameChange} />
+              <BasicSettingsTab
+                profile={profile}
+                editedProfile={editedProfile}
+                handleNameChange={handleNameChange}
+                setEditedProfile={setEditedProfile}
+              />
             </div>
           )}
 
@@ -490,6 +508,8 @@ interface CreateProfileDialogProps {
   onClose: (open: boolean) => void;
   profileName: string;
   setProfileName: (name: string) => void;
+  profileIcon: string;
+  setProfileIcon: (icon: string) => void;
   isCreating: boolean;
   onCreate: () => Promise<void>;
 }
@@ -499,6 +519,8 @@ function CreateProfileDialog({
   onClose,
   profileName,
   setProfileName,
+  profileIcon,
+  setProfileIcon,
   isCreating,
   onCreate
 }: CreateProfileDialogProps) {
@@ -527,6 +549,10 @@ function CreateProfileDialog({
               className="col-span-3"
               autoFocus
             />
+          </div>
+          <div className="space-y-2">
+            <Label>{t("profiles.profileIcon")}</Label>
+            <SpaceIconPicker selectedIcon={profileIcon} onSelectIcon={setProfileIcon} />
           </div>
         </div>
         <DialogFooter>
@@ -564,6 +590,7 @@ export function ProfilesSettings({ navigateToSpaces, navigateToSpace }: Profiles
   const [activeProfile, setActiveProfile] = useState<Profile | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [newProfileName, setNewProfileName] = useState("");
+  const [newProfileIcon, setNewProfileIcon] = useState("UserCircle");
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
 
   // Fetch profiles from the API, excluding internal profiles
@@ -598,11 +625,12 @@ export function ProfilesSettings({ navigateToSpaces, navigateToSpace }: Profiles
 
     setIsCreating(true);
     try {
-      const result = await blinker.profiles.createProfile(newProfileName);
+      const result = await blinker.profiles.createProfile(newProfileName, newProfileIcon);
       console.log("Profile creation result:", result);
 
       // Clear the form and close the dialog
       setNewProfileName("");
+      setNewProfileIcon("UserCircle");
       setCreateDialogOpen(false);
 
       // Refetch profiles to get the latest data
@@ -673,6 +701,8 @@ export function ProfilesSettings({ navigateToSpaces, navigateToSpace }: Profiles
         onClose={setCreateDialogOpen}
         profileName={newProfileName}
         setProfileName={setNewProfileName}
+        profileIcon={newProfileIcon}
+        setProfileIcon={setNewProfileIcon}
         isCreating={isCreating}
         onCreate={handleCreateProfile}
       />

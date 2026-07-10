@@ -767,6 +767,7 @@ const en: Record<keyof typeof ru, string> = {
 };
 
 Object.assign(ru, {
+  "profiles.profileIcon": "Иконка профиля",
   "newTab.background": "Фон новой вкладки",
   "newTab.backgroundDescription": "Настройте изображение, GIF или видео без звука.",
   "newTab.backgroundEmpty": "Фон не выбран",
@@ -796,6 +797,7 @@ Object.assign(ru, {
 });
 
 Object.assign(en, {
+  "profiles.profileIcon": "Profile icon",
   "newTab.background": "New tab background",
   "newTab.backgroundDescription": "Use an image, GIF, or muted video.",
   "newTab.backgroundEmpty": "No background selected",

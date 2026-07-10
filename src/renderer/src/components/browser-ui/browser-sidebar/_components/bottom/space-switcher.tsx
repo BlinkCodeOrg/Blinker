@@ -199,6 +199,7 @@ function useVisibleSpaces(spaces: Space[], activeIndex: number, containerWidth: 
 
 export function SpaceSwitcher() {
   const { spaces, currentSpace, isCurrentSpaceInternal } = useSpaces();
+  const [profileIcon, setProfileIcon] = useState("UserCircle");
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(0);
 
@@ -216,6 +217,14 @@ export function SpaceSwitcher() {
     return () => observer.disconnect();
   }, []);
 
+  useEffect(() => {
+    if (!currentSpace?.profileId) return;
+    void blinker.profiles.getProfiles().then((profiles) => {
+      const profile = profiles.find((entry) => entry.id === currentSpace.profileId);
+      setProfileIcon(profile?.icon ?? "UserCircle");
+    });
+  }, [currentSpace?.profileId]);
+
   const activeIndex = useMemo(() => {
     if (!currentSpace) return 0;
     const idx = spaces.findIndex((s) => s.id === currentSpace.id);
@@ -230,7 +239,15 @@ export function SpaceSwitcher() {
   }
 
   return (
-    <div ref={containerRef} className="flex-1 min-w-0 flex justify-center">
+    <div ref={containerRef} className="flex flex-1 min-w-0 items-center justify-center gap-2">
+      <button
+        type="button"
+        onClick={() => blinker.tabs.newTab("blinker://settings/#profiles", true)}
+        className="flex size-7 shrink-0 items-center justify-center rounded-md text-black/60 transition-colors hover:bg-black/10 hover:text-black dark:text-white/60 dark:hover:bg-white/10 dark:hover:text-white"
+        aria-label="Profiles"
+      >
+        <SpaceIcon id={profileIcon} className="size-4" />
+      </button>
       <div className={cn("flex flex-row items-center", compact ? "gap-0.5" : "gap-1")}>
         {visibleSpaces.map((space) => (
           <SpaceButton key={space.id} space={space} isActive={currentSpace?.id === space.id} compact={compact} />

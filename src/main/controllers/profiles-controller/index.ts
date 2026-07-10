@@ -93,9 +93,10 @@ class ProfilesController extends TypedEventEmitter<ProfilesControllerEvents> {
     profileId: string,
     profileName: string,
     shouldCreateSpace: boolean = true,
-    extraInfo: ExtraProfileCreationInfo = {}
+    extraInfo: ExtraProfileCreationInfo = {},
+    icon: string = "UserCircle"
   ): Promise<boolean> {
-    const result = await this.raw.create(profileId, profileName, shouldCreateSpace, extraInfo);
+    const result = await this.raw.create(profileId, profileName, shouldCreateSpace, extraInfo, icon);
     if (result.success) {
       this._setCachedProfileData(profileId, result.profileData);
       this.emit("profile-created", profileId, result.profileData);
@@ -106,10 +107,11 @@ class ProfilesController extends TypedEventEmitter<ProfilesControllerEvents> {
   public async create(
     profileName: string,
     shouldCreateSpace: boolean = true,
-    extraInfo: ExtraProfileCreationInfo = {}
+    extraInfo: ExtraProfileCreationInfo = {},
+    icon: string = "UserCircle"
   ): Promise<boolean> {
     const profileId = generateID();
-    return await this._create(profileId, profileName, shouldCreateSpace, extraInfo);
+    return await this._create(profileId, profileName, shouldCreateSpace, extraInfo, icon);
   }
 
   /**

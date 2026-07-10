@@ -923,8 +923,8 @@ const profilesAPI: BlinkerProfilesAPI = {
   getAreProfilesInternal: async () => {
     return ipcRenderer.invoke("profiles:get-are-internal");
   },
-  createProfile: async (profileName: string) => {
-    return ipcRenderer.invoke("profiles:create", profileName);
+  createProfile: async (profileName: string, icon?: string) => {
+    return ipcRenderer.invoke("profiles:create", profileName, icon);
   },
   updateProfile: async (profileId: string, profileData: Partial<ProfileData>) => {
     return ipcRenderer.invoke("profiles:update", profileId, profileData);

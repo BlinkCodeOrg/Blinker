@@ -1,6 +1,7 @@
 export type Profile = {
   id: string;
   name: string;
+  icon: string;
   /**
    * Causes all spaces in this profile to not be shown in most UI elements and
    * to not be switchable to or from by the user (e.g. incognito profiles)
@@ -27,7 +28,7 @@ export interface BlinkerProfilesAPI {
   /**
    * Creates a profile
    */
-  createProfile: (profileName: string) => Promise<boolean>;
+  createProfile: (profileName: string, icon?: string) => Promise<boolean>;
 
   /**
    * Updates a profile

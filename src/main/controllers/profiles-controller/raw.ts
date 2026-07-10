@@ -33,6 +33,7 @@ type RawUpdateProfileResult =
 // Schema
 export const ProfileDataSchema = type({
   name: "string",
+  icon: "string",
   createdAt: "number",
   internal: "boolean",
   ephemeral: "boolean"
@@ -57,6 +58,7 @@ function reconcileProfileData(profileId: string, data: DataStoreData): ProfileDa
 
   return {
     name: data.name ?? defaultName,
+    icon: data.icon ?? "UserCircle",
     createdAt: data.createdAt ?? getCurrentTimestamp(),
     internal: data.internal ?? false,
     ephemeral: data.ephemeral ?? false
@@ -73,7 +75,8 @@ export class RawProfilesController {
     profileId: string,
     profileName: string,
     shouldCreateSpace: boolean = true,
-    extraInfo: ExtraProfileCreationInfo = {}
+    extraInfo: ExtraProfileCreationInfo = {},
+    icon: string = "UserCircle"
   ): Promise<RawCreateProfileResult> {
     // Validate profileId to prevent directory traversal attacks or invalid characters
     if (!/^[a-zA-Z0-9_-]+$/.test(profileId)) {
@@ -97,6 +100,7 @@ export class RawProfilesController {
       const { internal = false, ephemeral = false } = extraInfo;
       const storingProfileData = {
         name: profileName,
+        icon,
         createdAt: getCurrentTimestamp(),
         internal,
         ephemeral
@@ -139,6 +143,9 @@ export class RawProfilesController {
 
       if (profileData.name) {
         updatedFields.name = profileData.name;
+      }
+      if (profileData.icon) {
+        updatedFields.icon = profileData.icon;
       }
 
       if (Object.keys(updatedFields).length > 0) {
