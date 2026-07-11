@@ -49,12 +49,17 @@ export const PinnedTabsProvider = ({ children }: PinnedTabsProviderProps) => {
       settled = true;
       setPinnedTabsByProfile(data);
     });
-    blinker.pinnedTabs.getData().then((data) => {
-      if (!settled) {
-        setPinnedTabsByProfile(data);
-      }
-    });
-    return unsub;
+    const timeout = window.setTimeout(() => {
+      void blinker.pinnedTabs.getData().then((data) => {
+        if (!settled) {
+          setPinnedTabsByProfile(data);
+        }
+      });
+    }, 450);
+    return () => {
+      window.clearTimeout(timeout);
+      unsub();
+    };
   }, []);
 
   const getPinnedTabs = useCallback(

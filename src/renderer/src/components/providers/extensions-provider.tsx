@@ -74,7 +74,11 @@ export const ExtensionsProvider = ({ dataKey = "extensions", profileId = null, c
 
   // Initial fetch
   useEffect(() => {
-    fetchExtensions(profileId);
+    const timeout = window.setTimeout(() => {
+      void fetchExtensions(profileId);
+    }, 700);
+
+    return () => window.clearTimeout(timeout);
   }, [profileId, fetchExtensions]);
 
   // When the provider scope changes, flush state immediately to avoid showing

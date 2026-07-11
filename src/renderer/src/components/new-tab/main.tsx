@@ -120,6 +120,7 @@ export function NewTabPage() {
               autoPlay
               loop
               playsInline
+              preload="auto"
               className="size-full origin-center"
               style={backgroundStyle}
             />

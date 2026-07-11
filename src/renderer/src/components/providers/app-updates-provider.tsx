@@ -28,10 +28,11 @@ export function AppUpdatesProvider({ children }: AppUpdatesProviderProps) {
 
   // Initialize update status
   useEffect(() => {
+    let cancelled = false;
     const fetchUpdateStatus = async () => {
       try {
         const status = await blinker.updates.getUpdateStatus();
-        setUpdateStatus(status);
+        if (!cancelled) setUpdateStatus(status);
       } catch (error) {
         console.error("Failed to get update status:", error);
       }
@@ -40,25 +41,32 @@ export function AppUpdatesProvider({ children }: AppUpdatesProviderProps) {
     const checkAutoUpdateSupport = async () => {
       try {
         const supported = await blinker.updates.isAutoUpdateSupported();
-        setIsAutoUpdateSupported(supported);
+        if (!cancelled) setIsAutoUpdateSupported(supported);
       } catch (error) {
         console.error("Failed to check auto update support:", error);
-        setIsAutoUpdateSupported(false);
+        if (!cancelled) setIsAutoUpdateSupported(false);
       }
     };
 
     const checkHasUpdated = async () => {
       try {
         const updated = await blinker.updates.hasUpdated();
-        setHasUpdated(updated);
+        if (!cancelled) setHasUpdated(updated);
       } catch (error) {
         console.error("Failed to check if app has updated:", error);
       }
     };
 
-    fetchUpdateStatus();
-    checkAutoUpdateSupport();
-    checkHasUpdated();
+    const timeout = window.setTimeout(() => {
+      void fetchUpdateStatus();
+      void checkAutoUpdateSupport();
+      void checkHasUpdated();
+    }, 1200);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timeout);
+    };
   }, []);
 
   // Listen for update status changes

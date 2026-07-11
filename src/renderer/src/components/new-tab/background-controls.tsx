@@ -98,7 +98,15 @@ export function NewTabBackgroundControls({ background, onChange }: BackgroundCon
           <div className="overflow-hidden rounded-lg border border-border bg-muted/40 aspect-video">
             {background.sourceUrl ? (
               background.mediaType === "video" ? (
-                <video src={background.sourceUrl} muted autoPlay loop playsInline className="size-full object-cover" />
+                <video
+                  src={background.sourceUrl}
+                  muted
+                  autoPlay
+                  loop
+                  playsInline
+                  preload="auto"
+                  className="size-full object-cover"
+                />
               ) : (
                 <img src={background.sourceUrl} alt="" className="size-full object-cover" />
               )

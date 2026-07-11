@@ -51,12 +51,42 @@ interface SpacesProviderProps {
   children: React.ReactNode;
 }
 
+const SPACES_CACHE_KEY = "BLINKER_SIDEBAR_SPACES_V1";
+const SPACES_CACHE_MAX_AGE = 1000 * 60 * 60 * 24;
+
+type SpacesCache = {
+  savedAt: number;
+  spaces: Space[];
+  currentSpaceId: string | null;
+  areProfilesInternal: Record<string, boolean>;
+  areProfilesEphemeral: Record<string, boolean>;
+};
+
+function readSpacesCache(): SpacesCache | null {
+  try {
+    const raw = localStorage.getItem(SPACES_CACHE_KEY);
+    if (!raw) return null;
+    const value = JSON.parse(raw) as SpacesCache;
+    if (!Array.isArray(value.spaces) || Date.now() - value.savedAt > SPACES_CACHE_MAX_AGE) return null;
+    return value;
+  } catch {
+    return null;
+  }
+}
+
 export const SpacesProvider = ({ windowType, children }: SpacesProviderProps) => {
-  const [allSpaces, setAllSpaces] = useState<Space[]>([]);
-  const [areProfilesInternal, setAreProfilesInternal] = useState<Record<string, boolean>>({});
-  const [areProfilesEphemeral, setAreProfilesEphemeral] = useState<Record<string, boolean>>({});
-  const [currentSpace, setCurrentSpace] = useState<Space | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const initialCache = useMemo(readSpacesCache, []);
+  const [allSpaces, setAllSpaces] = useState<Space[]>(() => initialCache?.spaces ?? []);
+  const [areProfilesInternal, setAreProfilesInternal] = useState<Record<string, boolean>>(
+    () => initialCache?.areProfilesInternal ?? {}
+  );
+  const [areProfilesEphemeral, setAreProfilesEphemeral] = useState<Record<string, boolean>>(
+    () => initialCache?.areProfilesEphemeral ?? {}
+  );
+  const [currentSpace, setCurrentSpace] = useState<Space | null>(
+    () => initialCache?.spaces.find((space) => space.id === initialCache.currentSpaceId) ?? null
+  );
+  const [isLoading, setIsLoading] = useState(() => !initialCache);
   const currentSpaceRef = useRef<Space | null>(null);
   const isReadOnlyConsumer = windowType === "none";
 
@@ -75,6 +105,23 @@ export const SpacesProvider = ({ windowType, children }: SpacesProviderProps) =>
   useEffect(() => {
     currentSpaceRef.current = currentSpace;
   }, [currentSpace]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        SPACES_CACHE_KEY,
+        JSON.stringify({
+          savedAt: Date.now(),
+          spaces: allSpaces,
+          currentSpaceId: currentSpace?.id ?? null,
+          areProfilesInternal,
+          areProfilesEphemeral
+        } satisfies SpacesCache)
+      );
+    } catch {
+      // The cache is a startup hint; IPC data remains authoritative.
+    }
+  }, [allSpaces, areProfilesEphemeral, areProfilesInternal, currentSpace?.id]);
 
   const fetchSpaces = useCallback(
     async (preferredSpaceId?: string) => {

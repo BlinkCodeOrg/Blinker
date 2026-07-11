@@ -2,8 +2,8 @@ import { useState, useEffect, useMemo, memo } from "react";
 import { Search } from "lucide-react";
 import { motion } from "motion/react";
 import { Input } from "@/components/ui/input";
-import { PhosphorIcons, SpaceIcon } from "@/lib/phosphor-icons";
-import { IconEntry } from "@phosphor-icons/core";
+import { SpaceIcon } from "@/lib/phosphor-icons";
+import type { IconEntry } from "@phosphor-icons/core";
 
 // ==============================
 // PhosphorIconPicker Component
@@ -18,10 +18,18 @@ export function SpaceIconPicker({ selectedIcon, onSelectIcon }: SpaceIconPickerP
   const [iconList, setIconList] = useState<IconEntry[]>([]);
   const [filteredIcons, setFilteredIcons] = useState<IconEntry[]>([]);
 
-  // Load icons only once on component mount
   useEffect(() => {
-    setIconList(PhosphorIcons);
-    setFilteredIcons(PhosphorIcons);
+    let cancelled = false;
+
+    void import("@/lib/phosphor-icon-catalog").then(({ PhosphorIcons }) => {
+      if (cancelled) return;
+      setIconList(PhosphorIcons);
+      setFilteredIcons(PhosphorIcons);
+    });
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   // Memoize filter operation to prevent excessive re-renders
