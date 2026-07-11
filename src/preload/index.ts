@@ -1262,6 +1262,9 @@ const extensionsAPI: BlinkerExtensionsAPI = {
   },
   importUnpacked: async () => {
     return ipcRenderer.invoke("extensions:import-unpacked");
+  },
+  importFirefoxXpi: async () => {
+    return ipcRenderer.invoke("extensions:import-firefox-xpi");
   }
 };
 
@@ -1350,7 +1353,12 @@ const blinkerAPI: typeof blinker = {
     resizeWindowTo: "all"
   }),
   omnibox: wrapAPI(omniboxAPI, "browser"),
-  newTab: wrapAPI(newTabAPI, "browser"),
+  newTab: wrapAPI(newTabAPI, "browser", {
+    getBackground: "settings",
+    chooseBackground: "settings",
+    updateBackground: "settings",
+    clearBackground: "settings"
+  }),
   findInPage: wrapAPI(findInPageAPI, "browser"),
   prompts: wrapAPI(promptsAPI, "browser"),
 

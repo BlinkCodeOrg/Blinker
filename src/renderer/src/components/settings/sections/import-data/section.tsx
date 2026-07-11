@@ -138,6 +138,20 @@ export function ImportDataSettings() {
     }
   };
 
+  const importFirefoxXpi = async () => {
+    setIsImportingExtensions(true);
+    try {
+      const extension = await blinker.extensions.importFirefoxXpi();
+      if (!extension) return;
+      toast.success(`Firefox extension imported: ${extension.name}`);
+    } catch (error) {
+      console.error("Failed to import Firefox extension:", error);
+      toast.error("Could not import the Firefox extension.");
+    } finally {
+      setIsImportingExtensions(false);
+    }
+  };
+
   return (
     <div className="space-y-6 remove-app-drag">
       <div>
@@ -165,10 +179,16 @@ export function ImportDataSettings() {
                   {t("import.importCsv")}
                 </Button>
               ) : item.id === "extensions" ? (
-                <Button onClick={importExtensions} disabled={isImportingExtensions}>
-                  <FolderInput className="h-4 w-4" />
-                  {t("import.importExtension")}
-                </Button>
+                <div className="flex flex-wrap gap-2">
+                  <Button onClick={importFirefoxXpi} disabled={isImportingExtensions}>
+                    <Download className="h-4 w-4" />
+                    Import .xpi
+                  </Button>
+                  <Button variant="outline" onClick={importExtensions} disabled={isImportingExtensions}>
+                    <FolderInput className="h-4 w-4" />
+                    {t("import.importExtension")}
+                  </Button>
+                </div>
               ) : (
                 <Button variant="outline" disabled={!item.ready}>
                   <Settings2 className="h-4 w-4" />

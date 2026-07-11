@@ -187,12 +187,8 @@ ipcMain.handle("extensions:import-unpacked", async (event: IpcMainInvokeEvent): 
 
   const window = browserWindowsController.getWindowFromWebContents(event.sender);
   const dialogOptions: Electron.OpenDialogOptions = {
-    title: "Import Extension",
-    properties: ["openDirectory", "openFile"],
-    filters: [
-      { name: "Browser extensions", extensions: ["xpi"] },
-      { name: "All files", extensions: ["*"] }
-    ]
+    title: "Import unpacked extension",
+    properties: ["openDirectory"]
   };
   const result = window
     ? await dialog.showOpenDialog(window.browserWindow, dialogOptions)
@@ -213,6 +209,42 @@ ipcMain.handle("extensions:import-unpacked", async (event: IpcMainInvokeEvent): 
   await fireOnExtensionsUpdated(profileId);
   return sharedExtension;
 });
+
+ipcMain.handle(
+  "extensions:import-firefox-xpi",
+  async (event: IpcMainInvokeEvent): Promise<SharedExtensionData | null> => {
+    const profileId = await getCurrentProfileIdFromWebContents(event.sender);
+    if (!profileId) return null;
+
+    const loadedProfile = loadedProfilesController.get(profileId);
+    if (!loadedProfile) return null;
+
+    const window = browserWindowsController.getWindowFromWebContents(event.sender);
+    const dialogOptions: Electron.OpenDialogOptions = {
+      title: "Import Firefox extension (.xpi)",
+      properties: ["openFile"],
+      filters: [{ name: "Firefox extension (.xpi)", extensions: ["xpi"] }]
+    };
+    const result = window
+      ? await dialog.showOpenDialog(window.browserWindow, dialogOptions)
+      : await dialog.showOpenDialog(dialogOptions);
+    if (result.canceled || result.filePaths.length === 0) return null;
+
+    const extensionId = await loadedProfile.extensionsManager.importUnpackedExtension(result.filePaths[0]);
+    if (!extensionId) return null;
+
+    const extensionData = loadedProfile.extensionsManager.getExtensionDataFromCache(extensionId);
+    if (!extensionData) return null;
+
+    const sharedExtension = await generateSharedExtensionData(
+      loadedProfile.extensionsManager,
+      extensionId,
+      extensionData
+    );
+    await fireOnExtensionsUpdated(profileId);
+    return sharedExtension;
+  }
+);
 
 export async function fireOnExtensionsUpdated(profileId: string) {
   const extensions = await getExtensionDataFromProfile(profileId);

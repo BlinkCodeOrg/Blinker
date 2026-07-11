@@ -37,4 +37,9 @@ export interface BlinkerExtensionsAPI {
    * Import an unpacked extension folder into the current profile
    */
   importUnpacked: () => Promise<SharedExtensionData | null>;
+
+  /**
+   * Import a packaged Firefox WebExtension (.xpi) into the current profile.
+   */
+  importFirefoxXpi: () => Promise<SharedExtensionData | null>;
 }

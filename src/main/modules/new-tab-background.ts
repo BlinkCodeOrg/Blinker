@@ -1,7 +1,6 @@
 import { dialog } from "electron";
 import fs from "fs/promises";
 import path from "path";
-import { pathToFileURL } from "url";
 import { getDatastore } from "@/saving/datastore";
 import { BLINKER_DATA_DIR } from "@/modules/paths";
 import type { NewTabBackground, NewTabBackgroundFit } from "~/blinker/interfaces/browser/newTab";
@@ -64,7 +63,7 @@ export async function getNewTabBackground(): Promise<NewTabBackground> {
 
   return {
     ...saved,
-    sourceUrl: pathToFileURL(filePath).href
+    sourceUrl: `blinker://new-tab-background/${encodeURIComponent(saved.fileName)}`
   };
 }
 

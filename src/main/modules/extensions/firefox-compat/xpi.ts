@@ -1,6 +1,6 @@
 import fs from "fs/promises";
 import path from "path";
-import extractZip from "extract-zip";
+import AdmZip from "adm-zip";
 import { prepareExtensionImport } from "./manifest";
 import { PreparedExtensionImport } from "./types";
 
@@ -23,7 +23,7 @@ export async function prepareExtensionSourceForImport(
   await fs.mkdir(stagingRoot, { recursive: true });
   await fs.rm(unpackedXpiPath, { recursive: true, force: true });
   await fs.mkdir(unpackedXpiPath, { recursive: true });
-  await extractZip(sourcePath, { dir: unpackedXpiPath });
+  new AdmZip(sourcePath).extractAllTo(unpackedXpiPath, true);
 
   const preparedImport = await prepareExtensionImport(unpackedXpiPath, stagingRoot, { mutateSource: true });
 

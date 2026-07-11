@@ -8,15 +8,25 @@ export function NewTabBackgroundCard() {
   const [background, setBackground] = useState<NewTabBackground | null>(null);
 
   useEffect(() => {
-    void blinker.newTab.getBackground().then(setBackground);
+    void blinker.newTab.getBackground().then(setBackground).catch(console.error);
   }, []);
 
   const choose = async () => {
-    const next = await blinker.newTab.chooseBackground();
-    if (next) setBackground(next);
+    try {
+      const next = await blinker.newTab.chooseBackground();
+      if (next) setBackground(next);
+    } catch (error) {
+      console.error("Failed to choose new tab background:", error);
+    }
   };
 
-  const clear = async () => setBackground(await blinker.newTab.clearBackground());
+  const clear = async () => {
+    try {
+      setBackground(await blinker.newTab.clearBackground());
+    } catch (error) {
+      console.error("Failed to clear new tab background:", error);
+    }
+  };
 
   return (
     <div className="remove-app-drag rounded-lg border bg-card p-6">

@@ -2,6 +2,7 @@ import { registerFaviconRoutes } from "./favicon";
 import { registerAssetsRoutes } from "./assets";
 import { registerExtensionIconRoutes } from "./extension-icon";
 import { registerPdfCacheRoutes } from "./pdf-cache";
+import { registerNewTabBackgroundRoutes } from "./new-tab-background";
 import { transformPathForRequest } from "../../utils";
 import { type Protocol } from "electron";
 import { Hono } from "hono/tiny";
@@ -18,6 +19,7 @@ registerFaviconRoutes(app);
 registerAssetsRoutes(app);
 registerExtensionIconRoutes(app);
 registerPdfCacheRoutes(app);
+registerNewTabBackgroundRoutes(app);
 
 // Catch-all Route
 registerStaticDomainsRoutes("blinker", app);
