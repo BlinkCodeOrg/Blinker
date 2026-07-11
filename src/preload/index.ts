@@ -1138,6 +1138,9 @@ const sitePermissionsAPI: BlinkerSitePermissionsAPI = {
   },
   clear: async (profileId) => {
     return ipcRenderer.invoke("site-permissions:clear", profileId);
+  },
+  onChanged: (callback) => {
+    return listenOnIPCChannel("site-permissions:on-changed", callback);
   }
 };
 

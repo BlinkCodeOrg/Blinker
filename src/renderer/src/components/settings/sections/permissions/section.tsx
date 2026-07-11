@@ -10,6 +10,8 @@ import type { Profile } from "~/blinker/interfaces/sessions/profiles";
 import type { SitePermissionEntry, SitePermissionSetting } from "~/types/site-permissions";
 
 const permissionLabelKeys: Record<string, string> = {
+  camera: "permission.cameraTitle",
+  microphone: "permission.microphoneTitle",
   media: "permission.cameraMicrophoneTitle",
   geolocation: "permission.geolocationTitle",
   notifications: "permission.notificationsTitle",

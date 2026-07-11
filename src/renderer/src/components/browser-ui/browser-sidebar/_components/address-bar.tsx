@@ -7,7 +7,7 @@ import { PinnedBrowserActions } from "./pinned-browser-actions";
 import { useBrowserSidebar } from "@/components/browser-ui/browser-sidebar/provider";
 import { BrowserActionList } from "@/components/browser-ui/browser-sidebar/_components/browser-action-list";
 import { BookmarkButton } from "@/components/browser-ui/browser-sidebar/_components/bookmark-button";
-// import { SiteControls } from "@/components/browser-ui/browser-sidebar/_components/site-controls";
+import { SiteControls } from "@/components/browser-ui/browser-sidebar/_components/site-controls";
 
 export const AddressBar = memo(function AddressBar() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -93,8 +93,7 @@ export const AddressBar = memo(function AddressBar() {
         <PinnedBrowserActions />
         <div>
           <BrowserActionList />
-          {/* TODO: Add site controls */}
-          {/* <SiteControls /> */}
+          <SiteControls />
         </div>
       </div>
     </div>

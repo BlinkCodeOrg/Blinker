@@ -7,7 +7,14 @@ import { getSitePermissionSetting, setSitePermissionForProfile } from "@/saving/
 import { app, dialog, OpenExternalPermissionRequest, type Session } from "electron";
 import type { PromptResult, PromptState, SitePermissionPromptResult } from "~/types/prompts";
 
-const MANAGED_PERMISSIONS = new Set(["media", "geolocation", "notifications", "midiSysex", "pointerLock"]);
+const MANAGED_PERMISSIONS = new Set([
+  "media",
+  "geolocation",
+  "notifications",
+  "midiSysex",
+  "pointerLock",
+  "fullscreen"
+]);
 
 function originFromUrl(url: string): string | null {
   try {
@@ -21,6 +28,10 @@ function originFromUrl(url: string): string | null {
 
 function permissionLabelKey(permission: string) {
   switch (permission) {
+    case "camera":
+      return "permission.camera";
+    case "microphone":
+      return "permission.microphone";
     case "media":
       return "permission.cameraMicrophone";
     case "geolocation":
@@ -36,6 +47,15 @@ function permissionLabelKey(permission: string) {
     default:
       return permission;
   }
+}
+
+function permissionKeys(permission: string, details: { mediaTypes?: string[] }): string[] {
+  if (permission !== "media") return [permission];
+  const mediaTypes = details.mediaTypes ?? [];
+  const keys = new Set<string>();
+  if (mediaTypes.includes("video")) keys.add("camera");
+  if (mediaTypes.includes("audio")) keys.add("microphone");
+  return keys.size > 0 ? [...keys] : ["media"];
 }
 
 async function requestSitePermission(tabId: number, origin: string, permission: string) {
@@ -62,11 +82,6 @@ async function requestSitePermission(tabId: number, origin: string, permission: 
 export function registerHandlersWithSession(session: Session) {
   session.setPermissionRequestHandler(async (webContents, permission, callback, details) => {
     debugPrint("PERMISSIONS", "permission request", webContents?.getURL() || "unknown-url", permission);
-
-    if (permission === "fullscreen") {
-      callback(true);
-      return;
-    }
 
     if (permission === "openExternal") {
       const openExternalDetails = details as OpenExternalPermissionRequest;
@@ -117,28 +132,53 @@ export function registerHandlersWithSession(session: Session) {
     const origin = originFromUrl(requestingUrl);
 
     if (!tab || !origin || !MANAGED_PERMISSIONS.has(permission)) {
-      callback(true);
-      return;
-    }
-
-    const stored = getSitePermissionSetting(tab.profileId, origin, permission);
-    if (stored === "allow") {
-      callback(true);
-      return;
-    }
-    if (stored === "block") {
       callback(false);
       return;
     }
 
-    const response = await requestSitePermission(tab.id, origin, permission);
-    if (response === "always") {
-      setSitePermissionForProfile(tab.profileId, { origin, permission, setting: "allow" });
-      sendMessageToListeners("site-permissions:on-changed");
+    const keys = permissionKeys(permission, details as { mediaTypes?: string[] });
+    const storedSettings = keys.map(
+      (key) =>
+        getSitePermissionSetting(tab.profileId, origin, key) ??
+        getSitePermissionSetting(tab.profileId, origin, permission)
+    );
+    if (storedSettings.every((setting) => setting === "allow")) {
       callback(true);
       return;
     }
+    if (storedSettings.some((setting) => setting === "block")) {
+      callback(false);
+      return;
+    }
 
-    callback(response === "allow");
+    for (const key of keys) {
+      const response = await requestSitePermission(tab.id, origin, key);
+      if (response === "always") {
+        setSitePermissionForProfile(tab.profileId, { origin, permission: key, setting: "allow" });
+        sendMessageToListeners("site-permissions:on-changed");
+        continue;
+      }
+      if (response !== "allow") {
+        callback(false);
+        return;
+      }
+    }
+    callback(true);
+  });
+
+  session.setPermissionCheckHandler((webContents, permission, requestingOrigin) => {
+    if (permission === "openExternal") return false;
+    const tab = webContents ? tabsController.getTabByWebContents(webContents) : null;
+    const origin = originFromUrl(requestingOrigin || webContents?.getURL() || "");
+    if (!tab || !origin || !MANAGED_PERMISSIONS.has(permission)) return false;
+    if (permission === "media") {
+      const legacy = getSitePermissionSetting(tab.profileId, origin, "media");
+      return (
+        legacy === "allow" ||
+        (getSitePermissionSetting(tab.profileId, origin, "camera") === "allow" &&
+          getSitePermissionSetting(tab.profileId, origin, "microphone") === "allow")
+      );
+    }
+    return getSitePermissionSetting(tab.profileId, origin, permission) === "allow";
   });
 }
