@@ -11,14 +11,15 @@ const activeTabFaviconCache = new Map<number, { faviconURL: string; data: ArrayB
 const inFlightFetches = new Map<string, Promise<{ data: ArrayBuffer; contentType: string }>>();
 
 // Remove cached favicons that are no longer active
-setInterval(() => {
+const faviconPruneInterval = setInterval(() => {
   for (const [tabId, cached] of activeTabFaviconCache.entries()) {
     const tab = tabsController.getTabById(tabId);
     if (!tab || tab.isDestroyed || tab.faviconURL !== cached.faviconURL) {
       activeTabFaviconCache.delete(tabId);
     }
   }
-}, 1000);
+}, 60_000);
+faviconPruneInterval.unref();
 
 // Common Cache-Control header for favicon responses.
 // The renderer URL includes faviconURL as a query param for cache-busting,

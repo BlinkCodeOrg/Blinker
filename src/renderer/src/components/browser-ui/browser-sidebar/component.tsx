@@ -333,7 +333,7 @@ export function BrowserSidebar({
         "relative w-full h-full max-h-screen remove-app-drag",
         "transition-transform",
         "flex flex-col",
-        isFloating && "rounded-lg border border-sidebar-border/50 sidebar-floating-bg backdrop-blur-md"
+        isFloating && "rounded-lg border border-sidebar-border/50 sidebar-floating-bg backdrop-blur-sm"
       )}
       style={SIDEBAR_ANIMATION_STYLE}
     >

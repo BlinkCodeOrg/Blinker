@@ -118,6 +118,11 @@ export function SpacePagesCarousel() {
     return idx === -1 ? 0 : idx;
   }, [currentSpace, spaces]);
 
+  // Large profiles may contain hundreds of tabs spread over many spaces.
+  // Keep only the active page and its immediate neighbours mounted so tab
+  // updates do not reconcile every hidden space.
+  const shouldRenderSpace = useCallback((index: number) => Math.abs(index - currentIndex) <= 1, [currentIndex]);
+
   // Keep a ref so the ResizeObserver (created once) always reads the latest index
   const currentIndexRef = useRef(currentIndex);
   currentIndexRef.current = currentIndex;
@@ -279,9 +284,13 @@ export function SpacePagesCarousel() {
       )}
       style={{ scrollbarWidth: "none" }}
     >
-      {spaces.map((space) => (
-        <SpaceContentPage key={space.id} space={space} moveTab={moveTab} slotMachineEnabled={slotMachineEnabled} />
-      ))}
+      {spaces.map((space, index) =>
+        shouldRenderSpace(index) ? (
+          <SpaceContentPage key={space.id} space={space} moveTab={moveTab} slotMachineEnabled={slotMachineEnabled} />
+        ) : (
+          <div key={space.id} className="min-w-full shrink-0 snap-start snap-always mx-1" aria-hidden />
+        )
+      )}
     </div>
   );
 }

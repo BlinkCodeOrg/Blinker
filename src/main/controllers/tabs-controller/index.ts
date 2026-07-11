@@ -21,7 +21,7 @@ import { quitController } from "@/controllers/quit-controller";
 import { clearPlaceholdersForTab, isSyncExcludedTab, isTabSyncEnabled, registerTabsController } from "./tab-sync";
 
 export const NEW_TAB_URL = "blinker://new-tab";
-const ARCHIVE_CHECK_INTERVAL_MS = 10 * 1000;
+const ARCHIVE_CHECK_INTERVAL_MS = 30 * 1000;
 
 type TabsControllerEvents = {
   "tab-created": [Tab];

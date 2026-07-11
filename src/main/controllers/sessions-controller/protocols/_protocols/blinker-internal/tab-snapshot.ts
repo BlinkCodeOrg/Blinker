@@ -3,25 +3,16 @@ import { HonoApp } from ".";
 
 // In-memory JPEG snapshots keyed by UUID.
 const snapshotStore = new Map<string, Buffer>();
-const snapshotTimestamps = new Map<string, number>();
+const snapshotExpiryTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
 // Evict snapshots older than 30s (safety net if removeSnapshot is never called).
 const SNAPSHOT_TTL_MS = 30_000;
-setInterval(() => {
-  const now = Date.now();
-  for (const [id, ts] of snapshotTimestamps.entries()) {
-    if (now - ts > SNAPSHOT_TTL_MS) {
-      snapshotStore.delete(id);
-      snapshotTimestamps.delete(id);
-    }
-  }
-}, 5_000);
 
 // JPEG quality — encoding is much faster and more consistent than PNG.
-const SNAPSHOT_JPEG_QUALITY = 70;
+const SNAPSHOT_JPEG_QUALITY = 62;
 
 // Max pixel width; wider images are downscaled proportionally before encoding.
-const SNAPSHOT_MAX_WIDTH = 1920;
+const SNAPSHOT_MAX_WIDTH = 1440;
 
 /**
  * Stores a NativeImage snapshot (downscaling if wider than SNAPSHOT_MAX_WIDTH)
@@ -42,13 +33,17 @@ export function storeSnapshot(image: Electron.NativeImage): string {
 
   const jpegBuffer = toEncode.toJPEG(SNAPSHOT_JPEG_QUALITY);
   snapshotStore.set(id, jpegBuffer);
-  snapshotTimestamps.set(id, Date.now());
+  const expiryTimer = setTimeout(() => removeSnapshot(id), SNAPSHOT_TTL_MS);
+  expiryTimer.unref();
+  snapshotExpiryTimers.set(id, expiryTimer);
   return id;
 }
 
 export function removeSnapshot(id: string): void {
   snapshotStore.delete(id);
-  snapshotTimestamps.delete(id);
+  const expiryTimer = snapshotExpiryTimers.get(id);
+  if (expiryTimer) clearTimeout(expiryTimer);
+  snapshotExpiryTimers.delete(id);
 }
 
 export function registerTabSnapshotRoutes(app: HonoApp) {

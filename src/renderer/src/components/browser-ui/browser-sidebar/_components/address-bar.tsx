@@ -5,7 +5,6 @@ import { useAddressUrl, useFocusedTabId } from "@/components/providers/tabs-prov
 import { simplifyUrl } from "@/lib/url";
 import { PinnedBrowserActions } from "./pinned-browser-actions";
 import { useBrowserSidebar } from "@/components/browser-ui/browser-sidebar/provider";
-import { BrowserActionList } from "@/components/browser-ui/browser-sidebar/_components/browser-action-list";
 import { BookmarkButton } from "@/components/browser-ui/browser-sidebar/_components/bookmark-button";
 import { SiteControls } from "@/components/browser-ui/browser-sidebar/_components/site-controls";
 
@@ -91,10 +90,7 @@ export const AddressBar = memo(function AddressBar() {
       >
         <BookmarkButton />
         <PinnedBrowserActions />
-        <div>
-          <BrowserActionList />
-          <SiteControls />
-        </div>
+        <SiteControls />
       </div>
     </div>
   );
