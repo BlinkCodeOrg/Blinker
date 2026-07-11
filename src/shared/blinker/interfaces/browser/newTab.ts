@@ -10,6 +10,7 @@ export type NewTabBackground = {
   positionX: number;
   positionY: number;
   overlay: number;
+  blur: number;
 };
 
 // API //

@@ -105,7 +105,8 @@ export function NewTabPage() {
     ? {
         objectFit: background.fit === "stretch" ? "fill" : background.fit,
         objectPosition: `${background.positionX}% ${background.positionY}%`,
-        transform: `scale(${background.scale})`
+        transform: `scale(${background.scale})`,
+        filter: background.blur > 0 ? `blur(${background.blur}px)` : undefined
       }
     : undefined;
 

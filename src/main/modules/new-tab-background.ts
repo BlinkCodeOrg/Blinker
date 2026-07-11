@@ -15,7 +15,8 @@ const DEFAULT_BACKGROUND: NewTabBackground = {
   scale: 1,
   positionX: 50,
   positionY: 50,
-  overlay: 0
+  overlay: 0,
+  blur: 0
 };
 
 type PersistedBackground = Omit<NewTabBackground, "sourceUrl"> & { fileName?: string };
@@ -46,7 +47,8 @@ function normalizeBackground(value: Partial<PersistedBackground>): PersistedBack
     scale: clamp(Number(value.scale) || DEFAULT_BACKGROUND.scale, 0.5, 3),
     positionX: clamp(Number(value.positionX) || DEFAULT_BACKGROUND.positionX, 0, 100),
     positionY: clamp(Number(value.positionY) || DEFAULT_BACKGROUND.positionY, 0, 100),
-    overlay: clamp(Number(value.overlay) || DEFAULT_BACKGROUND.overlay, 0, 80)
+    overlay: clamp(Number(value.overlay) || DEFAULT_BACKGROUND.overlay, 0, 80),
+    blur: clamp(Number(value.blur) || DEFAULT_BACKGROUND.blur, 0, 32)
   };
 }
 

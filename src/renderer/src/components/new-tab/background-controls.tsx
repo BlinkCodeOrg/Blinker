@@ -77,7 +77,7 @@ export function NewTabBackgroundControls({ background, onChange }: BackgroundCon
     }
   };
 
-  const resetFrame = () => void update({ fit: "cover", scale: 1, positionX: 50, positionY: 50, overlay: 0 });
+  const resetFrame = () => void update({ fit: "cover", scale: 1, positionX: 50, positionY: 50, overlay: 0, blur: 0 });
 
   const fit = background.fit as NewTabBackgroundFit;
 
@@ -180,6 +180,13 @@ export function NewTabBackgroundControls({ background, onChange }: BackgroundCon
                 min={0}
                 max={80}
                 onChange={(overlay) => void update({ overlay })}
+              />
+              <SliderRow
+                label={t("newTab.backgroundBlur")}
+                value={background.blur}
+                min={0}
+                max={32}
+                onChange={(blur) => void update({ blur })}
               />
 
               <Button variant="ghost" className="w-full gap-2" onClick={resetFrame}>
