@@ -68,6 +68,8 @@ class TabsController extends TypedEventEmitter<TabsControllerEvents> {
   public spaceFocusedTabMap: Map<WindowSpaceReference, Tab>;
   /** Activation history stores both tab IDs (number) and group IDs (string) */
   public spaceActivationHistory: Map<WindowSpaceReference, (number | string)[]>;
+  /** De-duplicates recovery when a freshly created space has no active tab yet. */
+  private emptySpaceRecovery: Map<WindowSpaceReference, Promise<void>>;
 
   // Tab Groups (keyed by string groupId)
   public tabGroups: Map<string, TabGroup>;
@@ -82,6 +84,7 @@ class TabsController extends TypedEventEmitter<TabsControllerEvents> {
     this.spaceActiveTabMap = new Map();
     this.spaceFocusedTabMap = new Map();
     this.spaceActivationHistory = new Map();
+    this.emptySpaceRecovery = new Map();
 
     this.tabGroups = new Map();
     this.tabGroupCounter = 0;
@@ -1400,6 +1403,50 @@ class TabsController extends TypedEventEmitter<TabsControllerEvents> {
     this.windowActiveSpaceMap.set(windowId, spaceId);
 
     this.emit("current-space-changed", windowId, spaceId);
+    void this.ensureWindowSpaceHasActiveTab(windowId, spaceId);
+  }
+
+  /**
+   * A newly created space does not have tabs by design. Never leave a browser
+   * window on that empty state: recover an existing tab or create a New Tab.
+   */
+  private async ensureWindowSpaceHasActiveTab(windowId: number, spaceId: string): Promise<void> {
+    const window = browserWindowsController.getWindowById(windowId);
+    if (!window || window.destroyed || window.browserWindowType !== "normal") return;
+
+    const key = `${windowId}-${spaceId}` as WindowSpaceReference;
+    if (this.getActiveTab(windowId, spaceId)) return;
+
+    const pendingRecovery = this.emptySpaceRecovery.get(key);
+    if (pendingRecovery) return pendingRecovery;
+
+    const recovery = (async () => {
+      const existingTab = this.getTabsInWindowSpace(windowId, spaceId).find((tab) => !tab.isDestroyed);
+      if (existingTab) {
+        this.activateTab(existingTab);
+        return;
+      }
+
+      const space = await spacesController.get(spaceId);
+      if (!space || window.destroyed || window.currentSpaceId !== spaceId) return;
+
+      const tab = await this.createTab(windowId, space.profileId, spaceId, undefined, {
+        url: NEW_TAB_URL
+      });
+
+      if (!window.destroyed && window.currentSpaceId === spaceId && !tab.isDestroyed) {
+        this.activateTab(tab);
+      }
+    })()
+      .catch((error) => {
+        console.error(`Failed to recover empty space ${spaceId}:`, error);
+      })
+      .finally(() => {
+        this.emptySpaceRecovery.delete(key);
+      });
+
+    this.emptySpaceRecovery.set(key, recovery);
+    return recovery;
   }
 
   /**
