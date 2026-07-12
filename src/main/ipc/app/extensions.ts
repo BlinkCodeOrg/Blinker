@@ -179,7 +179,15 @@ ipcMain.handle(
       const runningWorker = Object.values(loadedProfile.session.serviceWorkers.getAllRunning()).find((worker) =>
         worker.scope.startsWith(extensionOrigin)
       );
-      if (!runningWorker) return false;
+
+      if (!runningWorker) {
+        try {
+          await loadedProfile.session.serviceWorkers.startWorkerForScope(extensionOrigin);
+        } catch (error) {
+          console.error(`Failed to start service worker for extension ${extensionId}:`, error);
+          return false;
+        }
+      }
 
       const inspectorWindow = new ElectronBrowserWindow({
         show: false,
