@@ -127,14 +127,18 @@ export function QuickLinks({ className = "" }: QuickLinksProps) {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: 0.2 }}
-      className={`w-full max-w-2xl mt-auto ${className}`}
+      className={`relative z-10 w-full max-w-2xl mt-auto ${className}`}
     >
-      <div className="flex justify-between items-center mb-2">
-        <h2 className="text-sm font-medium text-gray-600 dark:text-gray-300">Quick Links</h2>
+      <div className="flex justify-between items-center mb-2 rounded-xl border border-white/15 bg-black/25 px-3 py-2 shadow-lg backdrop-blur-md">
+        <h2 className="text-sm font-semibold text-white drop-shadow-md">Quick Links</h2>
         <div className="flex gap-2">
           <Dialog open={isAddDialogOpen} onOpenChange={handleDialogOpenChange}>
             <DialogTrigger asChild>
-              <Button variant="outline" size="sm" className="flex items-center gap-1 text-xs py-1 h-7">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="flex items-center gap-1 text-xs py-1 h-7 border border-white/15 bg-black/25 text-white hover:bg-black/45 hover:text-white"
+              >
                 <Plus className="w-3 h-3" />
                 <span className="hidden">Add</span>
               </Button>
@@ -185,10 +189,10 @@ export function QuickLinks({ className = "" }: QuickLinksProps) {
             </DialogContent>
           </Dialog>
           <Button
-            variant="outline"
+            variant="ghost"
             size="sm"
             onClick={handleResetToDefaults}
-            className="flex items-center gap-1 text-xs py-1 h-7"
+            className="flex items-center gap-1 text-xs py-1 h-7 border border-white/15 bg-black/25 text-white hover:bg-black/45 hover:text-white"
           >
             <Trash2 className="w-3 h-3" />
             <span className="hidden">Reset</span>
@@ -196,7 +200,7 @@ export function QuickLinks({ className = "" }: QuickLinksProps) {
         </div>
       </div>
 
-      <div className="flex flex-wrap justify-center gap-2 sm:gap-3 md:gap-4 p-2">
+      <div className="flex flex-wrap justify-center gap-2 sm:gap-3 md:gap-4 rounded-2xl border border-white/15 bg-black/20 p-3 shadow-xl backdrop-blur-md">
         {quickLinks.map((link, index) => (
           <motion.div
             key={link.id}
@@ -207,14 +211,14 @@ export function QuickLinks({ className = "" }: QuickLinksProps) {
           >
             <button
               onClick={() => handleDeleteLink(link.id)}
-              className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity z-elevated"
+              className="absolute -top-1.5 -right-1.5 bg-red-500 text-white rounded-full p-1 opacity-60 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity z-elevated shadow-md"
               aria-label={`Delete ${link.name}`}
             >
-              <X className="w-2 h-2" />
+              <X className="w-2.5 h-2.5" />
             </button>
             <a
               href={link.url}
-              className="flex flex-col items-center justify-center w-20 bg-white/80 text-gray-800 dark:bg-gray-800/80 dark:text-gray-200 dark:hover:bg-gray-700/90 rounded-lg p-2 no-underline shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-200"
+              className="flex flex-col items-center justify-center w-20 rounded-lg border border-white/15 bg-black/30 p-2 text-white no-underline shadow-md backdrop-blur-md hover:bg-black/45 hover:shadow-lg hover:-translate-y-1 transition-all duration-200"
             >
               <div className="mb-1 flex items-center justify-center w-6 h-6 sm:w-8 sm:h-8 overflow-hidden">
                 {link.url.startsWith("blinker://history") ? (

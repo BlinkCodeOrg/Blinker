@@ -149,14 +149,14 @@ export function NewTabPage() {
       </div>
 
       {/* Center section with logo and search */}
-      <div className="flex flex-col items-center justify-start flex-grow pt-5 md:pt-8">
+      <div className="relative z-10 flex flex-col items-center justify-start flex-grow pt-5 md:pt-8">
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
           className="mb-8 md:mb-14"
         >
-          <div className="flex items-center justify-center gap-3 mb-2">
+          <div className="flex items-center justify-center gap-3 mb-2 rounded-full border border-white/15 bg-black/25 p-2 shadow-xl backdrop-blur-md">
             <img
               src="/assets/icon.png"
               alt="Blinker Browser Logo"
@@ -190,12 +190,13 @@ export function NewTabPage() {
                 placeholder="Search or enter URL..."
                 className={cn(
                   "w-full h-10 md:h-12 py-2 md:py-3 px-4 md:px-6 text-base md:text-lg rounded-2xl md:rounded-3xl",
-                  "outline-none border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-white",
+                  "outline-none border border-white/15 bg-black/35 text-white shadow-xl backdrop-blur-md",
+                  "placeholder:text-white/65 hover:bg-black/40 focus:bg-black/45 focus:border-white/30",
                   showSuggestions && matches.length > 0 && "!rounded-b-none border-b-0"
                 )}
                 autoFocus
               />
-              <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+              <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-white/70">
                 <Search className="size-5 md:size-6 mr-2" />
               </div>
             </div>
@@ -203,8 +204,8 @@ export function NewTabPage() {
             {showSuggestions && matches.length > 0 && (
               <div
                 className={cn(
-                  "absolute top-full left-0 right-0 bg-white dark:bg-gray-800 !rounded-t-none rounded-b-2xl overflow-hidden z-elevated",
-                  "border border-gray-200 dark:border-gray-700 shadow-2xl"
+                  "absolute top-full left-0 right-0 bg-black/55 text-white backdrop-blur-xl !rounded-t-none rounded-b-2xl overflow-hidden z-elevated",
+                  "border border-white/15 shadow-2xl"
                 )}
               >
                 <CommandList className="max-h-[250px] md:max-h-[300px] overflow-y-auto">
@@ -220,12 +221,12 @@ export function NewTabPage() {
                           handleSuggestionSelect(match);
                         }}
                         className={cn(
-                          "px-4 md:px-6 py-2 md:py-3 flex items-center hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer text-sm md:text-base",
-                          "data-[selected=true]:bg-gray-100 dark:data-[selected=true]:bg-gray-700"
+                          "px-4 md:px-6 py-2 md:py-3 flex items-center hover:bg-white/10 cursor-pointer text-sm md:text-base",
+                          "data-[selected=true]:bg-white/15"
                         )}
                       >
                         <SuggestionIcon match={match} />
-                        <span className="text-gray-800 dark:text-white truncate">{match.contents}</span>
+                        <span className="text-white truncate">{match.contents}</span>
                       </CommandItem>
                     ))}
                   </CommandGroup>
