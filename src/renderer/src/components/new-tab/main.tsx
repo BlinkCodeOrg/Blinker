@@ -156,7 +156,7 @@ export function NewTabPage() {
           transition={{ duration: 0.5 }}
           className="mb-8 md:mb-14"
         >
-          <div className="flex items-center justify-center gap-3 mb-2 rounded-full border border-white/15 bg-black/25 p-2 shadow-xl backdrop-blur-md">
+          <div className="flex items-center justify-center gap-3 mb-2">
             <img
               src="/assets/icon.png"
               alt="Blinker Browser Logo"

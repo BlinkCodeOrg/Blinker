@@ -129,7 +129,7 @@ export function QuickLinks({ className = "" }: QuickLinksProps) {
       transition={{ duration: 0.5, delay: 0.2 }}
       className={`relative z-10 w-full max-w-2xl mt-auto ${className}`}
     >
-      <div className="flex justify-between items-center mb-2 rounded-xl border border-white/15 bg-black/25 px-3 py-2 shadow-lg backdrop-blur-md">
+      <div className="flex justify-between items-center mb-2">
         <h2 className="text-sm font-semibold text-white drop-shadow-md">Quick Links</h2>
         <div className="flex gap-2">
           <Dialog open={isAddDialogOpen} onOpenChange={handleDialogOpenChange}>
@@ -200,7 +200,7 @@ export function QuickLinks({ className = "" }: QuickLinksProps) {
         </div>
       </div>
 
-      <div className="flex flex-wrap justify-center gap-2 sm:gap-3 md:gap-4 rounded-2xl border border-white/15 bg-black/20 p-3 shadow-xl backdrop-blur-md">
+      <div className="flex flex-wrap justify-center gap-2 sm:gap-3 md:gap-4 p-2">
         {quickLinks.map((link, index) => (
           <motion.div
             key={link.id}
@@ -211,7 +211,7 @@ export function QuickLinks({ className = "" }: QuickLinksProps) {
           >
             <button
               onClick={() => handleDeleteLink(link.id)}
-              className="absolute -top-1.5 -right-1.5 bg-red-500 text-white rounded-full p-1 opacity-60 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity z-elevated shadow-md"
+              className="absolute -top-1.5 -right-1.5 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity z-elevated shadow-md"
               aria-label={`Delete ${link.name}`}
             >
               <X className="w-2.5 h-2.5" />
