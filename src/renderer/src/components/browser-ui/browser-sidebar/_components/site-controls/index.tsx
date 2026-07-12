@@ -19,6 +19,8 @@ import {
   LockIcon,
   MousePointer2Icon,
   ShieldAlertIcon,
+  ShieldCheckIcon,
+  Settings2Icon,
   Volume2Icon
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -45,7 +47,13 @@ function getOrigin(url: string) {
   }
 }
 
-export function SiteControls() {
+export function SiteControls({
+  showConnection,
+  showPermissions
+}: {
+  showConnection: boolean;
+  showPermissions: boolean;
+}) {
   const { isCurrentSpaceLight } = useSpaces();
   const focusedTab = useFocusedTab();
   const [open, setOpen] = useState(false);
@@ -83,6 +91,7 @@ export function SiteControls() {
 
   if (!focusedTab) return null;
   const secure = origin?.startsWith("https://") ?? false;
+  const isInternalPage = !origin;
   const hostname = origin ? new URL(origin).hostname : t("siteControls.internalPage");
   const SelectedPermissionIcon = selectedPermission?.icon;
 
@@ -102,7 +111,15 @@ export function SiteControls() {
         )}
         onClick={(event) => event.stopPropagation()}
       >
-        {secure ? <LockIcon strokeWidth={2} className="size-3.5" /> : <ShieldAlertIcon className="size-3.5" />}
+        {!showConnection ? (
+          <Settings2Icon className="size-3.5" />
+        ) : isInternalPage ? (
+          <ShieldCheckIcon className="size-3.5" />
+        ) : secure ? (
+          <LockIcon strokeWidth={2} className="size-3.5" />
+        ) : (
+          <ShieldAlertIcon className="size-3.5" />
+        )}
         {permissions.some((entry) => entry.setting === "allow") && (
           <span className="absolute right-0 top-0 size-1.5 rounded-full bg-emerald-400" />
         )}
@@ -112,23 +129,34 @@ export function SiteControls() {
         className="flex w-[19rem] select-none flex-col gap-3"
         positionerClassName={cn(isCurrentSpaceLight ? "" : "dark")}
       >
-        <div className="flex items-center gap-3">
-          <div className={cn("rounded-full p-2", secure ? "bg-emerald-500/15" : "bg-amber-500/15")}>
-            {secure ? (
-              <LockIcon className="size-4 text-emerald-400" />
-            ) : (
-              <ShieldAlertIcon className="size-4 text-amber-400" />
-            )}
+        {showConnection && (
+          <div className="flex items-center gap-3">
+            <div
+              className={cn(
+                "rounded-full p-2",
+                isInternalPage ? "bg-white/10" : secure ? "bg-emerald-500/15" : "bg-amber-500/15"
+              )}
+            >
+              {isInternalPage ? (
+                <ShieldCheckIcon className="size-4 text-white/75" />
+              ) : secure ? (
+                <LockIcon className="size-4 text-emerald-400" />
+              ) : (
+                <ShieldAlertIcon className="size-4 text-amber-400" />
+              )}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-semibold">{hostname}</p>
+              {!isInternalPage && (
+                <p className="text-xs text-white/60">
+                  {secure ? t("siteControls.secureConnection") : t("siteControls.notSecure")}
+                </p>
+              )}
+            </div>
           </div>
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-semibold">{hostname}</p>
-            <p className="text-xs text-white/60">
-              {secure ? t("siteControls.secureConnection") : t("siteControls.notSecure")}
-            </p>
-          </div>
-        </div>
+        )}
 
-        {origin && !selectedPermission && (
+        {origin && showPermissions && !selectedPermission && (
           <>
             <Separator />
             <div className="space-y-2">
@@ -177,7 +205,7 @@ export function SiteControls() {
           </>
         )}
 
-        {origin && selectedPermission && SelectedPermissionIcon && (
+        {origin && showPermissions && selectedPermission && SelectedPermissionIcon && (
           <>
             <Separator />
             <div className="space-y-3">
@@ -224,9 +252,9 @@ export function SiteControls() {
           </>
         )}
 
-        {!selectedPermission && <Separator />}
+        {!selectedPermission && (showConnection || showPermissions) && <Separator />}
         {!selectedPermission && <SiteControlExtensions setOpen={setOpen} />}
-        {!selectedPermission && (
+        {!selectedPermission && showPermissions && (
           <Button
             variant="ghost"
             className="h-8 justify-start"

@@ -37,7 +37,7 @@ const cardTranslationKeys: Record<string, { title: string; subtitle: string }> =
     title: "card.commandPalette.title",
     subtitle: "card.commandPalette.subtitle"
   },
-  "browserInterfaceMode,sidebarSide": {
+  "browserInterfaceMode,sidebarSide,showSiteConnection,showSitePermissions": {
     title: "card.sidebar.title",
     subtitle: "card.sidebar.subtitle"
   },

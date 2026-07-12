@@ -145,6 +145,20 @@ export const BasicSettings: BasicSetting[] = [
     ]
   },
   {
+    id: "showSiteConnection",
+    name: "Show site connection status in the address bar",
+    showName: true,
+    type: "boolean",
+    defaultValue: true
+  },
+  {
+    id: "showSitePermissions",
+    name: "Show site permissions in the address bar",
+    showName: true,
+    type: "boolean",
+    defaultValue: true
+  },
+  {
     id: "archiveTabAfter",
     name: "Archive tab after",
     showName: false,
@@ -236,7 +250,7 @@ export const BasicSettingCards: BasicSettingCard[] = [
   {
     title: "Browser interface",
     subtitle: "Choose between sidebar and topbar layouts",
-    settings: ["browserInterfaceMode", "sidebarSide"]
+    settings: ["browserInterfaceMode", "sidebarSide", "showSiteConnection", "showSitePermissions"]
   },
   {
     title: "Performance",

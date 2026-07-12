@@ -7,12 +7,17 @@ import { PinnedBrowserActions } from "./pinned-browser-actions";
 import { useBrowserSidebar } from "@/components/browser-ui/browser-sidebar/provider";
 import { BookmarkButton } from "@/components/browser-ui/browser-sidebar/_components/bookmark-button";
 import { SiteControls } from "@/components/browser-ui/browser-sidebar/_components/site-controls";
+import { BrowserActionList } from "@/components/browser-ui/browser-sidebar/_components/browser-action-list";
+import { useSetting } from "@/components/providers/settings-provider";
 
 export const AddressBar = memo(function AddressBar() {
   const containerRef = useRef<HTMLDivElement>(null);
   const addressUrl = useAddressUrl();
   const focusedTabId = useFocusedTabId();
   const { hasSidebar } = useBrowserSidebar();
+  const [showSiteConnection] = useSetting<boolean>("showSiteConnection");
+  const [showSitePermissions] = useSetting<boolean>("showSitePermissions");
+  const shouldShowSiteControls = (showSiteConnection ?? true) || (showSitePermissions ?? true);
 
   const simplifiedUrl = simplifyUrl(addressUrl);
   const isPlaceholder = !simplifiedUrl;
@@ -90,7 +95,11 @@ export const AddressBar = memo(function AddressBar() {
       >
         <BookmarkButton />
         <PinnedBrowserActions />
-        <SiteControls />
+        {shouldShowSiteControls ? (
+          <SiteControls showConnection={showSiteConnection ?? true} showPermissions={showSitePermissions ?? true} />
+        ) : (
+          <BrowserActionList />
+        )}
       </div>
     </div>
   );
