@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { ChevronLeft } from "lucide-react";
+import { toast } from "sonner";
 import type { SharedExtensionData } from "~/types/extensions";
 
 interface ExtensionDetailsProps {
@@ -34,6 +35,16 @@ function ExtensionDetails({
       </div>
 
       <div className="space-y-4">
+        {extension.errors.length > 0 && (
+          <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-3">
+            <h3 className="text-sm font-medium text-destructive">Extension errors</h3>
+            {extension.errors.map((error) => (
+              <p key={error} className="mt-1 text-xs text-destructive/90">
+                {error}
+              </p>
+            ))}
+          </div>
+        )}
         <div className="flex items-center justify-between">
           <span>Enabled</span>
           <Switch
@@ -76,13 +87,40 @@ function ExtensionDetails({
               <p className="text-sm font-mono bg-muted p-2 rounded">{extension.id}</p>
             </div>
 
+            <div className="space-y-2">
+              <h3 className="text-sm font-medium">Path</h3>
+              <p className="break-all rounded bg-muted p-2 font-mono text-xs">{extension.path}</p>
+            </div>
+
+            {extension.type === "unpacked" && (
+              <Button
+                variant="outline"
+                disabled={!extension.enabled || isProcessing}
+                onClick={async () => {
+                  const success = await blinker.extensions.reloadExtension(extension.id);
+                  if (success) toast.success("Extension reloaded.");
+                  else toast.error("Failed to reload extension.");
+                }}
+              >
+                Reload extension
+              </Button>
+            )}
+
             {extension.inspectViews && extension.inspectViews.length > 0 && (
               <div className="space-y-2">
                 <h3 className="text-sm font-medium">Inspect views</h3>
                 <div className="space-y-1">
                   {extension.inspectViews.map((view) => (
-                    <Button key={view} variant="link" className="text-sm p-0 h-auto">
-                      {view}
+                    <Button
+                      key={view}
+                      variant="link"
+                      className="text-sm p-0 h-auto"
+                      onClick={async () => {
+                        const success = await blinker.extensions.inspectExtension(extension.id, view);
+                        if (!success) toast.error("The extension background context is not currently running.");
+                      }}
+                    >
+                      {view === "service_worker" ? "Service worker" : "Background page"}
                     </Button>
                   ))}
                 </div>
@@ -111,17 +149,6 @@ function ExtensionDetails({
               onCheckedChange={() => setExtensionPinned(extension.id, !extension.pinned)}
             />
           </div>
-        </div>
-
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-medium">Allow in Incognito</span>
-            <Switch disabled />
-          </div>
-          <p className="text-xs text-muted-foreground">
-            Warning: Blinker cannot prevent extensions from recording your browsing history. To disable this extension
-            in Incognito mode, unselect this option.
-          </p>
         </div>
       </div>
     </div>

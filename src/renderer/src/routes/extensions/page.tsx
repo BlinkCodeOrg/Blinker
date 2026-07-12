@@ -10,11 +10,14 @@ import ExtensionCard from "./components/extension-card";
 import ExtensionDetails from "./components/extension-details";
 import { ExtensionsProvider, useExtensions } from "@/components/providers/extensions-provider";
 import { useQueryState } from "nuqs";
+import { useSetting } from "@/components/providers/settings-provider";
+import { t } from "@/lib/i18n";
 
 export const CHROME_WEB_STORE_URL = "https://chromewebstore.google.com/category/extensions?utm_source=ext_sidebar";
 
 function ExtensionsPage() {
-  const [isDeveloperMode, setIsDeveloperMode] = useState(false);
+  const [developerModeSetting, setDeveloperMode] = useSetting<boolean>("extensionsDeveloperMode");
+  const isDeveloperMode = developerModeSetting ?? false;
   const [selectedExtensionId, setSelectedExtensionId] = useQueryState("id");
 
   const { extensions } = useExtensions();
@@ -57,6 +60,30 @@ function ExtensionsPage() {
     setSelectedExtensionId(null);
   };
 
+  const loadUnpacked = async () => {
+    setIsProcessing(true);
+    const extension = await blinker.extensions.importUnpacked();
+    if (extension) toast.success(t("extensions.unpackedLoaded"));
+    else toast.error(t("extensions.unpackedLoadFailed"));
+    setIsProcessing(false);
+  };
+
+  const packExtension = async () => {
+    setIsProcessing(true);
+    const success = await blinker.extensions.packExtension();
+    if (success) toast.success(t("extensions.packed"));
+    setIsProcessing(false);
+  };
+
+  const updateUnpacked = async () => {
+    setIsProcessing(true);
+    const unpacked = extensions.filter((extension) => extension.type === "unpacked" && extension.enabled);
+    const results = await Promise.all(unpacked.map((extension) => blinker.extensions.reloadExtension(extension.id)));
+    if (results.every(Boolean)) toast.success(t("extensions.updated"));
+    else toast.error(t("extensions.updateFailed"));
+    setIsProcessing(false);
+  };
+
   const selectedExtension = extensions.find((ext) => ext.id === selectedExtensionId);
 
   return (
@@ -96,8 +123,7 @@ function ExtensionsPage() {
                     <div className="flex items-center space-x-2">
                       <Switch
                         checked={isDeveloperMode}
-                        onCheckedChange={setIsDeveloperMode}
-                        disabled
+                        onCheckedChange={(value) => void setDeveloperMode(value)}
                         id="developer-mode"
                       />
                       <label
@@ -108,17 +134,21 @@ function ExtensionsPage() {
                       </label>
                     </div>
                   </div>
-                  {/* TODO: Add developer mode & Allow Loading Unpacked Extensions */}
                   {isDeveloperMode && (
                     <div className="flex space-x-2">
-                      <Button variant="outline" size="sm">
-                        Load unpacked
+                      <Button variant="outline" size="sm" onClick={() => void loadUnpacked()} disabled={isProcessing}>
+                        {t("extensions.loadUnpacked")}
                       </Button>
-                      <Button variant="outline" size="sm">
-                        Pack extension
+                      <Button variant="outline" size="sm" onClick={() => void packExtension()} disabled={isProcessing}>
+                        {t("extensions.pack")}
                       </Button>
-                      <Button variant="outline" size="sm">
-                        Update
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => void updateUnpacked()}
+                        disabled={isProcessing || !extensions.some((extension) => extension.type === "unpacked")}
+                      >
+                        {t("extensions.update")}
                       </Button>
                     </div>
                   )}
@@ -130,6 +160,7 @@ function ExtensionsPage() {
                       <ExtensionCard
                         key={extension.id}
                         extension={extension}
+                        isDeveloperMode={isDeveloperMode}
                         isProcessing={isProcessing}
                         setExtensionEnabled={setExtensionEnabled}
                         onDetailsClick={handleDetailsClick}

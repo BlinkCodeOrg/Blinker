@@ -14,6 +14,7 @@ export type ExtensionData = {
   type: ExtensionType;
   disabled: boolean;
   pinned: boolean;
+  sourcePath?: string;
 };
 
 type ExtensionDataWithId = ExtensionData & {
@@ -222,6 +223,10 @@ export class ExtensionManager extends TypedEventEmitter<{
   public async getExtensionPath(extensionId: string, extensionData: ExtensionData) {
     switch (extensionData.type) {
       case "unpacked": {
+        if (extensionData.sourcePath) {
+          const sourcePath = path.resolve(extensionData.sourcePath);
+          if ((await isDirectory(sourcePath)) && (await hasManifest(sourcePath))) return sourcePath;
+        }
         const unpackedPath = this.getExtensionsPath("unpacked");
         const extensionFolder = path.join(unpackedPath, extensionId);
 
@@ -400,9 +405,9 @@ export class ExtensionManager extends TypedEventEmitter<{
    * Add an installed extension to a profile
    * @param extensionId - The ID of the extension
    */
-  public async addInstalledExtension(type: ExtensionType, extensionId: string): Promise<boolean> {
+  public async addInstalledExtension(type: ExtensionType, extensionId: string, sourcePath?: string): Promise<boolean> {
     return await this.extensionStore
-      .set(extensionId, { type, disabled: false, pinned: DEFAULT_PINNED_STATE })
+      .set(extensionId, { type, disabled: false, pinned: DEFAULT_PINNED_STATE, sourcePath })
       .then(async () => {
         await this.updateCache();
         return true;
@@ -431,14 +436,20 @@ export class ExtensionManager extends TypedEventEmitter<{
       const sourcePathResolved = path.resolve(extensionSourcePath);
       const destinationPathResolved = path.resolve(destinationPath);
 
+      const useLiveSource = preparedImport.cleanupPaths.length === 0 && (await isDirectory(sourcePathResolved));
+
       await fs.mkdir(unpackedPath, { recursive: true });
-      if (sourcePathResolved !== destinationPathResolved) {
+      if (!useLiveSource && sourcePathResolved !== destinationPathResolved) {
         await fs.rm(destinationPath, { recursive: true, force: true });
         await fs.cp(extensionSourcePath, destinationPath, { recursive: true });
       }
       await this.profileSession.extensions.removeExtension(extensionId);
 
-      const added = await this.addInstalledExtension("unpacked", extensionId);
+      const added = await this.addInstalledExtension(
+        "unpacked",
+        extensionId,
+        useLiveSource ? sourcePathResolved : undefined
+      );
       if (!added) return null;
 
       await this.loadExtensionWithData(extensionId, {
@@ -479,7 +490,13 @@ export class ExtensionManager extends TypedEventEmitter<{
     }
 
     if (extensionData.type === "unpacked") {
-      // TODO: Remove unpacked extension
+      if (!extensionData.sourcePath) {
+        const unpackedRoot = path.resolve(this.getExtensionsPath("unpacked"));
+        const extensionPath = path.resolve(unpackedRoot, extensionId);
+        if (extensionPath.startsWith(`${unpackedRoot}${path.sep}`)) {
+          await fs.rm(extensionPath, { recursive: true, force: true });
+        }
+      }
     } else if (extensionData.type === "crx") {
       await uninstallExtension(extensionId, {
         extensionsPath: this.getExtensionsPath(extensionData.type),
@@ -489,6 +506,21 @@ export class ExtensionManager extends TypedEventEmitter<{
 
     await this.removeInstalledExtension(extensionId);
     return true;
+  }
+
+  public async reloadExtension(extensionId: string): Promise<boolean> {
+    const extensionData = await this.extensionStore.get<ExtensionData>(extensionId);
+    if (!extensionData || extensionData.disabled) return false;
+
+    try {
+      await this.unloadExtensionWithId(extensionId);
+      const extension = await this.loadExtensionWithData(extensionId, extensionData);
+      await this.updateCache();
+      return extension !== null;
+    } catch (error) {
+      console.error(`Failed to reload extension ${extensionId}:`, error);
+      return false;
+    }
   }
 
   /**

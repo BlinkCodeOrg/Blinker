@@ -1268,6 +1268,15 @@ const extensionsAPI: BlinkerExtensionsAPI = {
   },
   importFirefoxXpi: async () => {
     return ipcRenderer.invoke("extensions:import-firefox-xpi");
+  },
+  reloadExtension: async (extensionId: string) => {
+    return ipcRenderer.invoke("extensions:reload-extension", extensionId);
+  },
+  inspectExtension: async (extensionId, view) => {
+    return ipcRenderer.invoke("extensions:inspect-extension", extensionId, view);
+  },
+  packExtension: async () => {
+    return ipcRenderer.invoke("extensions:pack-extension");
   }
 };
 

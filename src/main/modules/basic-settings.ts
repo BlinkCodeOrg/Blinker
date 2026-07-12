@@ -204,6 +204,13 @@ export const BasicSettings: BasicSetting[] = [
     showName: true,
     type: "boolean",
     defaultValue: false
+  },
+  {
+    id: "extensionsDeveloperMode",
+    name: "Extensions developer mode",
+    showName: false,
+    type: "boolean",
+    defaultValue: false
   }
 ];
 

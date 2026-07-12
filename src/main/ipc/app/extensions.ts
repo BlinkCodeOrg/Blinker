@@ -9,10 +9,19 @@ import {
 } from "@/modules/extensions/management";
 import { getPermissionWarnings } from "@/modules/extensions/permission-warnings";
 import { spacesController } from "@/controllers/spaces-controller";
-import { dialog, ipcMain, IpcMainInvokeEvent, WebContents } from "electron";
-import { SharedExtensionData } from "~/types/extensions";
+import {
+  BrowserWindow as ElectronBrowserWindow,
+  dialog,
+  ipcMain,
+  IpcMainInvokeEvent,
+  WebContents,
+  webContents
+} from "electron";
+import { ExtensionInspectView, SharedExtensionData } from "~/types/extensions";
 import { browserWindowsController } from "@/controllers/windows-controller/interfaces/browser";
 import { loadedProfilesController } from "@/controllers/loaded-profiles-controller";
+import AdmZip from "adm-zip";
+import path from "path";
 
 async function generateSharedExtensionData(
   extensionsManager: ExtensionManager,
@@ -20,15 +29,57 @@ async function generateSharedExtensionData(
   extensionData: ExtensionData
 ): Promise<SharedExtensionData | null> {
   const extensionPath = await extensionsManager.getExtensionPath(extensionId, extensionData);
-  if (!extensionPath) return null;
+  if (!extensionPath) {
+    return {
+      type: extensionData.type,
+      id: extensionId,
+      name: "Broken extension",
+      description: "The extension directory or manifest.json could not be found.",
+      icon: "",
+      enabled: false,
+      pinned: extensionData.pinned,
+      version: "unknown",
+      path: extensionData.sourcePath ?? "",
+      size: 0,
+      permissions: [],
+      inspectViews: [],
+      errors: ["Extension directory or manifest.json is missing."]
+    };
+  }
 
   const manifest = await getManifest(extensionPath);
-  if (!manifest) return null;
+  if (!manifest) {
+    return {
+      type: extensionData.type,
+      id: extensionId,
+      name: "Invalid extension",
+      description: "manifest.json is invalid or cannot be parsed.",
+      icon: "",
+      enabled: false,
+      pinned: extensionData.pinned,
+      version: "unknown",
+      path: extensionPath,
+      size: 0,
+      permissions: [],
+      inspectViews: [],
+      errors: ["manifest.json is invalid or cannot be parsed."]
+    };
+  }
 
   const size = await getExtensionSize(extensionPath);
-  if (!size) return null;
 
   const permissions: string[] = getPermissionWarnings(manifest.permissions ?? [], manifest.host_permissions ?? []);
+  const inspectViews: ExtensionInspectView[] = [];
+  if (manifest.background && "service_worker" in manifest.background && manifest.background.service_worker) {
+    inspectViews.push("service_worker");
+  }
+  if (
+    manifest.background &&
+    !("service_worker" in manifest.background) &&
+    (manifest.background.page || manifest.background.scripts?.length)
+  ) {
+    inspectViews.push("background");
+  }
 
   const translatedName = await translateManifestString(extensionPath, manifest.name);
   const translatedShortName = manifest.short_name
@@ -55,8 +106,8 @@ async function generateSharedExtensionData(
     path: extensionPath,
     size,
     permissions,
-    // TODO: Add inspect views
-    inspectViews: []
+    inspectViews,
+    errors: []
   };
 }
 
@@ -96,6 +147,102 @@ ipcMain.handle(
     return getExtensionDataFromProfile(profileId);
   }
 );
+
+ipcMain.handle(
+  "extensions:reload-extension",
+  async (event: IpcMainInvokeEvent, extensionId: string): Promise<boolean> => {
+    const profileId = await getCurrentProfileIdFromWebContents(event.sender);
+    const loadedProfile = profileId ? loadedProfilesController.get(profileId) : null;
+    if (!loadedProfile) return false;
+    return loadedProfile.extensionsManager.reloadExtension(extensionId);
+  }
+);
+
+ipcMain.handle(
+  "extensions:inspect-extension",
+  async (event: IpcMainInvokeEvent, extensionId: string, view: ExtensionInspectView): Promise<boolean> => {
+    const profileId = await getCurrentProfileIdFromWebContents(event.sender);
+    const loadedProfile = profileId ? loadedProfilesController.get(profileId) : null;
+    if (!loadedProfile || !loadedProfile.session.extensions.getExtension(extensionId)) return false;
+
+    const extensionOrigin = `chrome-extension://${extensionId}/`;
+    const backgroundContents = webContents
+      .getAllWebContents()
+      .find((contents) => contents.getURL().startsWith(extensionOrigin));
+
+    if (view === "background" && backgroundContents) {
+      backgroundContents.openDevTools({ mode: "detach", activate: true });
+      return true;
+    }
+
+    if (view === "service_worker") {
+      const runningWorker = Object.values(loadedProfile.session.serviceWorkers.getAllRunning()).find((worker) =>
+        worker.scope.startsWith(extensionOrigin)
+      );
+      if (!runningWorker) return false;
+
+      const inspectorWindow = new ElectronBrowserWindow({
+        show: false,
+        webPreferences: { session: loadedProfile.session }
+      });
+      try {
+        await inspectorWindow.loadURL(extensionOrigin);
+        inspectorWindow.webContents.inspectServiceWorker();
+        inspectorWindow.webContents.once("devtools-closed", () => inspectorWindow.destroy());
+        return true;
+      } catch (error) {
+        console.error(`Failed to inspect service worker for extension ${extensionId}:`, error);
+        inspectorWindow.destroy();
+        return false;
+      }
+    }
+
+    return false;
+  }
+);
+
+ipcMain.handle("extensions:pack-extension", async (event: IpcMainInvokeEvent): Promise<boolean> => {
+  const owner = browserWindowsController.getWindowFromWebContents(event.sender)?.browserWindow;
+  const openOptions: Electron.OpenDialogOptions = {
+    title: "Select extension directory",
+    properties: ["openDirectory"]
+  };
+  const selected = owner ? await dialog.showOpenDialog(owner, openOptions) : await dialog.showOpenDialog(openOptions);
+  if (selected.canceled || !selected.filePaths[0]) return false;
+
+  const sourcePath = selected.filePaths[0];
+  const manifest = await getManifest(sourcePath);
+  if (!manifest?.name || !manifest.version || !manifest.manifest_version) {
+    const messageOptions: Electron.MessageBoxOptions = {
+      type: "error",
+      title: "Invalid extension",
+      message: "The selected folder does not contain a valid manifest.json."
+    };
+    if (owner) await dialog.showMessageBox(owner, messageOptions);
+    else await dialog.showMessageBox(messageOptions);
+    return false;
+  }
+
+  const saveOptions: Electron.SaveDialogOptions = {
+    title: "Pack extension",
+    defaultPath: `${path.basename(sourcePath)}-${manifest.version}.zip`,
+    filters: [{ name: "ZIP archive", extensions: ["zip"] }]
+  };
+  const destination = owner
+    ? await dialog.showSaveDialog(owner, saveOptions)
+    : await dialog.showSaveDialog(saveOptions);
+  if (destination.canceled || !destination.filePath) return false;
+
+  try {
+    const archive = new AdmZip();
+    archive.addLocalFolder(sourcePath);
+    archive.writeZip(destination.filePath);
+    return true;
+  } catch (error) {
+    console.error(`Failed to pack extension at ${sourcePath}:`, error);
+    return false;
+  }
+});
 
 ipcMain.handle(
   "extensions:get-all-in-current-profile",

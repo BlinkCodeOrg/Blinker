@@ -1,4 +1,4 @@
-type ExtensionInspectView = "service_worker" | "background";
+export type ExtensionInspectView = "service_worker" | "background";
 
 export type ExtensionType = "unpacked" | "crx";
 
@@ -16,4 +16,5 @@ export interface SharedExtensionData {
   size: number;
   permissions: string[];
   inspectViews: ExtensionInspectView[];
+  errors: string[];
 }

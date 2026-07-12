@@ -42,4 +42,13 @@ export interface BlinkerExtensionsAPI {
    * Import a packaged Firefox WebExtension (.xpi) into the current profile.
    */
   importFirefoxXpi: () => Promise<SharedExtensionData | null>;
+
+  /** Reload an installed extension from disk. */
+  reloadExtension: (extensionId: string) => Promise<boolean>;
+
+  /** Open developer tools for an extension background context. */
+  inspectExtension: (extensionId: string, view: "service_worker" | "background") => Promise<boolean>;
+
+  /** Pack an extension directory into a portable ZIP archive. */
+  packExtension: () => Promise<boolean>;
 }
