@@ -12,8 +12,7 @@ export async function generateRoutes() {
   // Create index.html files for each route
   for (const route of routes) {
     const htmlPath = path.join(FRONTEND_PATH, `route-${route}.html`);
-    const content = `
-<!DOCTYPE html>
+    const content = `<!doctype html>
 <html lang="en" dir="ltr">
   <head>
     <meta charset="UTF-8" />
@@ -25,7 +24,7 @@ export async function generateRoutes() {
     <script type="module" src="/src/routes/${route}/main.tsx"></script>
   </body>
 </html>
-`.trim();
+`;
 
     await fs.writeFile(htmlPath, content);
   }
@@ -33,8 +32,7 @@ export async function generateRoutes() {
   // Create main.tsx files for each route
   for (const route of routes) {
     const entrypointPath = path.join(ROUTES_PATH, route, "main.tsx");
-    const content = `
-import { PlatformProvider } from "@/components/main/platform";
+    const content = `import { PlatformProvider } from "@/components/main/platform";
 import { UmamiScriptLoader } from "@/components/analytics/umami";
 import { Fragment, StrictMode as ReactStrictMode } from "react";
 import { Toaster } from "sonner";
@@ -57,7 +55,7 @@ createRoot(document.getElementById("root")!).render(
     </PlatformProvider>
   </StrictMode>
 );
-`.trim();
+`;
 
     await fs.writeFile(entrypointPath, content);
   }

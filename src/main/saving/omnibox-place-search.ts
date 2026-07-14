@@ -1,7 +1,7 @@
-import { and, desc, eq, or, sql } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import { existsSync } from "fs";
 import path from "path";
-import { spawnSync } from "child_process";
+import { spawn } from "child_process";
 import { app } from "electron";
 import { getDb } from "@/saving/db";
 import { bookmarks, historyUrls } from "@/saving/db/schema";
@@ -9,8 +9,12 @@ import type { OmniboxPlaceSuggestion, OmniboxPlaceSuggestionSource } from "~/bli
 
 const DEFAULT_LIMIT = 8;
 const MAX_LIMIT = 20;
-const SQL_PREFILTER_LIMIT = 1200;
+const RECENT_HISTORY_LIMIT = 900;
+const TYPED_HISTORY_LIMIT = 600;
+const BOOKMARK_LIMIT = 600;
 const NATIVE_RANK_THRESHOLD = 700;
+const CANDIDATE_CACHE_TTL_MS = 2_500;
+const MAX_CACHED_PROFILES = 8;
 
 type PlaceCandidate = {
   url: string;
@@ -24,6 +28,13 @@ type PlaceCandidate = {
 type RankedPlaceCandidate = PlaceCandidate & {
   relevance: number;
 };
+
+type CandidateCacheEntry = {
+  expiresAt: number;
+  candidates: PlaceCandidate[];
+};
+
+const candidateCache = new Map<string, CandidateCacheEntry>();
 
 function tokenize(value: string): string[] {
   return Array.from(
@@ -108,11 +119,11 @@ function escapeTsv(value: string): string {
   return value.replaceAll("\t", " ").replaceAll("\r", " ").replaceAll("\n", " ");
 }
 
-function rankPlacesWithNativeRust(
+async function rankPlacesWithNativeRust(
   candidates: PlaceCandidate[],
   input: string,
   limit: number
-): OmniboxPlaceSuggestion[] | null {
+): Promise<OmniboxPlaceSuggestion[] | null> {
   const rankerPath = getNativeRankerPath();
   if (!rankerPath) return null;
 
@@ -131,20 +142,45 @@ function rankPlacesWithNativeRust(
     )
   ].join("\n");
 
-  const result = spawnSync(rankerPath, {
-    input: payload,
-    encoding: "utf8",
-    timeout: 160,
-    windowsHide: true,
-    maxBuffer: 64 * 1024
+  const stdout = await new Promise<string | null>((resolve) => {
+    const child = spawn(rankerPath, [], {
+      windowsHide: true,
+      stdio: ["pipe", "pipe", "ignore"]
+    });
+    const chunks: Buffer[] = [];
+    let outputBytes = 0;
+    let settled = false;
+
+    const finish = (value: string | null) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeout);
+      resolve(value);
+    };
+    const timeout = setTimeout(() => {
+      child.kill();
+      finish(null);
+    }, 160);
+
+    child.stdout.on("data", (chunk: Buffer) => {
+      outputBytes += chunk.length;
+      if (outputBytes > 64 * 1024) {
+        child.kill();
+        finish(null);
+        return;
+      }
+      chunks.push(chunk);
+    });
+    child.on("error", () => finish(null));
+    child.on("close", (code) => finish(code === 0 ? Buffer.concat(chunks).toString("utf8") : null));
+    child.stdin.on("error", () => finish(null));
+    child.stdin.end(payload);
   });
 
-  if (result.error || result.status !== 0) {
-    return null;
-  }
+  if (stdout === null) return null;
 
   const ranked: OmniboxPlaceSuggestion[] = [];
-  for (const line of result.stdout.split(/\r?\n/)) {
+  for (const line of stdout.split(/\r?\n/)) {
     if (!line) continue;
     const [indexRaw, relevanceRaw] = line.split("\t");
     const index = Number(indexRaw);
@@ -191,37 +227,33 @@ function rankPlacesInTypeScript(candidates: PlaceCandidate[], input: string, lim
   }));
 }
 
-function listPlaceCandidates(profileId: string, input: string): PlaceCandidate[] {
+function listPlaceCandidates(profileId: string): PlaceCandidate[] {
+  const now = Date.now();
+  const cached = candidateCache.get(profileId);
+  if (cached && cached.expiresAt > now) return cached.candidates;
+
   const db = getDb();
-  const tokens = tokenize(input);
-  if (tokens.length === 0) return [];
-
-  const historySearch = or(
-    ...tokens.map(
-      (token) => sql`instr(lower(${historyUrls.url}), ${token}) > 0 OR instr(lower(${historyUrls.title}), ${token}) > 0`
-    )
-  );
-  const bookmarkSearch = or(
-    ...tokens.map(
-      (token) =>
-        sql`instr(lower(${bookmarks.url}), ${token}) > 0 OR instr(lower(${bookmarks.title}), ${token}) > 0 OR instr(lower(${bookmarks.folder}), ${token}) > 0`
-    )
-  );
-
-  const historyRows = db
-    .select({
-      url: historyUrls.url,
-      title: historyUrls.title,
-      visitCount: historyUrls.visitCount,
-      typedCount: historyUrls.typedCount,
-      recencyTime: historyUrls.lastVisitTime
-    })
+  const historySelection = {
+    url: historyUrls.url,
+    title: historyUrls.title,
+    visitCount: historyUrls.visitCount,
+    typedCount: historyUrls.typedCount,
+    recencyTime: historyUrls.lastVisitTime
+  };
+  const recentHistoryRows = db
+    .select(historySelection)
     .from(historyUrls)
-    .where(and(eq(historyUrls.profileId, profileId), historySearch))
-    .orderBy(desc(historyUrls.typedCount), desc(historyUrls.lastVisitTime))
-    .limit(SQL_PREFILTER_LIMIT)
+    .where(eq(historyUrls.profileId, profileId))
+    .orderBy(desc(historyUrls.lastVisitTime))
+    .limit(RECENT_HISTORY_LIMIT)
     .all();
-
+  const typedHistoryRows = db
+    .select(historySelection)
+    .from(historyUrls)
+    .where(eq(historyUrls.profileId, profileId))
+    .orderBy(desc(historyUrls.typedCount), desc(historyUrls.lastVisitTime))
+    .limit(TYPED_HISTORY_LIMIT)
+    .all();
   const bookmarkRows = db
     .select({
       url: bookmarks.url,
@@ -229,12 +261,16 @@ function listPlaceCandidates(profileId: string, input: string): PlaceCandidate[]
       recencyTime: bookmarks.updatedAt
     })
     .from(bookmarks)
-    .where(and(eq(bookmarks.profileId, profileId), bookmarkSearch))
+    .where(eq(bookmarks.profileId, profileId))
     .orderBy(desc(bookmarks.updatedAt), desc(bookmarks.id))
-    .limit(Math.min(SQL_PREFILTER_LIMIT, 600))
+    .limit(BOOKMARK_LIMIT)
     .all();
 
-  return [
+  const historyRows = new Map<string, (typeof recentHistoryRows)[number]>();
+  for (const row of recentHistoryRows) historyRows.set(row.url, row);
+  for (const row of typedHistoryRows) historyRows.set(row.url, row);
+
+  const candidates = [
     ...bookmarkRows.map((row) => ({
       url: row.url,
       title: row.title,
@@ -243,7 +279,7 @@ function listPlaceCandidates(profileId: string, input: string): PlaceCandidate[]
       typedCount: 0,
       recencyTime: row.recencyTime
     })),
-    ...historyRows.map((row) => ({
+    ...historyRows.values().map((row) => ({
       url: row.url,
       title: row.title,
       source: "history" as const,
@@ -252,24 +288,42 @@ function listPlaceCandidates(profileId: string, input: string): PlaceCandidate[]
       recencyTime: row.recencyTime
     }))
   ];
+
+  candidateCache.delete(profileId);
+  candidateCache.set(profileId, { expiresAt: now + CANDIDATE_CACHE_TTL_MS, candidates });
+  while (candidateCache.size > MAX_CACHED_PROFILES) {
+    const oldestProfileId = candidateCache.keys().next().value;
+    if (oldestProfileId === undefined) break;
+    candidateCache.delete(oldestProfileId);
+  }
+
+  return candidates;
 }
 
-export function searchOmniboxPlacesForProfile(
+export async function searchOmniboxPlacesForProfile(
   profileId: string,
   input: string,
   requestedLimit = DEFAULT_LIMIT
-): OmniboxPlaceSuggestion[] {
+): Promise<OmniboxPlaceSuggestion[]> {
   const trimmed = input.trim();
   if (trimmed.length < 2) return [];
 
   const limit = Math.min(Math.max(requestedLimit, 1), MAX_LIMIT);
-  const candidates = listPlaceCandidates(profileId, trimmed);
+  const inputLower = trimmed.toLowerCase();
+  const tokens = tokenize(inputLower);
+  const candidates = listPlaceCandidates(profileId).filter((candidate) => {
+    const title = candidate.title.toLowerCase();
+    const url = candidate.url.toLowerCase();
+    return tokens.every((token) => title.includes(token) || url.includes(token));
+  });
 
   // Rust native ranking is intentionally optional. If a compiled ranker is added
   // to the build later, only huge candidate sets should use it; the TS path stays
   // as the reliable default for normal browsing data.
   if (candidates.length >= NATIVE_RANK_THRESHOLD) {
-    return rankPlacesWithNativeRust(candidates, trimmed, limit) ?? rankPlacesInTypeScript(candidates, trimmed, limit);
+    return (
+      (await rankPlacesWithNativeRust(candidates, trimmed, limit)) ?? rankPlacesInTypeScript(candidates, trimmed, limit)
+    );
   }
 
   return rankPlacesInTypeScript(candidates, trimmed, limit);

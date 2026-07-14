@@ -4,6 +4,19 @@ import { measureAsync } from "@/lib/performance";
 
 export async function flushPlaceSuggestions(input: string, flush: OmniboxFlush, signal: AbortSignal): Promise<void> {
   try {
+    await new Promise<void>((resolve) => {
+      const timeout = window.setTimeout(resolve, 35);
+      signal.addEventListener(
+        "abort",
+        () => {
+          window.clearTimeout(timeout);
+          resolve();
+        },
+        { once: true }
+      );
+    });
+    if (signal.aborted) return;
+
     const places = await measureAsync("renderer.omnibox.searchPlaces", () => blinker.omnibox.searchPlaces(input, 6), {
       inputLength: input.length,
       limit: 6

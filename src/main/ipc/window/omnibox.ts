@@ -5,7 +5,7 @@ import { debugPrint } from "@/modules/output";
 import { searchOmniboxPlacesForProfile } from "@/saving/omnibox-place-search";
 import { ipcMain } from "electron";
 import type { OmniboxOpenParams } from "~/blinker/interfaces/browser/omnibox";
-import { measurePerformanceSync } from "@/modules/performance";
+import { measurePerformance } from "@/modules/performance";
 
 async function profileIdFromSender(sender: Electron.WebContents): Promise<string | null> {
   const window = browserWindowsController.getWindowFromWebContents(sender);
@@ -55,7 +55,7 @@ ipcMain.handle("omnibox:get-state", (event) => {
 ipcMain.handle("omnibox:search-places", async (event, input: string, limit?: number) => {
   const profileId = await profileIdFromSender(event.sender);
   if (!profileId) return [];
-  return measurePerformanceSync(
+  return measurePerformance(
     "ipc.omnibox.searchPlaces",
     "ipc",
     () => searchOmniboxPlacesForProfile(profileId, input, limit),
